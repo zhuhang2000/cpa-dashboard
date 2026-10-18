@@ -23,6 +23,7 @@ from portal.app import App  # noqa: E402
 from portal.billing import apply_credit, to_micro  # noqa: E402
 from portal.common import USERNAME_RE  # noqa: E402
 from portal.config import load_config  # noqa: E402
+from portal.constants import Role, TxType, UserStatus  # noqa: E402
 from portal.db import now_ms, transaction  # noqa: E402
 from portal.routes import register_routes  # noqa: E402
 from portal.security import hash_password, new_redeem_code  # noqa: E402
@@ -74,13 +75,14 @@ def cmd_create_admin(app, username, password=None):
     try:
         row = conn.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
         if row:
-            conn.execute("UPDATE users SET role = 'admin', status = 'active' WHERE id = ?", (row["id"],))
+            conn.execute("UPDATE users SET role = ?, status = ? WHERE id = ?",
+                         (Role.ADMIN, UserStatus.ACTIVE, row["id"]))
             print("已将用户 %s 设为管理员" % username)
             return
         password = password or _ask_password()
         conn.execute(
-            "INSERT INTO users (username, password_hash, role, created_at) VALUES (?, ?, 'admin', ?)",
-            (username, hash_password(password), now_ms()),
+            "INSERT INTO users (username, password_hash, role, created_at) VALUES (?, ?, ?, ?)",
+            (username, hash_password(password), Role.ADMIN, now_ms()),
         )
         print("已创建管理员 %s" % username)
     finally:
@@ -132,7 +134,7 @@ def cmd_credit(app, username, amount, note):
         if not row:
             sys.exit("用户不存在: %s" % username)
         with transaction(conn):
-            balance = apply_credit(conn, row["id"], to_micro(amount), "admin", note=note or "命令行调整")
+            balance = apply_credit(conn, row["id"], to_micro(amount), TxType.ADMIN, note=note or "命令行调整")
         print("%s 当前余额: %.4f" % (username, balance / 1e6))
     finally:
         conn.close()

@@ -6,15 +6,13 @@ per-request costs of a fraction of a cent add up exactly.
 import re
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
+from .constants import TxType
 from .db import now_ms
 
 MICRO = 1000000
 PER_MILLION = 1000000.0
 CACHE_READ_RATIO = 0.1
 CACHE_WRITE_RATIO = 1.25
-
-# Transaction types that count towards a user's total recharge.
-RECHARGE_TYPES = ("redeem", "online", "admin")
 
 
 def to_micro(amount):
@@ -154,7 +152,7 @@ def build_price_book(conn, cpamp_prices, settings):
 
 def apply_credit(conn, user_id, amount_micro, tx_type, ref=None, note=None, operator_id=None):
     """Change a balance and write the ledger row. Call inside db.transaction()."""
-    recharge = amount_micro if (tx_type in RECHARGE_TYPES and amount_micro > 0) else 0
+    recharge = amount_micro if (tx_type in TxType.RECHARGE and amount_micro > 0) else 0
     conn.execute(
         "UPDATE users SET balance_micro = balance_micro + ?, "
         "total_recharge_micro = total_recharge_micro + ? WHERE id = ?",

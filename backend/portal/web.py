@@ -12,6 +12,7 @@ import urllib.parse
 from http.cookies import CookieError, SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+from .constants import Role, UserStatus
 from .db import now_ms
 from .security import sha256_hex
 
@@ -167,7 +168,7 @@ class Request:
                 (token_hash,),
             ).fetchone()
             now = now_ms()
-            if row is not None and row["session_expires_at"] > now and row["status"] == "active":
+            if row is not None and row["session_expires_at"] > now and row["status"] == UserStatus.ACTIVE:
                 self.user = row
                 self.session_hash = token_hash
                 lifetime = int(self.app.cfg.get("session_days") or 7) * DAY_MS
@@ -177,7 +178,7 @@ class Request:
                     self.set_cookie(SESSION_COOKIE, token, lifetime // 1000)
         if required and self.user is None:
             raise ApiError(401, "请先登录")
-        if required == "admin" and self.user["role"] != "admin":
+        if required == "admin" and self.user["role"] != Role.ADMIN:
             raise ApiError(403, "需要管理员权限")
 
 

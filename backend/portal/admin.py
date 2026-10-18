@@ -1,14 +1,15 @@
 """Admin JSON API: users, balances, redeem codes, prices and settings."""
 from . import billing
-from .billing import RECHARGE_TYPES, apply_credit
+from .billing import apply_credit
 from .common import (DAY_MS, daily_series, day_start, epay_conf, like_pattern, money, month_start,
                      paginate, parse_money, tz_offset_ms, user_public)
+from .constants import KeyStatus, RedeemStatus, Role, TxType, UserStatus
 from .db import get_setting, now_ms, set_setting, transaction
 from .keys import live_counts
 from .security import new_redeem_code
 from .web import ApiError
 
-_RECHARGE_IN = "(%s)" % ", ".join("'%s'" % t for t in RECHARGE_TYPES)
+_RECHARGE_IN = "(%s)" % ", ".join("'%s'" % t for t in TxType.RECHARGE)
 
 
 def overview(req):
@@ -58,7 +59,7 @@ def overview(req):
     return {
         "users": {"total": scalar("SELECT COUNT(*) FROM users"),
                   "today": scalar("SELECT COUNT(*) FROM users WHERE created_at >= ?", (today,))},
-        "keys_active": scalar("SELECT COUNT(*) FROM api_keys WHERE status = 'active'"),
+        "keys_active": scalar("SELECT COUNT(*) FROM api_keys WHERE status = ?", (KeyStatus.ACTIVE,)),
         "balance_total": money(scalar("SELECT SUM(balance_micro) FROM users")),
         "recharge": {"today": recharge_since(today), "month": recharge_since(month)},
         "usage": {"today": usage_since(today), "month": usage_since(month)},
@@ -112,17 +113,17 @@ def update_user(req, user_id):
     row = _get_user(conn, user_id)
     is_self = row["id"] == req.user["id"]
     if "status" in data:
-        if data["status"] not in ("active", "banned"):
+        if data["status"] not in UserStatus.ALL:
             raise ApiError(400, "状态不正确")
-        if is_self and data["status"] != "active":
+        if is_self and data["status"] != UserStatus.ACTIVE:
             raise ApiError(400, "不能禁用自己的账号")
         conn.execute("UPDATE users SET status = ? WHERE id = ?", (data["status"], row["id"]))
-        if data["status"] == "banned":
+        if data["status"] == UserStatus.BANNED:
             conn.execute("DELETE FROM sessions WHERE user_id = ?", (row["id"],))
     if "role" in data:
-        if data["role"] not in ("user", "admin"):
+        if data["role"] not in Role.ALL:
             raise ApiError(400, "角色不正确")
-        if is_self and data["role"] != "admin":
+        if is_self and data["role"] != Role.ADMIN:
             raise ApiError(400, "不能取消自己的管理员身份")
         conn.execute("UPDATE users SET role = ? WHERE id = ?", (data["role"], row["id"]))
     req.app.worker.trigger()
@@ -136,7 +137,7 @@ def adjust_balance(req, user_id):
     conn = req.conn
     with transaction(conn):
         _get_user(conn, user_id)
-        balance = apply_credit(conn, user_id, amount, "admin", note=note, operator_id=req.user["id"])
+        balance = apply_credit(conn, user_id, amount, TxType.ADMIN, note=note, operator_id=req.user["id"])
     req.app.worker.trigger()
     return {"balance": money(balance)}
 
@@ -146,7 +147,7 @@ def list_codes(req):
     page, size, offset = paginate(req)
     where, args = ["1 = 1"], []
     status = req.arg("status")
-    if status in ("unused", "used", "disabled"):
+    if status in RedeemStatus.ALL:
         where.append("c.status = ?")
         args.append(status)
     batch = (req.arg("batch") or "").strip()
@@ -212,8 +213,8 @@ def create_codes(req):
 
 def disable_code(req, code):
     changed = req.conn.execute(
-        "UPDATE redeem_codes SET status = 'disabled' WHERE code = ? AND status = 'unused'",
-        (code.upper(),),
+        "UPDATE redeem_codes SET status = ? WHERE code = ? AND status = ?",
+        (RedeemStatus.DISABLED, code.upper(), RedeemStatus.UNUSED),
     ).rowcount
     if not changed:
         raise ApiError(400, "只能停用未使用的兑换码")

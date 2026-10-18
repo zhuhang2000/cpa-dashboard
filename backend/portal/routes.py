@@ -10,11 +10,11 @@ from . import __version__, billing, epay, keys
 from .billing import MICRO, apply_credit, to_micro
 from .common import (DAY_MS, EMAIL_RE, USERNAME_RE, daily_series, day_start, epay_conf, money,
                      month_start, paginate, time_label, tz_offset_ms, user_public)
+from .constants import OrderStatus, RedeemStatus, TxType, UserStatus
 from .db import get_setting, now_ms, transaction
 from .security import hash_password, new_session_token, sha256_hex, verify_password
 from .web import SESSION_COOKIE, ApiError, Response
 
-# Balances, prices and recharge credits are all denominated in US dollars.
 _DUMMY_HASH = []
 
 
@@ -126,7 +126,7 @@ def register(req):
             (username, email, password_hash, now_ms(), now_ms(), req.ip),
         ).lastrowid
         if bonus > 0:
-            apply_credit(conn, user_id, bonus, "bonus", note="注册赠送")
+            apply_credit(conn, user_id, bonus, TxType.BONUS, note="注册赠送")
         _start_session(req, user_id)
     row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
     return {"user": user_public(row)}
@@ -152,7 +152,7 @@ def login(req):
         app.limiter.add(ip_key)
         app.limiter.add(account_key)
         raise ApiError(401, "用户名或密码错误")
-    if row["status"] != "active":
+    if row["status"] != UserStatus.ACTIVE:
         raise ApiError(403, "账号已被禁用，请联系管理员")
     app.limiter.reset(account_key)
     with transaction(conn):
@@ -408,7 +408,7 @@ def list_transactions(req):
     items = []
     for row in rows:
         ref = row["ref"] or ""
-        if row["type"] == "redeem" and len(ref) > 9:
+        if row["type"] == TxType.REDEEM and len(ref) > 9:
             ref = ref[:4] + "-****-****-" + ref[-4:]
         items.append({"id": row["id"], "type": row["type"], "amount": money(row["amount_micro"]),
                       "balance_after": money(row["balance_after_micro"]), "ref": ref,
@@ -438,16 +438,18 @@ def redeem(req):
         row = conn.execute("SELECT * FROM redeem_codes WHERE code = ?", (code,)).fetchone()
         if row is None:
             error = "兑换码不存在"
-        elif row["status"] == "used":
+        elif row["status"] == RedeemStatus.USED:
             error = "兑换码已被使用"
-        elif row["status"] != "unused":
+        elif row["status"] != RedeemStatus.UNUSED:
             error = "兑换码已停用"
         elif row["expires_at"] and row["expires_at"] <= now_ms():
             error = "兑换码已过期"
         else:
-            conn.execute("UPDATE redeem_codes SET status = 'used', used_by = ?, used_at = ? "
-                         "WHERE code = ? AND status = 'unused'", (uid, now_ms(), code))
-            balance = apply_credit(conn, uid, row["amount_micro"], "redeem", ref=code, note="兑换码充值")
+            conn.execute("UPDATE redeem_codes SET status = ?, used_by = ?, used_at = ? "
+                         "WHERE code = ? AND status = ?",
+                         (RedeemStatus.USED, uid, now_ms(), code, RedeemStatus.UNUSED))
+            balance = apply_credit(conn, uid, row["amount_micro"], TxType.REDEEM, ref=code,
+                                   note="兑换码充值")
     if error:
         for key in fail_keys:
             app.limiter.add(key)
@@ -521,19 +523,20 @@ def _settle_epay(app, params):
             order = conn.execute("SELECT * FROM orders WHERE order_no = ?", (order_no,)).fetchone()
             if order is None:
                 return False, order_no
-            if order["status"] == "paid":
+            if order["status"] == OrderStatus.PAID:
                 return True, order_no
             try:
                 if Decimal(str(params.get("money"))) != Decimal(order["pay_amount"]):
                     return False, order_no
             except InvalidOperation:
                 return False, order_no
-            conn.execute("UPDATE orders SET status = 'paid', trade_no = ?, paid_at = ? "
-                         "WHERE order_no = ? AND status = 'pending'",
-                         (str(params.get("trade_no") or ""), now_ms(), order_no))
+            conn.execute("UPDATE orders SET status = ?, trade_no = ?, paid_at = ? "
+                         "WHERE order_no = ? AND status = ?",
+                         (OrderStatus.PAID, str(params.get("trade_no") or ""), now_ms(), order_no,
+                          OrderStatus.PENDING))
             label = {"alipay": "支付宝", "wxpay": "微信支付", "qqpay": "QQ 钱包"}.get(order["channel"],
                                                                               order["channel"])
-            apply_credit(conn, order["user_id"], order["credit_micro"], "online", ref=order_no,
+            apply_credit(conn, order["user_id"], order["credit_micro"], TxType.ONLINE, ref=order_no,
                          note="在线充值（%s）" % label)
     finally:
         conn.close()

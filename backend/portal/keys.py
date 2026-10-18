@@ -5,13 +5,11 @@ the set of keys the sync worker pushes to CLIProxyAPI are both derived from it.
 """
 from .billing import to_micro
 from .common import money, parse_money, parse_optional_ts
+from .constants import KeyState, KeyStatus, UserStatus
 from .db import now_ms, transaction
 from .security import new_api_key, sha256_hex
 from .web import ApiError
 
-ACTIVE = "active"
-DISABLED = "disabled"
-DELETED = "deleted"
 NAME_MAX = 32
 DEFAULT_NAME = "默认密钥"
 
@@ -44,15 +42,15 @@ def mask(key, prefix):
 # -- state ---------------------------------------------------------------------------
 def state(key_row, user_row, min_balance, now):
     """Why a key can or cannot be used right now; only ACTIVE keys are synced to CPA."""
-    if key_row["status"] != ACTIVE:
+    if key_row["status"] != KeyStatus.ACTIVE:
         return key_row["status"]  # disabled / deleted
     if key_row["expires_at"] and key_row["expires_at"] <= now:
-        return "expired"
+        return KeyState.EXPIRED
     if key_row["quota_micro"] is not None and key_row["used_micro"] >= key_row["quota_micro"]:
-        return "exhausted"
-    if user_row["balance_micro"] <= min_balance or user_row["status"] != "active":
-        return "suspended"
-    return ACTIVE
+        return KeyState.EXHAUSTED
+    if user_row["balance_micro"] <= min_balance or user_row["status"] != UserStatus.ACTIVE:
+        return KeyState.SUSPENDED
+    return KeyStatus.ACTIVE
 
 
 def desired_and_managed(conn, app):
@@ -68,7 +66,7 @@ def desired_and_managed(conn, app):
     for row in conn.execute("SELECT * FROM api_keys"):
         managed.add(row["key"])
         user = users.get(row["user_id"])
-        if user is not None and state(row, user, min_balance, now) == ACTIVE:
+        if user is not None and state(row, user, min_balance, now) == KeyStatus.ACTIVE:
             desired.add(row["key"])
     return desired, managed
 
@@ -76,7 +74,7 @@ def desired_and_managed(conn, app):
 # -- reads ---------------------------------------------------------------------------
 def count_live(conn, user_id):
     return conn.execute("SELECT COUNT(*) FROM api_keys WHERE user_id = ? AND status != ?",
-                        (user_id, DELETED)).fetchone()[0]
+                        (user_id, KeyStatus.DELETED)).fetchone()[0]
 
 
 def live_counts(conn, user_ids):
@@ -86,7 +84,7 @@ def live_counts(conn, user_ids):
     rows = conn.execute(
         "SELECT user_id, COUNT(*) FROM api_keys WHERE status != ? AND user_id IN (%s) "
         "GROUP BY user_id" % ", ".join("?" * len(user_ids)),
-        [DELETED] + list(user_ids),
+        [KeyStatus.DELETED] + list(user_ids),
     )
     return {row[0]: row[1] for row in rows}
 
@@ -94,14 +92,14 @@ def live_counts(conn, user_ids):
 def list_for_user(conn, user_id):
     return conn.execute(
         "SELECT * FROM api_keys WHERE user_id = ? AND status != ? ORDER BY id DESC",
-        (user_id, DELETED),
+        (user_id, KeyStatus.DELETED),
     ).fetchall()
 
 
 def get_owned(conn, user_id, key_id):
     row = conn.execute(
         "SELECT * FROM api_keys WHERE id = ? AND user_id = ? AND status != ?",
-        (key_id, user_id, DELETED),
+        (key_id, user_id, KeyStatus.DELETED),
     ).fetchone()
     if row is None:
         raise ApiError(404, "密钥不存在")
@@ -152,7 +150,7 @@ def update(conn, key_row, data):
         fields.append("name = ?")
         args.append(parse_name(data.get("name")))
     if "status" in data:
-        if data["status"] not in (ACTIVE, DISABLED):
+        if data["status"] not in KeyStatus.SETTABLE:
             raise ApiError(400, "状态不正确")
         fields.append("status = ?")
         args.append(data["status"])
@@ -171,7 +169,7 @@ def update(conn, key_row, data):
 def soft_delete(conn, key_row):
     """Keep the row for usage history; the next sync removes the key from CPA."""
     conn.execute("UPDATE api_keys SET status = ?, deleted_at = ? WHERE id = ?",
-                 (DELETED, now_ms(), key_row["id"]))
+                 (KeyStatus.DELETED, now_ms(), key_row["id"]))
 
 
 # -- output --------------------------------------------------------------------------
