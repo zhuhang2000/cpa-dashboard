@@ -118,13 +118,30 @@
             </button>
           </div>
         </div>
+        <div v-if="form.mode === 'add'" class="field">
+          <label for="adj-type">类型</label>
+          <select id="adj-type" v-model="form.type" class="select" required>
+            <option disabled value="">请选择类型</option>
+            <option v-for="(entry, value) in REDEEM_TYPES" :key="value" :value="value">{{ entry.label }}</option>
+          </select>
+        </div>
         <div class="field">
           <label for="adj-amount">金额</label>
           <div class="input-group has-prefix">
             <span class="input-prefix">{{ currency() }}</span>
             <input id="adj-amount" v-model="form.amount" class="input" type="number" min="0.01" step="0.01" required />
           </div>
-          <div class="field-hint">线下收款后可在这里手动充值，会记录在用户的余额流水中。</div>
+          <div class="field-hint">
+            {{
+              form.mode === 'sub'
+                ? '扣减余额，不抵扣充值统计，也不计入调用消费。'
+                : !form.type
+                  ? '请选择充值或赠送。'
+                  : form.type === RedeemType.GIFT
+                    ? '赠送仅增加余额，不计入充值统计。'
+                    : '充值增加余额，并计入充值统计。'
+            }}
+          </div>
         </div>
         <div class="field">
           <label for="adj-note">备注</label>
@@ -152,7 +169,7 @@ import UserKeysModal from '@/components/admin/UserKeysModal.vue'
 import { accountsApi } from '@/api/accounts'
 import { billingApi } from '@/api/billing'
 import { usePagedList } from '@/composables/usePagedList'
-import { ROLES, Role, USER_STATUSES, UserStatus } from '@/constants'
+import { REDEEM_TYPES, RedeemType, ROLES, Role, USER_STATUSES, UserStatus } from '@/constants'
 import { store } from '@/store'
 import { currency, date, money, num, relative } from '@/utils/format'
 import { toast } from '@/toast'
@@ -163,7 +180,7 @@ const saving = ref(false)
 const adjusting = ref(null)
 const keyUser = ref(null)
 const menu = ref(null)
-const form = reactive({ mode: 'add', amount: '', note: '' })
+const form = reactive({ mode: 'add', type: '', amount: '', note: '' })
 
 // The table scrolls horizontally, so the row menu is teleported and fixed-positioned.
 function openMenu(event, u) {
@@ -191,16 +208,20 @@ function openKeys(u) {
 
 function openAdjust(u) {
   adjusting.value = u
-  Object.assign(form, { mode: 'add', amount: '', note: '' })
+  Object.assign(form, { mode: 'add', type: '', amount: '', note: '' })
 }
 
 async function adjust() {
+  if (saving.value) return
+  if (form.mode === 'add' && !form.type) return toast.error('请选择充值或赠送')
   const value = Number(form.amount)
   if (!(value > 0)) return toast.error('请输入大于 0 的金额')
   saving.value = true
   try {
     const amount = form.mode === 'add' ? value : -value
-    const data = await billingApi.adjustBalance(adjusting.value.id, { amount, note: form.note })
+    const payload = { amount, note: form.note }
+    if (form.mode === 'add') payload.type = form.type
+    const data = await billingApi.adjustBalance(adjusting.value.id, payload)
     toast.success(`已调整，当前余额 ${money(data.balance)}`)
     adjusting.value = null
     await users.load()
