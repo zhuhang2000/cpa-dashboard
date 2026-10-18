@@ -8,7 +8,7 @@ import sys
 import uvicorn
 
 from core.config import CONFIG_PATH, initialize_config, load_config
-from core.constants import DAY_MS, VERSION, TxType
+from core.constants import DAY_MS, VERSION, RedeemType, TxType
 from core.db import now_ms, transaction
 from core.errors import ApiError
 from runtime.app import Runtime, create_app
@@ -81,14 +81,16 @@ def cmd_reset_password(runtime, username, password=None):
     print("已重置 %s 的密码，并注销其所有登录" % username)
 
 
-def cmd_gen_codes(runtime, amount, count, batch, expires_days):
+def cmd_gen_codes(runtime, amount, count, batch, expires_days, code_type):
     micro = billing.to_micro(amount)
     if micro <= 0 or not 1 <= count <= 5000:
         sys.exit("面额需大于 0，数量 1-5000")
     expires_at = now_ms() + expires_days * DAY_MS if expires_days else None
     conn = runtime.db()
     try:
-        codes = billing.generate_codes(conn, micro, count, batch, expires_at)
+        codes = billing.generate_codes(
+            conn, micro, count, batch, expires_at, created_by=None, code_type=code_type
+        )
     finally:
         conn.close()
     print("\n".join(codes))
@@ -125,6 +127,12 @@ def main():
     p.add_argument("--count", type=int, default=1)
     p.add_argument("--batch")
     p.add_argument("--expires-days", type=int, default=0)
+    p.add_argument(
+        "--type",
+        choices=RedeemType.ALL,
+        default=RedeemType.RECHARGE,
+        help="recharge counts toward recharge totals; gift only adds balance",
+    )
     p = sub.add_parser("credit", help="adjust a user's balance (negative to deduct)")
     p.add_argument("username")
     p.add_argument("amount")
@@ -152,6 +160,6 @@ def main():
     elif command == "reset-password":
         cmd_reset_password(app, args.username, args.password)
     elif command == "gen-codes":
-        cmd_gen_codes(app, args.amount, args.count, args.batch, args.expires_days)
+        cmd_gen_codes(app, args.amount, args.count, args.batch, args.expires_days, args.type)
     elif command == "credit":
         cmd_credit(app, args.username, args.amount, args.note)

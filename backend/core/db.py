@@ -136,7 +136,12 @@ CREATE TABLE settings (
 );
 """
 
-MIGRATIONS = [SCHEMA_V1]
+SCHEMA_V2 = """
+ALTER TABLE redeem_codes ADD COLUMN type TEXT NOT NULL DEFAULT 'recharge'
+    CHECK (type IN ('recharge', 'gift'));
+"""
+
+MIGRATIONS = [SCHEMA_V1, SCHEMA_V2]
 
 
 def now_ms():

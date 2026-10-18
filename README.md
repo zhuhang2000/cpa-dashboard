@@ -30,7 +30,7 @@
 | --- | --- |
 | 注册 / 登录（可关闭注册、注册赠送） | 运营概况：用户数、今日/本月充值与消费、14 天收支图、同步状态告警 |
 | 概览：余额、今日/本月消费、30 天消费趋势、模型消费排行、接入示例（cURL / Python / Claude Code） | 用户管理：搜索、调整余额（线下收款手动充值）、禁用账号、设为管理员 |
-| API 密钥：创建（完整密钥只展示一次）、复制、单独额度上限、过期时间、启用/禁用、删除 | 兑换码：批量生成（面额/数量/批次/有效期）、复制全部、下载 TXT、停用 |
+| API 密钥：创建（完整密钥只展示一次）、复制、单独额度上限、过期时间、启用/禁用、删除 | 兑换码：批量生成（面额/数量/充值或赠送/批次/有效期）、复制全部、下载 TXT、停用 |
 | 用量明细：按时间/密钥/模型/状态筛选，输入/缓存/输出/推理 tokens、费用、耗时，导出 CSV | 模型定价：自定义售价，或用 CPAMP 同步的官方价 × 倍率；控制前台是否展示；未定价模型告警 |
 | 充值中心：兑换码充值、在线充值（易支付，可选）、余额流水、支付订单 | 系统设置：站点名称、API 地址、公告、开放注册、注册赠送、价格倍率、默认价格 |
 | 模型价格：每百万 / 每千 tokens 两种单位 | 命令行：创建管理员、重置密码、生成兑换码、调整余额 |
@@ -190,10 +190,11 @@ systemctl restart api-portal
 
 ## 充值方式
 
-**兑换码（默认可用）**：管理后台 → 兑换码 → 生成，复制或下载后通过发卡平台 / 微信等渠道出售。命令行也可以生成：
+**兑换码（默认可用）**：管理后台 → 兑换码 → 生成，可选择“充值”或“赠送”。两种均增加余额；只有充值类型计入用户累计充值、运营充值汇总和趋势统计，赠送单独记录为“兑换码赠送”。已有兑换码迁移为充值类型；生成接口必须明确传入类型。命令行也可以生成：
 
 ```bash
 .venv/bin/python server.py gen-codes --amount 50 --count 20 --batch 2026-10
+.venv/bin/python server.py gen-codes --amount 10 --count 20 --type gift --batch 2026-10-赠送
 ```
 
 **线下收款**：管理后台 → 用户管理 → 调整余额，会记入该用户的余额流水。
@@ -220,7 +221,7 @@ systemctl restart api-portal
 .venv/bin/python server.py                              # 启动（systemd 已代劳）
 .venv/bin/python server.py create-admin <用户名>         # 创建/提升管理员
 .venv/bin/python server.py reset-password <用户名>       # 重置密码并注销其所有登录
-.venv/bin/python server.py gen-codes --amount 50 --count 10 [--batch 名称] [--expires-days 30]
+.venv/bin/python server.py gen-codes --amount 50 --count 10 [--type recharge|gift] [--batch 名称] [--expires-days 30]
 .venv/bin/python server.py credit <用户名> 100 --note "线下转账"   # 负数为扣款
 ```
 

@@ -8,7 +8,7 @@ import secrets
 import time
 from decimal import ROUND_DOWN, ROUND_HALF_UP, Decimal, InvalidOperation
 
-from core.constants import OrderStatus, RedeemStatus, TxType
+from core.constants import OrderStatus, RedeemStatus, RedeemType, TxType
 from core.db import like_pattern, now_ms, transaction
 from core.errors import ApiError
 from core.security import new_redeem_code
@@ -124,7 +124,7 @@ def list_transactions(conn, user_id, page, size, offset):
     items = []
     for row in rows:
         ref = row["ref"] or ""
-        if row["type"] == TxType.REDEEM and len(ref) > 9:
+        if row["type"] in (TxType.REDEEM, TxType.REDEEM_GIFT) and len(ref) > 9:
             ref = ref[:4] + "-****-****-" + ref[-4:]
         items.append(
             {
@@ -171,8 +171,14 @@ def redeem(conn, user_id, raw_code, limiter, ip):
                 "WHERE code = ? AND status = ?",
                 (RedeemStatus.USED, user_id, now_ms(), code, RedeemStatus.UNUSED),
             )
+            is_gift = row["type"] == RedeemType.GIFT
             balance = apply_credit(
-                conn, user_id, row["amount_micro"], TxType.REDEEM, ref=code, note="兑换码充值"
+                conn,
+                user_id,
+                row["amount_micro"],
+                TxType.REDEEM_GIFT if is_gift else TxType.REDEEM,
+                ref=code,
+                note="兑换码赠送" if is_gift else "兑换码充值",
             )
     if error:
         for key in fail_keys:
@@ -215,6 +221,7 @@ def list_codes(conn, page, size, offset, status=None, batch="", query=""):
             {
                 "code": r["code"],
                 "amount": money(r["amount_micro"]),
+                "type": r["type"],
                 "batch": r["batch"] or "",
                 "status": r["status"],
                 "created_at": r["created_at"],
@@ -231,16 +238,18 @@ def list_codes(conn, page, size, offset, status=None, batch="", query=""):
     }
 
 
-def generate_codes(conn, amount_micro, count, batch, expires_at, created_by=None):
-    """Generate unique recharge codes in one transaction for the API and CLI."""
+def generate_codes(conn, amount_micro, count, batch, expires_at, created_by, code_type):
+    """Generate unique recharge or gift codes in one transaction for the API and CLI."""
+    if code_type not in RedeemType.ALL:
+        raise ApiError(400, "兑换码类型必须为充值或赠送")
     codes = []
     with transaction(conn):
         while len(codes) < count:
             code = new_redeem_code()
             inserted = conn.execute(
                 "INSERT OR IGNORE INTO redeem_codes (code, amount_micro, batch, created_by, created_at, "
-                "expires_at) VALUES (?, ?, ?, ?, ?, ?)",
-                (code, amount_micro, batch, created_by, now_ms(), expires_at),
+                "expires_at, type) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (code, amount_micro, batch, created_by, now_ms(), expires_at, code_type),
             ).rowcount
             if inserted:
                 codes.append(code)
@@ -265,8 +274,9 @@ def create_codes(conn, operator_id, data):
         if not 1 <= days <= 3650:
             raise ApiError(400, "有效期需在 1-3650 天之间")
         expires_at = now_ms() + days * DAY_MS
-    codes = generate_codes(conn, amount, count, batch, expires_at, operator_id)
-    return {"codes": codes, "amount": money(amount), "batch": batch or ""}
+    code_type = data.get("type")
+    codes = generate_codes(conn, amount, count, batch, expires_at, operator_id, code_type)
+    return {"codes": codes, "amount": money(amount), "batch": batch or "", "type": code_type}
 
 
 def disable_code(conn, code):

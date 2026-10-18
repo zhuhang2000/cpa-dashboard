@@ -44,6 +44,12 @@ class RedeemStatus:
     ALL = (UNUSED, USED, DISABLED)
 
 
+class RedeemType:
+    RECHARGE = "recharge"
+    GIFT = "gift"
+    ALL = (RECHARGE, GIFT)
+
+
 class OrderStatus:
     PENDING = "pending"
     PAID = "paid"
@@ -53,10 +59,11 @@ class TxType:
     """transactions.type. Usage charges are not written to the ledger."""
 
     REDEEM = "redeem"
+    REDEEM_GIFT = "redeem_gift"
     ONLINE = "online"
     ADMIN = "admin"
     BONUS = "bonus"
-    RECHARGE = (REDEEM, ONLINE, ADMIN)  # counted in users.total_recharge_micro
+    RECHARGE = (REDEEM, ONLINE, ADMIN)  # gifts are excluded from all recharge statistics
 
 
 VERSION = "1.0.0"
