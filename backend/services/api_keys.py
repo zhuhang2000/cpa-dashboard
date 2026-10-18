@@ -157,10 +157,14 @@ def update(conn, key_row, data):
         fields.append("expires_at = ?")
         args.append(parse_optional_ts(data.get("expires_at"), "过期时间"))
     if fields:
-        conn.execute(
-            "UPDATE api_keys SET %s WHERE id = ?" % ", ".join(fields), args + [key_row["id"]]
-        )
-    return _get(conn, key_row["id"])
+        changed = conn.execute(
+            "UPDATE api_keys SET %s WHERE id = ? AND user_id = ? AND status != ?"
+            % ", ".join(fields),
+            args + [key_row["id"], key_row["user_id"], KeyStatus.DELETED],
+        ).rowcount
+        if not changed:
+            raise ApiError(404, "密钥不存在")
+    return get_owned(conn, key_row["user_id"], key_row["id"])
 
 
 def soft_delete(conn, key_row):

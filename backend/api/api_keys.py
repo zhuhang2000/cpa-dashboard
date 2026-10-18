@@ -2,9 +2,9 @@
 
 from fastapi import APIRouter, Depends
 
-from api.dependencies import get_connection, get_runtime, json_body, require_user
+from api.dependencies import get_connection, get_runtime, json_body, require_admin, require_user
 from core.db import now_ms
-from services import api_keys
+from services import accounts, api_keys
 from services.billing import money
 
 router = APIRouter(tags=["api_keys"])
@@ -82,3 +82,25 @@ def delete_key(
 @router.post("/api/keys/{key_id:int}/reveal")
 def reveal_key(key_id: int, user=Depends(require_user), conn=Depends(get_connection)):
     return {"key": api_keys.get_owned(conn, user["id"], key_id)["key"]}
+
+
+@router.get("/api/admin/users/{user_id:int}/keys", dependencies=[Depends(require_admin)])
+def list_user_keys(user_id: int, conn=Depends(get_connection), runtime=Depends(get_runtime)):
+    user = accounts.get(conn, user_id)
+    return {
+        "items": [
+            {**to_public(runtime.cfg, row, user), "key": row["key"]}
+            for row in api_keys.list_for_user(conn, user_id)
+        ]
+    }
+
+
+@router.delete(
+    "/api/admin/users/{user_id:int}/keys/{key_id:int}", dependencies=[Depends(require_admin)]
+)
+def delete_user_key(
+    user_id: int, key_id: int, conn=Depends(get_connection), runtime=Depends(get_runtime)
+):
+    api_keys.soft_delete(conn, api_keys.get_owned(conn, user_id, key_id))
+    runtime.worker.trigger()
+    return {"ok": True}
