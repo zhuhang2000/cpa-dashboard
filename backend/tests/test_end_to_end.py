@@ -208,7 +208,10 @@ def run_portal_scenario(admin, user, bootstrap_admin, append_usage, payment_key=
     )
     assert balance["balance"] == 10
     generated, _ = call(
-        admin, "POST", "/api/admin/codes", json={"amount": 5, "count": 2, "batch": "scenario"}
+        admin,
+        "POST",
+        "/api/admin/codes",
+        json={"amount": 5, "count": 2, "batch": "scenario", "type": "recharge"},
     )
     codes = generated["codes"]
     listed, _ = call(

@@ -1,12 +1,11 @@
 """Exercise the actual entry point from outside backend/ with isolated config."""
 
-import json
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
-from core.db import connect
+from core.db import MIGRATIONS, connect
 from core.security import verify_password
 
 BACKEND = Path(__file__).resolve().parents[1]
@@ -37,8 +36,10 @@ def test_cli_commands_keep_paths_and_database_format(tmp_path):
     assert "create-admin" in help_text
     assert "--config" not in help_text
     assert str(config) in run("init-config")
-    content = (BACKEND / "core" / ".env").read_text()
-    config.write_text(content.replace("DATA_DIR=../data-dev", "DATA_DIR=../data") + "\nSITE_NAME=CLI test site\nCPAMP_USAGE_DB=\n")
+    content = (BACKEND / "core" / ".env.example").read_text()
+    config.write_text(
+        content + f"\nDATA_DIR={backend / 'data'}\nSITE_NAME=CLI test site\nCPAMP_USAGE_DB=\n"
+    )
     original = config.read_bytes()
     assert str(config) in run("init-config")
     assert config.read_bytes() == original
@@ -51,14 +52,21 @@ def test_cli_commands_keep_paths_and_database_format(tmp_path):
         "gen-codes", "--amount", "5", "--count", "2", "--batch", "CLI", "--expires-days", "30"
     ).splitlines()
     assert len(codes) == 2 and codes[0] != codes[1]
+    gifts = run("gen-codes", "--amount", "7", "--type", "gift").splitlines()
+    assert len(gifts) == 1
     conn = connect(backend / "data" / "portal.sqlite")
     try:
         user = conn.execute("SELECT * FROM users WHERE username = 'admin'").fetchone()
         assert user["balance_micro"] == 12500000
         assert verify_password("second-password", user["password_hash"])
         assert (
-            conn.execute("SELECT COUNT(*) FROM redeem_codes WHERE batch = 'CLI'").fetchone()[0] == 2
+            conn.execute(
+                "SELECT COUNT(*) FROM redeem_codes WHERE batch = 'CLI' AND type = 'recharge'"
+            ).fetchone()[0]
+            == 2
         )
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == 1
+        gift = conn.execute("SELECT * FROM redeem_codes WHERE code = ?", (gifts[0],)).fetchone()
+        assert gift["type"] == "gift" and gift["amount_micro"] == 7000000
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == len(MIGRATIONS)
     finally:
         conn.close()

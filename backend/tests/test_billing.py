@@ -5,7 +5,7 @@ from copy import deepcopy
 import pytest
 
 from core.config import load_config
-from core.constants import OrderStatus
+from core.constants import OrderStatus, RedeemType
 from core.db import connect, init_db, transaction
 from core.security import RateLimiter
 from integrations import epay
@@ -103,7 +103,9 @@ def test_payment_callback_rejects_bad_signature_without_writing(billing_conn):
 def test_generate_codes_supports_cli_and_retries_collisions(billing_conn, monkeypatch):
     values = iter(["AAAA-BBBB-CCCC-DDDD", "AAAA-BBBB-CCCC-DDDD", "1111-2222-3333-4444"])
     monkeypatch.setattr(billing, "new_redeem_code", lambda: next(values))
-    codes = billing.generate_codes(billing_conn, 5000000, 2, "cli-batch", None)
+    codes = billing.generate_codes(
+        billing_conn, 5000000, 2, "cli-batch", None, None, RedeemType.RECHARGE
+    )
     assert codes == ["AAAA-BBBB-CCCC-DDDD", "1111-2222-3333-4444"]
     rows = billing_conn.execute("SELECT * FROM redeem_codes ORDER BY code").fetchall()
     assert len(rows) == 2
@@ -117,7 +119,7 @@ def test_code_generation_rolls_back_partial_batch(billing_conn, monkeypatch):
     values = iter(["AAAA-BBBB-CCCC-DDDD"])
     monkeypatch.setattr(billing, "new_redeem_code", lambda: next(values))
     with pytest.raises(StopIteration):
-        billing.generate_codes(billing_conn, 5000000, 2, "partial", None)
+        billing.generate_codes(billing_conn, 5000000, 2, "partial", None, None, RedeemType.RECHARGE)
     assert billing_conn.execute("SELECT COUNT(*) FROM redeem_codes").fetchone()[0] == 0
 
 
