@@ -1,5 +1,6 @@
 import { reactive } from 'vue'
-import { api } from './api'
+import { accountsApi } from '@/api/accounts'
+import { settingsApi } from '@/api/settings'
 
 export const store = reactive({
   status: null, // site info from /api/status
@@ -21,8 +22,8 @@ let statusPromise = null
 export function ensureStatus() {
   if (store.status) return Promise.resolve(store.status)
   if (!statusPromise) {
-    statusPromise = api
-      .get('/api/status')
+    statusPromise = settingsApi
+      .getStatus()
       .then((data) => (store.status = data))
       .catch(() => {
         statusPromise = null
@@ -54,7 +55,7 @@ export async function refreshUser({ throttle = 0 } = {}) {
   if (throttle && Date.now() - lastRefresh < throttle) return store.user
   lastRefresh = Date.now()
   try {
-    const data = await api.get('/api/user/me', null, { silent401: true })
+    const data = await accountsApi.getMe()
     store.user = data.user || null
     store.keyCount = data.key_count || 0
   } catch (e) {
@@ -72,7 +73,7 @@ export function setUser(user) {
 
 export async function logout() {
   try {
-    await api.post('/api/auth/logout')
+    await accountsApi.logout()
   } catch {
     /* ignore */
   }

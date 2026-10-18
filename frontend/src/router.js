@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { setUnauthorizedHandler } from './api'
+import { setUnauthorizedHandler } from '@/api/http'
 import { Role } from './constants'
 import { ensureStatus, ensureUser, store } from './store'
 import AppLayout from '@/layouts/AppLayout.vue'
@@ -13,7 +13,11 @@ const consolePages = [
   { path: '', component: Dashboard, meta: { title: '概览', icon: 'grid' } },
   { path: 'keys', component: () => import('@/views/Keys.vue'), meta: { title: 'API 密钥', icon: 'key' } },
   { path: 'usage', component: () => import('@/views/Usage.vue'), meta: { title: '用量明细', icon: 'activity' } },
-  { path: 'recharge', component: () => import('@/views/Recharge.vue'), meta: { title: '充值中心', icon: 'wallet' } },
+  {
+    path: 'recharge',
+    component: () => import('@/views/recharge/index.vue'),
+    meta: { title: '充值中心', icon: 'wallet' },
+  },
   { path: 'pricing', component: () => import('@/views/Pricing.vue'), meta: { title: '模型价格', icon: 'tag' } },
   { path: 'settings', component: () => import('@/views/Settings.vue'), meta: { title: '个人设置', icon: 'settings' } },
 ]

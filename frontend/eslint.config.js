@@ -4,6 +4,8 @@ import pluginVue from 'eslint-plugin-vue'
 import { defineConfig, globalIgnores } from 'eslint/config'
 import globals from 'globals'
 
+const noParentImports = { regex: '^\\.\\./', message: "Import from outside this folder with the '@/' alias." }
+
 export default defineConfig([
   // public/ is copied into dist as-is and is not part of the bundle.
   globalIgnores(['dist/', 'public/']),
@@ -17,9 +19,19 @@ export default defineConfig([
       // `vite build` does not check templates, so report names and components they cannot resolve.
       'vue/no-undef-components': ['error', { ignorePatterns: ['RouterLink', 'RouterView'] }],
       'vue/no-undef-properties': 'error',
+      'no-restricted-imports': ['error', { patterns: [noParentImports] }],
+    },
+  },
+  {
+    // Endpoints are defined once in src/api/*; pages and components call those, not http.
+    files: ['src/views/**', 'src/components/**', 'src/layouts/**', 'src/composables/**'],
+    rules: {
       'no-restricted-imports': [
         'error',
-        { patterns: [{ regex: '^\\.\\./', message: "Import from outside this folder with the '@/' alias." }] },
+        {
+          paths: [{ name: '@/api/http', message: 'Call the endpoint module in src/api instead.' }],
+          patterns: [noParentImports],
+        },
       ],
     },
   },
