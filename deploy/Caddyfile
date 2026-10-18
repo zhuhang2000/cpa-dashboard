@@ -1,0 +1,6 @@
+# Caddy obtains and renews the HTTPS certificate automatically.
+# Replace the domain, point its DNS A record at this server, then `systemctl reload caddy`.
+console.example.com {
+	encode gzip
+	reverse_proxy 127.0.0.1:18400
+}

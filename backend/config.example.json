@@ -1,0 +1,55 @@
+{
+  "listen": "127.0.0.1",
+  "port": 18400,
+  "site_name": "API 控制台",
+  "currency_symbol": "$",
+  "public_api_base": "https://api.example.com",
+  "guide_url": "https://help.tromino.wiki/guidance/api-guide#tool-intro",
+  "tz_offset_minutes": 480,
+  "data_dir": "./data",
+  "frontend_dir": "../frontend/dist",
+  "trust_proxy": true,
+  "cookie_secure": "auto",
+  "session_days": 7,
+  "allow_register": true,
+  "signup_bonus": 0,
+  "max_keys_per_user": 10,
+  "min_balance_to_call": 0,
+  "key_prefix": "sk-",
+
+  "cpa": {
+    "base_url": "http://127.0.0.1:8317",
+    "management_key": "",
+    "sync_keys": true,
+    "timeout_seconds": 8
+  },
+
+  "cpamp": {
+    "usage_db": "/opt/services/cpa-manager-plus/data/usage.sqlite",
+    "sync_interval_seconds": 15,
+    "batch_size": 1000
+  },
+
+  "pricing": {
+    "use_cpamp_prices": true,
+    "cpamp_price_multiplier": 1.0,
+    "default_input_price": 0,
+    "default_output_price": 0,
+    "bill_failed_requests": false
+  },
+
+  "payment": {
+    "presets": [10, 30, 50, 100, 200, 500],
+    "min_amount": 1,
+    "max_amount": 10000,
+    "credit_ratio": 1.0,
+    "epay": {
+      "enabled": false,
+      "gateway": "https://pay.example.com",
+      "pid": "",
+      "key": "",
+      "channels": ["alipay", "wxpay"],
+      "site_url": "https://console.example.com"
+    }
+  }
+}

@@ -1,0 +1,25 @@
+# /etc/systemd/system/api-portal.service
+#
+#   systemctl daemon-reload && systemctl enable --now api-portal
+#   journalctl -u api-portal -f
+#
+# Runs as root by default because it must read CPA Manager Plus' SQLite database
+# (WAL mode needs access to usage.sqlite-shm). If you run CPAMP under its own user,
+# set User= to an account that can read/write that data directory instead.
+[Unit]
+Description=API Portal (CLIProxyAPI user console)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/services/api-portal/backend
+ExecStart=/usr/bin/python3 /opt/services/api-portal/backend/server.py -c /opt/services/api-portal/backend/config.json
+Restart=always
+RestartSec=3
+Environment=PYTHONUNBUFFERED=1
+NoNewPrivileges=true
+PrivateTmp=true
+MemoryMax=200M
+
+[Install]
+WantedBy=multi-user.target
