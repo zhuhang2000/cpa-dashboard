@@ -4,6 +4,10 @@ frontend/dist/
 backend/data/
 backend/data-dev/
 backend/config.json
+backend/config/config.json
+backend/core/.env
+*.env
+!.env.example
 # Real server address; copy from deploy/deploy.example.sh
 deploy/deploy.sh
 __pycache__/
@@ -12,6 +16,7 @@ __pycache__/
 .DS_Store
 .vscode/
 .idea/
-
-
-backend/test/
+# Python environment and local test caches
+.venv/
+.pytest_cache/
+.ruff_cache/

@@ -1,13 +1,6 @@
 #!/usr/bin/env bash
-# One-step release: build the frontend, package what the server needs, upload,
-# extract over the previous version and restart. config.json and data/ are not
-# in the package, so the server's settings and database are never overwritten.
-#
-#   cp deploy/deploy.example.sh deploy/deploy.sh   # deploy.sh is git-ignored
-#   # fill in HOST / PORT below, then:
-#   bash deploy/deploy.sh
-#
-# Settings can also be overridden per run, e.g. HOST=1.2.3.4 bash deploy/deploy.sh
+# One-step release: build frontend, package, upload, extract and restart service.
+# Local environment configs, cache, and test files are excluded from packaging.
 set -euo pipefail
 
 HOST="${HOST:-your.server.ip}"
@@ -32,17 +25,35 @@ echo "==> 构建前端"
 (cd "$ROOT/frontend" && npm run build --silent)
 
 echo "==> 打包"
-# Keep macOS extended attributes and ._ files out of the archive.
 TAR_FLAGS=""
 if tar --version 2>/dev/null | grep -q bsdtar; then
   TAR_FLAGS="--no-xattrs --no-mac-metadata"
 fi
+
+# Exclude local configs, dev data, virtualenvs, and test caches
 # shellcheck disable=SC2086
 (cd "$(dirname "$ROOT")" && COPYFILE_DISABLE=1 tar $TAR_FLAGS \
-  --exclude='__pycache__' --exclude='.DS_Store' --exclude='deploy*.sh' -czf "$PKG" \
+  --exclude='__pycache__' \
+  --exclude='*.pyc' \
+  --exclude='*.pyo' \
+  --exclude='.DS_Store' \
+  --exclude='deploy*.sh' \
+  --exclude='*.env' \
+  --exclude='data*' \
+  --exclude='*.sqlite*' \
+  --exclude='.pytest_cache' \
+  --exclude='.ruff_cache' \
+  --exclude='.venv' \
+  --exclude='node_modules' \
+  --exclude='tests' \
+  -czf "$PKG" \
   "$NAME/backend/server.py" \
-  "$NAME/backend/portal" \
-  "$NAME/backend/config.example.json" \
+  "$NAME/backend/runtime" \
+  "$NAME/backend/core" \
+  "$NAME/backend/api" \
+  "$NAME/backend/services" \
+  "$NAME/backend/integrations" \
+  "$NAME/backend/requirements/base.txt" \
   "$NAME/frontend/dist" \
   "$NAME/deploy" \
   "$NAME/README.md")
@@ -56,21 +67,19 @@ ssh -p "$PORT" "$TARGET" bash -s -- "$REMOTE_DIR" "$SERVICE" <<'REMOTE'
 set -euo pipefail
 dir="$1"; service="$2"
 cd "$dir"
-tar xzf api-portal-release.tar.gz
+tar --warning=no-timestamp -xzf api-portal-release.tar.gz 2>/dev/null || tar xzf api-portal-release.tar.gz
 rm -f api-portal-release.tar.gz
-find "$dir/api-portal/backend" -name __pycache__ -type d -prune -exec rm -rf {} +
+backend="$dir/api-portal/backend"
 
-if [ ! -f "$dir/api-portal/backend/config.json" ]; then
-  echo "首次部署：尚未创建 config.json，请登录服务器按 README 第 3-5 步完成配置、创建管理员并安装 systemd 服务。"
-  exit 0
+if [ ! -d "$backend/.venv" ]; then
+  python3 -m venv "$backend/.venv"
 fi
-if ! systemctl list-unit-files "$service.service" | grep -q "$service.service"; then
-  echo "未找到 $service.service，请按 README 第 5 步安装 systemd 服务。"
-  exit 0
-fi
+"$backend/.venv/bin/python" -m pip install -q --disable-pip-version-check -r "$backend/requirements/base.txt"
 
+find "$backend" -path "$backend/.venv" -prune -o -name __pycache__ -type d -exec rm -rf {} +
 systemctl restart "$service"
 sleep 2
+
 if systemctl is-active --quiet "$service"; then
   echo "$service 已重启并运行中"
   journalctl -u "$service" -n 5 --no-pager
