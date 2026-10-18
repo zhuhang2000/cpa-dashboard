@@ -42,6 +42,44 @@ def login(client, username):
     assert response.status_code == 200
 
 
+def test_delete_codes_removes_unused_and_disabled_but_preserves_redeemed(redeem_portal):
+    client, runtime = redeem_portal
+    login(client, "admin")
+    response = client.post("/api/admin/codes", json={"amount": 5, "count": 3, "type": "recharge"})
+    assert response.status_code == 200
+    unused, disabled, used = response.json()["codes"]
+    conn = runtime.db()
+    try:
+        conn.execute("UPDATE redeem_codes SET status = 'disabled' WHERE code = ?", (disabled,))
+        conn.execute("UPDATE redeem_codes SET expires_at = 1 WHERE code = ?", (unused,))
+    finally:
+        conn.close()
+
+    login(client, "alice")
+    assert client.delete(f"/api/admin/codes/{unused}").status_code == 403
+    assert client.post("/api/billing/redeem", json={"code": used}).status_code == 200
+    login(client, "admin")
+    for code in (unused, disabled):
+        assert client.delete(f"/api/admin/codes/{code}").status_code == 200
+        assert client.delete(f"/api/admin/codes/{code}").status_code == 400
+    assert client.delete(f"/api/admin/codes/{used}").status_code == 400
+    listing = client.get("/api/admin/codes").json()
+    assert listing["total"] == 1
+    assert listing["items"][0]["code"] == used
+
+    conn = runtime.db()
+    try:
+        assert [row[0] for row in conn.execute("SELECT code FROM redeem_codes")] == [used]
+        assert conn.execute("SELECT COUNT(*) FROM transactions").fetchone()[0] == 1
+        assert billing.recharge_totals(conn, 0) == 5000000
+    finally:
+        conn.close()
+    login(client, "alice")
+    for code in (unused, disabled):
+        assert client.post("/api/billing/redeem", json={"code": code}).status_code == 400
+    assert client.get("/api/user/me").json()["user"]["balance"] == 5
+
+
 def test_v1_migration_preserves_existing_codes_balances_and_recharge_history(tmp_path):
     path = tmp_path / "legacy.sqlite"
     used_code = "AAAA-BBBB-CCCC-DDDD"
