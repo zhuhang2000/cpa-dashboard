@@ -125,7 +125,7 @@
 <script setup>
 import { onMounted, ref } from 'vue'
 import Icon from '@/components/Icon.vue'
-import { api } from '@/api'
+import { settingsApi } from '@/api/settings'
 import { refreshStatus } from '@/store'
 import { currency } from '@/utils/format'
 import { toast } from '@/toast'
@@ -136,7 +136,7 @@ const saving = ref(false)
 async function save() {
   saving.value = true
   try {
-    const data = await api.put('/api/admin/settings', form.value)
+    const data = await settingsApi.putSettings(form.value)
     form.value = data.settings
     await refreshStatus()
     toast.success('设置已保存')
@@ -149,7 +149,7 @@ async function save() {
 
 onMounted(async () => {
   try {
-    form.value = (await api.get('/api/admin/settings')).settings
+    form.value = (await settingsApi.getSettings()).settings
   } catch (e) {
     toast.error(e.message)
   }

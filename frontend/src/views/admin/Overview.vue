@@ -179,7 +179,8 @@ import BarChart from '@/components/BarChart.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import Icon from '@/components/Icon.vue'
 import StatCard from '@/components/StatCard.vue'
-import { api } from '@/api'
+import { settingsApi } from '@/api/settings'
+import { usageApi } from '@/api/usage'
 import { currency, dateTime, dayLabel, money, num } from '@/utils/format'
 import { toast } from '@/toast'
 
@@ -199,7 +200,7 @@ function label(ok) {
 
 async function load() {
   try {
-    data.value = await api.get('/api/admin/overview')
+    data.value = await usageApi.overview()
   } catch (e) {
     toast.error(e.message)
   }
@@ -208,7 +209,7 @@ async function load() {
 async function sync() {
   syncing.value = true
   try {
-    await api.post('/api/admin/sync')
+    await settingsApi.runSync()
     await load()
     toast.success('同步完成')
   } catch (e) {

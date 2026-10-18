@@ -182,7 +182,7 @@ import EmptyState from '@/components/EmptyState.vue'
 import Icon from '@/components/Icon.vue'
 import Modal from '@/components/Modal.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
-import { api } from '@/api'
+import { keysApi } from '@/api/api_keys'
 import { KEY_STATES, KeyStatus } from '@/constants'
 import { refreshUser, store } from '@/store'
 import { currency, date, dateTime, fromInputDate, money, num, relative, toInputDate } from '@/utils/format'
@@ -211,7 +211,7 @@ function quotaClass(k) {
 async function load() {
   loading.value = true
   try {
-    const data = await api.get('/api/keys')
+    const data = await keysApi.listKeys()
     items.value = data.items
     maxKeys.value = data.max_keys
     store.keyCount = data.items.length
@@ -224,7 +224,7 @@ async function load() {
 
 async function reveal(k) {
   try {
-    const data = await api.post(`/api/keys/${k.id}/reveal`)
+    const data = await keysApi.revealKey(k.id)
     return data.key
   } catch (e) {
     toast.error(e.message)
@@ -261,10 +261,10 @@ async function save() {
   saving.value = true
   try {
     if (editing.value) {
-      await api.patch(`/api/keys/${editing.value.id}`, payload)
+      await keysApi.updateKey(editing.value.id, payload)
       toast.success('已保存')
     } else {
-      const data = await api.post('/api/keys', payload)
+      const data = await keysApi.createKey(payload)
       createdKey.value = data.key
     }
     formOpen.value = false
@@ -279,7 +279,7 @@ async function save() {
 async function toggle(k) {
   const status = k.status === KeyStatus.ACTIVE ? KeyStatus.DISABLED : KeyStatus.ACTIVE
   try {
-    await api.patch(`/api/keys/${k.id}`, { status })
+    await keysApi.updateKey(k.id, { status })
     toast.success(status === KeyStatus.ACTIVE ? '已启用' : '已禁用')
     await load()
   } catch (e) {
@@ -290,7 +290,7 @@ async function toggle(k) {
 async function remove() {
   saving.value = true
   try {
-    await api.del(`/api/keys/${removing.value.id}`)
+    await keysApi.deleteKey(removing.value.id)
     toast.success('已删除')
     removing.value = null
     await load()

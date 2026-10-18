@@ -74,7 +74,7 @@ import { computed, onMounted, ref } from 'vue'
 import CopyButton from '@/components/CopyButton.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import Icon from '@/components/Icon.vue'
-import { api } from '@/api'
+import { pricingApi } from '@/api/pricing'
 import { price } from '@/utils/format'
 import { toast } from '@/toast'
 
@@ -95,7 +95,7 @@ function show(v) {
 
 onMounted(async () => {
   try {
-    items.value = (await api.get('/api/pricing')).items
+    items.value = (await pricingApi.getPricing()).items
   } catch (e) {
     toast.error(e.message)
   } finally {

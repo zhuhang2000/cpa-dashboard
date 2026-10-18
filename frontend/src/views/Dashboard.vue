@@ -173,7 +173,7 @@ import CopyButton from '@/components/CopyButton.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import Icon from '@/components/Icon.vue'
 import StatCard from '@/components/StatCard.vue'
-import { api } from '@/api'
+import { usageApi } from '@/api/usage'
 import { refreshUser, store } from '@/store'
 import { currency, dayLabel, money, num, tokens } from '@/utils/format'
 import { toast } from '@/toast'
@@ -225,7 +225,7 @@ const guideUrl = computed(() => store.status?.guide_url || '')
 
 async function load() {
   try {
-    summary.value = await api.get('/api/usage/summary', { days: days.value })
+    summary.value = await usageApi.usageSummary({ days: days.value })
   } catch (e) {
     toast.error(e.message)
   }

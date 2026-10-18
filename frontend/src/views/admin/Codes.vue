@@ -164,7 +164,7 @@ import Icon from '@/components/Icon.vue'
 import Modal from '@/components/Modal.vue'
 import Pagination from '@/components/Pagination.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
-import { api } from '@/api'
+import { billingApi } from '@/api/billing'
 import { usePagedList } from '@/composables/usePagedList'
 import { REDEEM_STATES, RedeemState, RedeemStatus } from '@/constants'
 import { currency, date, dateTime, money } from '@/utils/format'
@@ -177,7 +177,7 @@ const statuses = [
 const status = ref('')
 const batch = ref('')
 const q = ref('')
-const codes = usePagedList('/api/admin/codes', () => ({ status: status.value, batch: batch.value, q: q.value }), {
+const codes = usePagedList(billingApi.listCodes, () => ({ status: status.value, batch: batch.value, q: q.value }), {
   batches: [],
 })
 const saving = ref(false)
@@ -197,7 +197,7 @@ function setStatus(s) {
 async function generate() {
   saving.value = true
   try {
-    generated.value = await api.post('/api/admin/codes', {
+    generated.value = await billingApi.createCodes({
       amount: gen.amount,
       count: Number(gen.count),
       batch: gen.batch,
@@ -214,7 +214,7 @@ async function generate() {
 
 async function disable(c) {
   try {
-    await api.del(`/api/admin/codes/${encodeURIComponent(c.code)}`)
+    await billingApi.disableCode(c.code)
     toast.success('已停用')
     await codes.load()
   } catch (e) {

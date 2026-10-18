@@ -80,7 +80,7 @@ import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Icon from '@/components/Icon.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
-import { api } from '@/api'
+import { accountsApi } from '@/api/accounts'
 import { ROLES } from '@/constants'
 import { logout, setUser, store } from '@/store'
 import { dateTime, money } from '@/utils/format'
@@ -95,7 +95,7 @@ const pw = reactive({ old: '', next: '', confirm: '' })
 async function saveProfile() {
   savingProfile.value = true
   try {
-    const data = await api.put('/api/user/profile', { email: email.value })
+    const data = await accountsApi.updateProfile({ email: email.value })
     setUser(data.user)
     toast.success('资料已保存')
   } catch (e) {
@@ -110,7 +110,7 @@ async function changePassword() {
   if (pw.next !== pw.confirm) return toast.error('两次输入的新密码不一致')
   savingPassword.value = true
   try {
-    await api.post('/api/user/password', { old_password: pw.old, new_password: pw.next })
+    await accountsApi.changePassword({ old_password: pw.old, new_password: pw.next })
     Object.assign(pw, { old: '', next: '', confirm: '' })
     toast.success('密码已修改')
   } catch (e) {

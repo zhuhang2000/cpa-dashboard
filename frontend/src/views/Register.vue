@@ -89,7 +89,7 @@ import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AuthShell from '@/layouts/AuthShell.vue'
 import Icon from '@/components/Icon.vue'
-import { api } from '@/api'
+import { accountsApi } from '@/api/accounts'
 import { setUser, store } from '@/store'
 import { money } from '@/utils/format'
 import { toast } from '@/toast'
@@ -127,7 +127,7 @@ async function submit() {
   }
   loading.value = true
   try {
-    const data = await api.post('/api/auth/register', {
+    const data = await accountsApi.register({
       username: form.username,
       email: form.email,
       password: form.password,

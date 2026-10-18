@@ -122,7 +122,8 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import EmptyState from '@/components/EmptyState.vue'
 import Icon from '@/components/Icon.vue'
 import Pagination from '@/components/Pagination.vue'
-import { api, exportUrl } from '@/api'
+import { keysApi } from '@/api/api_keys'
+import { usageApi } from '@/api/usage'
 import { dateTime, duration, fromInputDate, money, num, toInputDate, tokens } from '@/utils/format'
 import { toast } from '@/toast'
 
@@ -165,7 +166,7 @@ const filters = computed(() => {
   return { start, end, key_id: keyId.value, model: model.value, status: status.value }
 })
 
-const exportHref = computed(() => exportUrl('/api/usage/export', filters.value))
+const exportHref = computed(() => usageApi.usageExportUrl(filters.value))
 
 function shortTime(ms) {
   const full = dateTime(ms, { seconds: true })
@@ -179,7 +180,7 @@ function inputTitle(r) {
 async function load() {
   loading.value = true
   try {
-    const res = await api.get('/api/usage/logs', { ...filters.value, page: page.value, page_size: pageSize })
+    const res = await usageApi.usageLogs({ ...filters.value, page: page.value, page_size: pageSize })
     Object.assign(data, res)
     models.value = res.models
   } catch (e) {
@@ -205,7 +206,7 @@ function go(p) {
 onMounted(async () => {
   load()
   try {
-    keys.value = (await api.get('/api/keys')).items
+    keys.value = (await keysApi.listKeys()).items
   } catch {
     /* filter list is optional */
   }

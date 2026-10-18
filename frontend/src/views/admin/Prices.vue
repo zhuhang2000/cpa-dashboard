@@ -163,7 +163,8 @@ import EmptyState from '@/components/EmptyState.vue'
 import Icon from '@/components/Icon.vue'
 import Modal from '@/components/Modal.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
-import { api } from '@/api'
+import { pricingApi } from '@/api/pricing'
+import { settingsApi } from '@/api/settings'
 import { PRICE_SOURCES } from '@/constants'
 import { currency, num, price, relative } from '@/utils/format'
 import { toast } from '@/toast'
@@ -187,7 +188,7 @@ const editingRow = computed(() => items.value.find((m) => m.model === editingMod
 async function load() {
   loading.value = true
   try {
-    const [prices, conf] = await Promise.all([api.get('/api/admin/prices'), api.get('/api/admin/settings')])
+    const [prices, conf] = await Promise.all([pricingApi.listPrices(), settingsApi.getSettings()])
     items.value = prices.items
     cpampCount.value = prices.cpamp_models
     settings.value = conf.settings
@@ -237,7 +238,7 @@ function fillReference() {
 async function save() {
   saving.value = true
   try {
-    await api.put('/api/admin/prices', {
+    await pricingApi.upsertPrice({
       model: editingModel.value || form.model,
       input: form.input,
       output: form.output,
@@ -257,7 +258,7 @@ async function save() {
 
 async function removeOverride(m) {
   try {
-    await api.post('/api/admin/prices/delete', { model: m.model })
+    await pricingApi.deletePrice({ model: m.model })
     toast.success('已恢复默认定价')
     await load()
   } catch (e) {
@@ -267,7 +268,7 @@ async function removeOverride(m) {
 
 async function setHidden(m, hidden) {
   try {
-    await api.post('/api/admin/prices/visibility', { model: m.model, hidden })
+    await pricingApi.setVisibility({ model: m.model, hidden })
     m.hidden = hidden
     toast.success(hidden ? '已在前台价格页隐藏' : '已在前台价格页显示')
   } catch (e) {

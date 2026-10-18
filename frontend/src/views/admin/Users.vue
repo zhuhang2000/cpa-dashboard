@@ -136,7 +136,8 @@ import Icon from '@/components/Icon.vue'
 import Modal from '@/components/Modal.vue'
 import Pagination from '@/components/Pagination.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
-import { api } from '@/api'
+import { accountsApi } from '@/api/accounts'
+import { billingApi } from '@/api/billing'
 import { usePagedList } from '@/composables/usePagedList'
 import { ROLES, Role, USER_STATUSES, UserStatus } from '@/constants'
 import { store } from '@/store'
@@ -144,7 +145,7 @@ import { currency, date, money, num, relative } from '@/utils/format'
 import { toast } from '@/toast'
 
 const q = ref('')
-const users = usePagedList('/api/admin/users', () => ({ q: q.value }))
+const users = usePagedList(accountsApi.listUsers, () => ({ q: q.value }))
 const saving = ref(false)
 const adjusting = ref(null)
 const menu = ref(null)
@@ -180,7 +181,7 @@ async function adjust() {
   saving.value = true
   try {
     const amount = form.mode === 'add' ? value : -value
-    const data = await api.post(`/api/admin/users/${adjusting.value.id}/balance`, { amount, note: form.note })
+    const data = await billingApi.adjustBalance(adjusting.value.id, { amount, note: form.note })
     toast.success(`已调整，当前余额 ${money(data.balance)}`)
     adjusting.value = null
     await users.load()
@@ -194,7 +195,7 @@ async function adjust() {
 async function update(u, payload, message) {
   closeMenu()
   try {
-    await api.patch(`/api/admin/users/${u.id}`, payload)
+    await accountsApi.updateUser(u.id, payload)
     toast.success(message)
     await users.load()
   } catch (e) {

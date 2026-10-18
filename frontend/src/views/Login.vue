@@ -57,7 +57,7 @@ import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AuthShell from '@/layouts/AuthShell.vue'
 import Icon from '@/components/Icon.vue'
-import { api } from '@/api'
+import { accountsApi } from '@/api/accounts'
 import { setUser, store } from '@/store'
 
 const router = useRouter()
@@ -75,7 +75,7 @@ async function submit() {
   }
   loading.value = true
   try {
-    const data = await api.post('/api/auth/login', form)
+    const data = await accountsApi.login(form)
     setUser(data.user)
     const redirect =
       typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/') ? route.query.redirect : '/'
