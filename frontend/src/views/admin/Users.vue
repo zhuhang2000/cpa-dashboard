@@ -3,7 +3,7 @@
     <div class="page-header">
       <div>
         <h1 class="page-title">用户管理</h1>
-        <p class="page-desc">查看用户余额与消费，调整余额、禁用账号或设置管理员。</p>
+        <p class="page-desc">查看用户余额与消费，点击用户名查看 API 密钥，可调整余额、禁用账号或设置管理员。</p>
       </div>
     </div>
 
@@ -39,11 +39,21 @@
             <tr v-for="u in users.items" :key="u.id">
               <td class="nowrap">
                 <div class="row" style="gap: 6px">
-                  <span class="cell-main">{{ u.username }}</span>
+                  <button
+                    type="button"
+                    class="link-btn cell-main user-keys-link"
+                    :aria-label="`查看 ${u.username} 的 API 密钥`"
+                    @click="openKeys(u)"
+                  >
+                    {{ u.username }}
+                  </button>
                   <StatusBadge v-if="u.role === Role.ADMIN" class="plain" :map="ROLES" :value="u.role" />
                   <StatusBadge v-if="u.status !== UserStatus.ACTIVE" :map="USER_STATUSES" :value="u.status" />
                 </div>
-                <div class="cell-sub">#{{ u.id }} · {{ u.email || '未填写邮箱' }} · {{ u.key_count }} 个密钥</div>
+                <div class="cell-sub">
+                  #{{ u.id }} · {{ u.email || '未填写邮箱' }} ·
+                  <button type="button" class="link-btn" @click="openKeys(u)">{{ u.key_count }} 个密钥</button>
+                </div>
               </td>
               <td class="right num nowrap" :class="{ 'text-danger': u.balance <= 0 }">
                 <b>{{ money(u.balance) }}</b>
@@ -88,6 +98,8 @@
         </button>
       </div>
     </Teleport>
+
+    <UserKeysModal v-if="keyUser" :key="keyUser.id" :user="keyUser" @close="keyUser = null" @deleted="users.load()" />
 
     <Modal :open="!!adjusting" title="调整余额" @close="adjusting = null">
       <form id="adjust-form" @submit.prevent="adjust">
@@ -136,6 +148,7 @@ import Icon from '@/components/Icon.vue'
 import Modal from '@/components/Modal.vue'
 import Pagination from '@/components/Pagination.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
+import UserKeysModal from '@/components/admin/UserKeysModal.vue'
 import { accountsApi } from '@/api/accounts'
 import { billingApi } from '@/api/billing'
 import { usePagedList } from '@/composables/usePagedList'
@@ -148,6 +161,7 @@ const q = ref('')
 const users = usePagedList(accountsApi.listUsers, () => ({ q: q.value }))
 const saving = ref(false)
 const adjusting = ref(null)
+const keyUser = ref(null)
 const menu = ref(null)
 const form = reactive({ mode: 'add', amount: '', note: '' })
 
@@ -168,6 +182,11 @@ function openMenu(event, u) {
 }
 function closeMenu() {
   menu.value = null
+}
+
+function openKeys(u) {
+  closeMenu()
+  keyUser.value = u
 }
 
 function openAdjust(u) {
@@ -231,6 +250,12 @@ onBeforeUnmount(() => {
 }
 .search .input {
   padding-left: 32px;
+}
+.user-keys-link {
+  color: var(--text);
+}
+.user-keys-link:hover {
+  color: var(--accent);
 }
 .more {
   display: inline-flex;

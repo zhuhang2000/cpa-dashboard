@@ -6,4 +6,6 @@ export const keysApi = {
   updateKey: (id, body) => http.patch(`/api/keys/${id}`, body),
   deleteKey: (id) => http.del(`/api/keys/${id}`),
   revealKey: (id) => http.post(`/api/keys/${id}/reveal`),
+  listUserKeys: (userId) => http.get(`/api/admin/users/${userId}/keys`),
+  deleteUserKey: (userId, keyId) => http.del(`/api/admin/users/${userId}/keys/${keyId}`),
 }
