@@ -24,7 +24,12 @@
             :type="showPassword ? 'text' : 'password'"
             autocomplete="current-password"
           />
-          <button type="button" class="input-addon" :aria-label="showPassword ? '隐藏密码' : '显示密码'" @click="showPassword = !showPassword">
+          <button
+            type="button"
+            class="input-addon"
+            :aria-label="showPassword ? '隐藏密码' : '显示密码'"
+            @click="showPassword = !showPassword"
+          >
             <Icon :name="showPassword ? 'eye-off' : 'eye'" :size="16" />
           </button>
         </div>
@@ -50,10 +55,10 @@
 <script setup>
 import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import AuthShell from '../components/AuthShell.vue'
-import Icon from '../components/Icon.vue'
-import { api } from '../api'
-import { setUser, store } from '../store'
+import AuthShell from '@/layouts/AuthShell.vue'
+import Icon from '@/components/Icon.vue'
+import { api } from '@/api'
+import { setUser, store } from '@/store'
 
 const router = useRouter()
 const route = useRoute()
@@ -72,7 +77,8 @@ async function submit() {
   try {
     const data = await api.post('/api/auth/login', form)
     setUser(data.user)
-    const redirect = typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/') ? route.query.redirect : '/'
+    const redirect =
+      typeof route.query.redirect === 'string' && route.query.redirect.startsWith('/') ? route.query.redirect : '/'
     router.replace(redirect)
   } catch (e) {
     error.value = e.message

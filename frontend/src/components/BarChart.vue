@@ -57,9 +57,7 @@ const props = defineProps({
 })
 
 const hover = ref(-1)
-const isEmpty = computed(() =>
-  props.data.every((row) => props.series.every((s) => !(Number(row[s.key]) > 0))),
-)
+const isEmpty = computed(() => props.data.every((row) => props.series.every((s) => !(Number(row[s.key]) > 0))))
 
 function niceStep(raw) {
   if (raw <= 0) return 1

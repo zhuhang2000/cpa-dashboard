@@ -1,5 +1,10 @@
 <template>
-  <svg viewBox="0 0 560 410" preserveAspectRatio="xMidYMid meet" role="img" aria-label="一个 API 密钥同时接入 OpenAI、Claude 与 Gemini">
+  <svg
+    viewBox="0 0 560 410"
+    preserveAspectRatio="xMidYMid meet"
+    role="img"
+    aria-label="一个 API 密钥同时接入 OpenAI、Claude 与 Gemini"
+  >
     <defs>
       <linearGradient id="auth-art-brand" x1="0" y1="0" x2="1" y2="1">
         <stop offset="0" stop-color="#4f5bd5" />
@@ -28,26 +33,71 @@
     </g>
 
     <g v-for="m in models" :key="m.name">
-      <rect x="372" :y="m.y - 26" width="164" height="52" rx="14" fill="#fff" stroke="#e6e8f2" filter="url(#auth-art-shadow)" />
+      <rect
+        x="372"
+        :y="m.y - 26"
+        width="164"
+        height="52"
+        rx="14"
+        fill="#fff"
+        stroke="#e6e8f2"
+        filter="url(#auth-art-shadow)"
+      />
       <circle cx="400" :cy="m.y" r="15" :fill="m.soft" />
-      <text x="400" :y="m.y" text-anchor="middle" dominant-baseline="central" font-size="14" font-weight="700" :fill="m.color">{{ m.name[0] }}</text>
-      <text x="426" :y="m.y" dominant-baseline="central" font-size="14" font-weight="600" fill="#111827">{{ m.name }}</text>
+      <text
+        x="400"
+        :y="m.y"
+        text-anchor="middle"
+        dominant-baseline="central"
+        font-size="14"
+        font-weight="700"
+        :fill="m.color"
+      >
+        {{ m.name[0] }}
+      </text>
+      <text x="426" :y="m.y" dominant-baseline="central" font-size="14" font-weight="600" fill="#111827">
+        {{ m.name }}
+      </text>
       <circle cx="512" :cy="m.y" r="8" fill="#e7f6ed" />
-      <path :d="`M508.5 ${m.y} l2.5 2.5 4.5-5`" fill="none" stroke="#138a4a" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+      <path
+        :d="`M508.5 ${m.y} l2.5 2.5 4.5-5`"
+        fill="none"
+        stroke="#138a4a"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
       <circle cx="372" :cy="m.y" r="4.5" fill="#fff" stroke="#a78bfa" stroke-width="2" />
     </g>
 
     <!-- the key -->
     <rect x="24" y="146" width="212" height="108" rx="16" fill="#fff" stroke="#e6e8f2" filter="url(#auth-art-shadow)" />
     <rect x="44" y="166" width="40" height="40" rx="11" fill="url(#auth-art-brand)" />
-    <g transform="translate(52 174)" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <g
+      transform="translate(52 174)"
+      fill="none"
+      stroke="#fff"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
       <circle cx="7.5" cy="15.5" r="5.5" />
       <path d="m21 2-9.6 9.6" />
       <path d="m15.5 7.5 3 3L22 7l-3-3" />
     </g>
     <text x="96" y="178" dominant-baseline="central" font-size="12" fill="#6b7280">API 密钥</text>
     <rect x="180" y="169" width="36" height="18" rx="9" fill="#e7f6ed" />
-    <text x="198" y="178" text-anchor="middle" dominant-baseline="central" font-size="11" font-weight="600" fill="#138a4a">启用</text>
+    <text
+      x="198"
+      y="178"
+      text-anchor="middle"
+      dominant-baseline="central"
+      font-size="11"
+      font-weight="600"
+      fill="#138a4a"
+    >
+      启用
+    </text>
     <text x="96" y="198" dominant-baseline="central" font-size="13" fill="#111827" class="art-mono">sk-••••••3f9a</text>
     <rect x="44" y="228" width="172" height="6" rx="3" fill="#eceef3" />
     <rect x="44" y="228" width="62" height="6" rx="3" fill="url(#auth-art-brand)" />
@@ -58,13 +108,26 @@
       <circle cx="90" cy="78" r="13" fill="#e7f6ed" />
       <path d="M90 72v12M84 78h12" stroke="#138a4a" stroke-width="2" stroke-linecap="round" />
       <text x="112" y="69" dominant-baseline="central" font-size="11.5" fill="#6b7280">充值到账</text>
-      <text x="112" y="88" dominant-baseline="central" font-size="14" font-weight="700" fill="#138a4a">{{ money(50, { sign: true }) }}</text>
+      <text x="112" y="88" dominant-baseline="central" font-size="14" font-weight="700" fill="#138a4a">
+        {{ money(50, { sign: true }) }}
+      </text>
     </g>
 
     <g class="art-float art-float-late">
-      <rect x="56" y="286" width="236" height="92" rx="16" fill="#fff" stroke="#e6e8f2" filter="url(#auth-art-shadow)" />
+      <rect
+        x="56"
+        y="286"
+        width="236"
+        height="92"
+        rx="16"
+        fill="#fff"
+        stroke="#e6e8f2"
+        filter="url(#auth-art-shadow)"
+      />
       <text x="78" y="312" dominant-baseline="central" font-size="12" fill="#6b7280">本月消费</text>
-      <text x="78" y="341" dominant-baseline="central" font-size="20" font-weight="700" fill="#111827">{{ money(36.2) }}</text>
+      <text x="78" y="341" dominant-baseline="central" font-size="20" font-weight="700" fill="#111827">
+        {{ money(36.2) }}
+      </text>
       <rect
         v-for="(h, i) in bars"
         :key="i"
@@ -80,7 +143,7 @@
 </template>
 
 <script setup>
-import { money } from '../format'
+import { money } from '@/utils/format'
 
 // Decorative only; brand colours approximate each vendor, no logos.
 const models = [

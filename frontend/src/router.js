@@ -2,10 +2,32 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { setUnauthorizedHandler } from './api'
 import { Role } from './constants'
 import { ensureStatus, ensureUser, store } from './store'
-import AppLayout from './components/AppLayout.vue'
-import Login from './views/Login.vue'
-import Register from './views/Register.vue'
-import Dashboard from './views/Dashboard.vue'
+import AppLayout from '@/layouts/AppLayout.vue'
+import Login from '@/views/Login.vue'
+import Register from '@/views/Register.vue'
+import Dashboard from '@/views/Dashboard.vue'
+
+// Pages inside the app layout, one list per sidebar section. AppLayout builds the menu from
+// these routes, so a page with an `icon` only needs its entry here to appear in the sidebar.
+const consolePages = [
+  { path: '', component: Dashboard, meta: { title: '概览', icon: 'grid' } },
+  { path: 'keys', component: () => import('@/views/Keys.vue'), meta: { title: 'API 密钥', icon: 'key' } },
+  { path: 'usage', component: () => import('@/views/Usage.vue'), meta: { title: '用量明细', icon: 'activity' } },
+  { path: 'recharge', component: () => import('@/views/Recharge.vue'), meta: { title: '充值中心', icon: 'wallet' } },
+  { path: 'pricing', component: () => import('@/views/Pricing.vue'), meta: { title: '模型价格', icon: 'tag' } },
+  { path: 'settings', component: () => import('@/views/Settings.vue'), meta: { title: '个人设置', icon: 'settings' } },
+]
+const adminPages = [
+  { path: '', component: () => import('@/views/admin/Overview.vue'), meta: { title: '运营概况', icon: 'trend' } },
+  { path: 'users', component: () => import('@/views/admin/Users.vue'), meta: { title: '用户管理', icon: 'users' } },
+  { path: 'codes', component: () => import('@/views/admin/Codes.vue'), meta: { title: '兑换码', icon: 'ticket' } },
+  { path: 'prices', component: () => import('@/views/admin/Prices.vue'), meta: { title: '模型定价', icon: 'coins' } },
+  {
+    path: 'settings',
+    component: () => import('@/views/admin/Settings.vue'),
+    meta: { title: '系统设置', icon: 'sliders' },
+  },
+]
 
 const routes = [
   { path: '/login', component: Login, meta: { title: '登录', guest: true } },
@@ -14,21 +36,14 @@ const routes = [
     path: '/',
     component: AppLayout,
     meta: { auth: true },
+    // One component-less group per sidebar section. Route meta is merged from parent to child,
+    // so `admin: true` here covers every admin page in the guard below.
     children: [
-      { path: '', component: Dashboard, meta: { title: '概览' } },
-      { path: 'keys', component: () => import('./views/Keys.vue'), meta: { title: 'API 密钥' } },
-      { path: 'usage', component: () => import('./views/Usage.vue'), meta: { title: '用量明细' } },
-      { path: 'recharge', component: () => import('./views/Recharge.vue'), meta: { title: '充值中心' } },
-      { path: 'pricing', component: () => import('./views/Pricing.vue'), meta: { title: '模型价格' } },
-      { path: 'settings', component: () => import('./views/Settings.vue'), meta: { title: '个人设置' } },
-      { path: 'admin', component: () => import('./views/admin/Overview.vue'), meta: { title: '运营概况', admin: true } },
-      { path: 'admin/users', component: () => import('./views/admin/Users.vue'), meta: { title: '用户管理', admin: true } },
-      { path: 'admin/codes', component: () => import('./views/admin/Codes.vue'), meta: { title: '兑换码', admin: true } },
-      { path: 'admin/prices', component: () => import('./views/admin/Prices.vue'), meta: { title: '模型定价', admin: true } },
-      { path: 'admin/settings', component: () => import('./views/admin/Settings.vue'), meta: { title: '系统设置', admin: true } },
+      { path: '', meta: { section: '控制台' }, children: consolePages },
+      { path: 'admin', meta: { section: '管理后台', admin: true }, children: adminPages },
     ],
   },
-  { path: '/:pathMatch(.*)*', component: () => import('./views/NotFound.vue'), meta: { title: '页面不存在' } },
+  { path: '/:pathMatch(.*)*', component: () => import('@/views/NotFound.vue'), meta: { title: '页面不存在' } },
 ]
 
 const router = createRouter({

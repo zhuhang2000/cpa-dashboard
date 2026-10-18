@@ -11,7 +11,12 @@
       <div class="card-header">
         <form class="input-group has-prefix search" @submit.prevent="users.load(1)">
           <span class="input-prefix"><Icon name="search" :size="15" /></span>
-          <input v-model.trim="q" class="input input-sm" placeholder="搜索用户名或邮箱，回车确认" aria-label="搜索用户" />
+          <input
+            v-model.trim="q"
+            class="input input-sm"
+            placeholder="搜索用户名或邮箱，回车确认"
+            aria-label="搜索用户"
+          />
         </form>
         <span class="muted">{{ num(users.total) }} 位用户</span>
       </div>
@@ -40,14 +45,18 @@
                 </div>
                 <div class="cell-sub">#{{ u.id }} · {{ u.email || '未填写邮箱' }} · {{ u.key_count }} 个密钥</div>
               </td>
-              <td class="right num nowrap" :class="{ 'text-danger': u.balance <= 0 }"><b>{{ money(u.balance) }}</b></td>
+              <td class="right num nowrap" :class="{ 'text-danger': u.balance <= 0 }">
+                <b>{{ money(u.balance) }}</b>
+              </td>
               <td class="right num nowrap">
                 <div class="text-success">+{{ money(u.total_recharge) }}</div>
                 <div class="cell-sub">-{{ money(u.total_spent) }}</div>
               </td>
               <td class="nowrap">
                 <div>{{ date(u.created_at) }}</div>
-                <div class="cell-sub" :title="u.last_login_ip">{{ u.last_login_at ? `${relative(u.last_login_at)}登录` : '从未登录' }}</div>
+                <div class="cell-sub" :title="u.last_login_ip">
+                  {{ u.last_login_at ? `${relative(u.last_login_at)}登录` : '从未登录' }}
+                </div>
               </td>
               <td class="actions">
                 <button class="link-btn" @click="openAdjust(u)">调整余额</button>
@@ -66,7 +75,11 @@
 
     <Teleport to="body">
       <div v-if="menu" class="dropdown-menu" :style="menu.style" role="menu" @click.stop>
-        <button class="dropdown-item" :class="{ danger: menu.user.status === UserStatus.ACTIVE }" @click="toggleStatus(menu.user)">
+        <button
+          class="dropdown-item"
+          :class="{ danger: menu.user.status === UserStatus.ACTIVE }"
+          @click="toggleStatus(menu.user)"
+        >
           <Icon :name="menu.user.status === UserStatus.ACTIVE ? 'lock' : 'check-circle'" :size="15" />
           {{ menu.user.status === UserStatus.ACTIVE ? '禁用账号' : '启用账号' }}
         </button>
@@ -79,13 +92,18 @@
     <Modal :open="!!adjusting" title="调整余额" @close="adjusting = null">
       <form id="adjust-form" @submit.prevent="adjust">
         <p class="muted" style="margin-bottom: 14px">
-          用户 <b style="color: var(--text)">{{ adjusting?.username }}</b> 当前余额 <b class="num" style="color: var(--text)">{{ money(adjusting?.balance || 0) }}</b>
+          用户 <b style="color: var(--text)">{{ adjusting?.username }}</b> 当前余额
+          <b class="num" style="color: var(--text)">{{ money(adjusting?.balance || 0) }}</b>
         </p>
         <div class="field">
           <span class="field-label">操作</span>
           <div class="tabs">
-            <button type="button" class="tab" :class="{ active: form.mode === 'add' }" @click="form.mode = 'add'">增加</button>
-            <button type="button" class="tab" :class="{ active: form.mode === 'sub' }" @click="form.mode = 'sub'">扣减</button>
+            <button type="button" class="tab" :class="{ active: form.mode === 'add' }" @click="form.mode = 'add'">
+              增加
+            </button>
+            <button type="button" class="tab" :class="{ active: form.mode === 'sub' }" @click="form.mode = 'sub'">
+              扣减
+            </button>
           </div>
         </div>
         <div class="field">
@@ -103,7 +121,9 @@
       </form>
       <template #footer>
         <button class="btn" @click="adjusting = null">取消</button>
-        <button class="btn btn-primary" form="adjust-form" :disabled="saving">确认{{ form.mode === 'add' ? '增加' : '扣减' }}</button>
+        <button class="btn btn-primary" form="adjust-form" :disabled="saving">
+          确认{{ form.mode === 'add' ? '增加' : '扣减' }}
+        </button>
       </template>
     </Modal>
   </div>
@@ -111,17 +131,17 @@
 
 <script setup>
 import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
-import EmptyState from '../../components/EmptyState.vue'
-import Icon from '../../components/Icon.vue'
-import Modal from '../../components/Modal.vue'
-import Pagination from '../../components/Pagination.vue'
-import StatusBadge from '../../components/StatusBadge.vue'
-import { api } from '../../api'
-import { usePagedList } from '../../composables/usePagedList'
-import { ROLES, Role, USER_STATUSES, UserStatus } from '../../constants'
-import { store } from '../../store'
-import { currency, date, money, num, relative } from '../../format'
-import { toast } from '../../toast'
+import EmptyState from '@/components/EmptyState.vue'
+import Icon from '@/components/Icon.vue'
+import Modal from '@/components/Modal.vue'
+import Pagination from '@/components/Pagination.vue'
+import StatusBadge from '@/components/StatusBadge.vue'
+import { api } from '@/api'
+import { usePagedList } from '@/composables/usePagedList'
+import { ROLES, Role, USER_STATUSES, UserStatus } from '@/constants'
+import { store } from '@/store'
+import { currency, date, money, num, relative } from '@/utils/format'
+import { toast } from '@/toast'
 
 const q = ref('')
 const users = usePagedList('/api/admin/users', () => ({ q: q.value }))
@@ -136,7 +156,13 @@ function openMenu(event, u) {
   const rect = event.currentTarget.getBoundingClientRect()
   menu.value = {
     user: u,
-    style: { position: 'fixed', top: `${rect.bottom + 6}px`, left: `${Math.max(8, rect.right - 160)}px`, right: 'auto', minWidth: '160px' },
+    style: {
+      position: 'fixed',
+      top: `${rect.bottom + 6}px`,
+      left: `${Math.max(8, rect.right - 160)}px`,
+      right: 'auto',
+      minWidth: '160px',
+    },
   }
 }
 function closeMenu() {

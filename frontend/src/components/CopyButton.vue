@@ -14,7 +14,8 @@
 <script setup>
 import { ref } from 'vue'
 import Icon from './Icon.vue'
-import { copyLazy, copyText, toast } from '../toast'
+import { toast } from '@/toast'
+import { copyLazy, copyText } from '@/utils/clipboard'
 
 const props = defineProps({
   text: { type: [String, Function], required: true },

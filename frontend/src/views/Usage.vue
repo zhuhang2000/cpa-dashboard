@@ -14,7 +14,15 @@
     <div class="card">
       <div class="card-body filters">
         <div class="tabs">
-          <button v-for="p in presets" :key="p.key" class="tab" :class="{ active: range === p.key }" @click="setRange(p.key)">{{ p.label }}</button>
+          <button
+            v-for="p in presets"
+            :key="p.key"
+            class="tab"
+            :class="{ active: range === p.key }"
+            @click="setRange(p.key)"
+          >
+            {{ p.label }}
+          </button>
         </div>
         <template v-if="range === 'custom'">
           <input v-model="customStart" class="input input-sm" type="date" aria-label="开始日期" @change="apply" />
@@ -36,14 +44,25 @@
         </select>
       </div>
       <div class="summary-bar">
-        <span>请求 <b class="num">{{ num(data.total) }}</b> 次</span>
-        <span>消费 <b class="num">{{ money(data.sum_cost) }}</b></span>
-        <span>Tokens <b class="num">{{ tokens(data.sum_tokens) }}</b></span>
+        <span
+          >请求 <b class="num">{{ num(data.total) }}</b> 次</span
+        >
+        <span
+          >消费 <b class="num">{{ money(data.sum_cost) }}</b></span
+        >
+        <span
+          >Tokens <b class="num">{{ tokens(data.sum_tokens) }}</b></span
+        >
       </div>
       <div v-if="loading && !data.items.length" class="card-body stack" style="gap: 10px">
         <div v-for="i in 6" :key="i" class="skeleton" style="height: 34px" />
       </div>
-      <EmptyState v-else-if="!data.items.length" icon="activity" title="没有符合条件的调用记录" desc="调整筛选条件，或使用 API 密钥发起一次调用" />
+      <EmptyState
+        v-else-if="!data.items.length"
+        icon="activity"
+        title="没有符合条件的调用记录"
+        desc="调整筛选条件，或使用 API 密钥发起一次调用"
+      />
       <div v-else class="table-wrap">
         <table class="table">
           <thead>
@@ -75,11 +94,16 @@
                 {{ tokens(r.output_tokens) }}
                 <div v-if="r.reasoning_tokens" class="cell-sub">推理 {{ tokens(r.reasoning_tokens) }}</div>
               </td>
-              <td class="right num nowrap"><b>{{ money(r.cost) }}</b></td>
+              <td class="right num nowrap">
+                <b>{{ money(r.cost) }}</b>
+              </td>
               <td class="nowrap">
-                <span class="badge" :class="r.failed ? 'badge-danger' : 'badge-success'">{{ r.failed ? '失败' : '成功' }}</span>
+                <span class="badge" :class="r.failed ? 'badge-danger' : 'badge-success'">{{
+                  r.failed ? '失败' : '成功'
+                }}</span>
                 <div class="cell-sub num">
-                  {{ duration(r.latency_ms) }}<template v-if="r.stream !== null"> · {{ r.stream ? '流式' : '非流式' }}</template>
+                  {{ duration(r.latency_ms)
+                  }}<template v-if="r.stream !== null"> · {{ r.stream ? '流式' : '非流式' }}</template>
                 </div>
               </td>
             </tr>
@@ -95,12 +119,12 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import EmptyState from '../components/EmptyState.vue'
-import Icon from '../components/Icon.vue'
-import Pagination from '../components/Pagination.vue'
-import { api, exportUrl } from '../api'
-import { dateTime, duration, fromInputDate, money, num, toInputDate, tokens } from '../format'
-import { toast } from '../toast'
+import EmptyState from '@/components/EmptyState.vue'
+import Icon from '@/components/Icon.vue'
+import Pagination from '@/components/Pagination.vue'
+import { api, exportUrl } from '@/api'
+import { dateTime, duration, fromInputDate, money, num, toInputDate, tokens } from '@/utils/format'
+import { toast } from '@/toast'
 
 const presets = [
   { key: 'today', label: '今天' },

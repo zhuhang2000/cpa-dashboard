@@ -6,14 +6,9 @@
         <span class="truncate">{{ siteName }}</span>
       </RouterLink>
       <nav class="nav" @click="navOpen = false">
-        <div class="nav-section">控制台</div>
-        <RouterLink v-for="item in mainNav" :key="item.to" :to="item.to" class="nav-link">
-          <Icon :name="item.icon" :size="18" />
-          {{ item.label }}
-        </RouterLink>
-        <template v-if="isAdmin">
-          <div class="nav-section">管理后台</div>
-          <RouterLink v-for="item in adminNav" :key="item.to" :to="item.to" class="nav-link">
+        <template v-for="section in sections" :key="section.label">
+          <div class="nav-section">{{ section.label }}</div>
+          <RouterLink v-for="item in section.items" :key="item.to" :to="item.to" class="nav-link">
             <Icon :name="item.icon" :size="18" />
             {{ item.label }}
           </RouterLink>
@@ -41,7 +36,13 @@
             <Icon :name="isDark ? 'sun' : 'moon'" />
           </button>
           <div ref="menuRef" class="dropdown">
-            <button class="user-btn" aria-label="用户菜单" aria-haspopup="menu" :aria-expanded="menuOpen" @click="menuOpen = !menuOpen">
+            <button
+              class="user-btn"
+              aria-label="用户菜单"
+              aria-haspopup="menu"
+              :aria-expanded="menuOpen"
+              @click="menuOpen = !menuOpen"
+            >
               <span class="avatar">{{ initial }}</span>
               <span class="hide-sm">{{ store.user?.username }}</span>
               <Icon name="chevron-down" :size="16" class="hide-sm" />
@@ -70,10 +71,10 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import Icon from './Icon.vue'
-import { ROLES, Role } from '../constants'
-import { effectiveTheme, logout, refreshUser, store, toggleTheme } from '../store'
-import { money } from '../format'
+import Icon from '@/components/Icon.vue'
+import { ROLES, Role } from '@/constants'
+import { effectiveTheme, logout, refreshUser, store, toggleTheme } from '@/store'
+import { money } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
@@ -81,24 +82,25 @@ const navOpen = ref(false)
 const menuOpen = ref(false)
 const menuRef = ref(null)
 
-const mainNav = [
-  { to: '/', label: '概览', icon: 'grid' },
-  { to: '/keys', label: 'API 密钥', icon: 'key' },
-  { to: '/usage', label: '用量明细', icon: 'activity' },
-  { to: '/recharge', label: '充值中心', icon: 'wallet' },
-  { to: '/pricing', label: '模型价格', icon: 'tag' },
-  { to: '/settings', label: '个人设置', icon: 'settings' },
-]
-const adminNav = [
-  { to: '/admin', label: '运营概况', icon: 'trend' },
-  { to: '/admin/users', label: '用户管理', icon: 'users' },
-  { to: '/admin/codes', label: '兑换码', icon: 'ticket' },
-  { to: '/admin/prices', label: '模型定价', icon: 'coins' },
-  { to: '/admin/settings', label: '系统设置', icon: 'sliders' },
-]
-
 const siteName = computed(() => store.status?.site_name || 'API 控制台')
 const isAdmin = computed(() => store.user?.role === Role.ADMIN)
+
+// The sidebar mirrors the route table in router.js: each child group of this layout's route is a
+// section listing its pages that have an icon. Admin groups are shown to admins only.
+const sections = computed(() =>
+  route.matched[0].children
+    .filter((group) => !group.meta.admin || isAdmin.value)
+    .map((group) => ({
+      label: group.meta.section,
+      items: group.children
+        .filter((page) => page.meta.icon)
+        .map((page) => ({
+          to: `/${[group.path, page.path].filter(Boolean).join('/')}`,
+          label: page.meta.title,
+          icon: page.meta.icon,
+        })),
+    })),
+)
 const initial = computed(() => (store.user?.username || '?').slice(0, 1).toUpperCase())
 const lowBalance = computed(() => (store.user?.balance ?? 1) <= 0)
 const isDark = computed(() => (store.theme, effectiveTheme() === 'dark'))

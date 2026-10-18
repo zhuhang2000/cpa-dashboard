@@ -2,7 +2,9 @@
   <AuthShell>
     <h1 class="auth-title">创建账号</h1>
     <p class="auth-sub">
-      <template v-if="bonus > 0">新用户赠送 <b class="text-success">{{ money(bonus) }}</b> 体验额度</template>
+      <template v-if="bonus > 0"
+        >新用户赠送 <b class="text-success">{{ money(bonus) }}</b> 体验额度</template
+      >
       <template v-else>注册后即可创建 API 密钥</template>
     </p>
 
@@ -14,11 +16,25 @@
     <form v-else novalidate @submit.prevent="submit">
       <div class="field">
         <label for="reg-user">用户名</label>
-        <input id="reg-user" v-model.trim="form.username" class="input" autocomplete="username" placeholder="3-32 位字母、数字、下划线" autofocus />
+        <input
+          id="reg-user"
+          v-model.trim="form.username"
+          class="input"
+          autocomplete="username"
+          placeholder="3-32 位字母、数字、下划线"
+          autofocus
+        />
       </div>
       <div class="field">
         <label for="reg-email">邮箱 <span class="faint">（选填）</span></label>
-        <input id="reg-email" v-model.trim="form.email" class="input" type="email" autocomplete="email" placeholder="name@example.com" />
+        <input
+          id="reg-email"
+          v-model.trim="form.email"
+          class="input"
+          type="email"
+          autocomplete="email"
+          placeholder="name@example.com"
+        />
       </div>
       <div class="field">
         <label for="reg-pass">密码</label>
@@ -31,7 +47,12 @@
             autocomplete="new-password"
             placeholder="至少 8 位"
           />
-          <button type="button" class="input-addon" :aria-label="showPassword ? '隐藏密码' : '显示密码'" @click="showPassword = !showPassword">
+          <button
+            type="button"
+            class="input-addon"
+            :aria-label="showPassword ? '隐藏密码' : '显示密码'"
+            @click="showPassword = !showPassword"
+          >
             <Icon :name="showPassword ? 'eye-off' : 'eye'" :size="16" />
           </button>
         </div>
@@ -41,7 +62,14 @@
       </div>
       <div class="field">
         <label for="reg-pass2">确认密码</label>
-        <input id="reg-pass2" v-model="form.confirm" class="input" :type="showPassword ? 'text' : 'password'" autocomplete="new-password" placeholder="再次输入密码" />
+        <input
+          id="reg-pass2"
+          v-model="form.confirm"
+          class="input"
+          :type="showPassword ? 'text' : 'password'"
+          autocomplete="new-password"
+          placeholder="再次输入密码"
+        />
       </div>
       <div v-if="error" class="alert alert-danger" style="margin-bottom: 16px">
         <Icon name="alert" :size="16" />
@@ -59,12 +87,12 @@
 <script setup>
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import AuthShell from '../components/AuthShell.vue'
-import Icon from '../components/Icon.vue'
-import { api } from '../api'
-import { setUser, store } from '../store'
-import { money } from '../format'
-import { toast } from '../toast'
+import AuthShell from '@/layouts/AuthShell.vue'
+import Icon from '@/components/Icon.vue'
+import { api } from '@/api'
+import { setUser, store } from '@/store'
+import { money } from '@/utils/format'
+import { toast } from '@/toast'
 
 const router = useRouter()
 const form = reactive({ username: '', email: '', password: '', confirm: '' })

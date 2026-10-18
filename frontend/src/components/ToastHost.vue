@@ -9,7 +9,7 @@
 
 <script setup>
 import Icon from './Icon.vue'
-import { toasts } from '../toast'
+import { toasts } from '@/toast'
 
 const icons = { success: 'check-circle', error: 'x-circle', info: 'info' }
 </script>

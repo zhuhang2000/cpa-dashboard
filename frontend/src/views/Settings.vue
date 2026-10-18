@@ -28,7 +28,9 @@
               <label for="email">邮箱</label>
               <input id="email" v-model.trim="email" class="input" type="email" placeholder="用于登录，可留空" />
             </div>
-            <button class="btn btn-primary" :disabled="savingProfile || email === (store.user?.email || '')">保存资料</button>
+            <button class="btn btn-primary" :disabled="savingProfile || email === (store.user?.email || '')">
+              保存资料
+            </button>
           </form>
         </div>
       </div>
@@ -42,7 +44,14 @@
           </div>
           <div class="field">
             <label for="new-pass">新密码</label>
-            <input id="new-pass" v-model="pw.next" class="input" type="password" autocomplete="new-password" placeholder="至少 8 位" />
+            <input
+              id="new-pass"
+              v-model="pw.next"
+              class="input"
+              type="password"
+              autocomplete="new-password"
+              placeholder="至少 8 位"
+            />
           </div>
           <div class="field">
             <label for="new-pass2">确认新密码</label>
@@ -69,13 +78,13 @@
 <script setup>
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import Icon from '../components/Icon.vue'
-import StatusBadge from '../components/StatusBadge.vue'
-import { api } from '../api'
-import { ROLES } from '../constants'
-import { logout, setUser, store } from '../store'
-import { dateTime, money } from '../format'
-import { toast } from '../toast'
+import Icon from '@/components/Icon.vue'
+import StatusBadge from '@/components/StatusBadge.vue'
+import { api } from '@/api'
+import { ROLES } from '@/constants'
+import { logout, setUser, store } from '@/store'
+import { dateTime, money } from '@/utils/format'
+import { toast } from '@/toast'
 
 const router = useRouter()
 const email = ref(store.user?.email || '')

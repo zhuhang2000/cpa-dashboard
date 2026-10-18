@@ -24,7 +24,12 @@
       <div v-if="loading" class="card-body stack" style="gap: 10px">
         <div v-for="i in 6" :key="i" class="skeleton" style="height: 34px" />
       </div>
-      <EmptyState v-else-if="!filtered.length" icon="tag" :title="q ? '没有匹配的模型' : '暂无模型价格'" :desc="q ? '' : '管理员配置价格后会显示在这里'" />
+      <EmptyState
+        v-else-if="!filtered.length"
+        icon="tag"
+        :title="q ? '没有匹配的模型' : '暂无模型价格'"
+        :desc="q ? '' : '管理员配置价格后会显示在这里'"
+      />
       <div v-else class="table-wrap">
         <table class="table">
           <thead>
@@ -55,7 +60,10 @@
         </table>
       </div>
       <div class="card-footer muted" style="font-size: 12.5px">
-        <span>费用 = 输入 tokens × 输入单价 + 输出 tokens × 输出单价（命中缓存的输入按缓存价格计算），推理 tokens 计入输出。</span>
+        <span
+          >费用 = 输入 tokens × 输入单价 + 输出 tokens × 输出单价（命中缓存的输入按缓存价格计算），推理 tokens
+          计入输出。</span
+        >
       </div>
     </div>
   </div>
@@ -63,12 +71,12 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import CopyButton from '../components/CopyButton.vue'
-import EmptyState from '../components/EmptyState.vue'
-import Icon from '../components/Icon.vue'
-import { api } from '../api'
-import { price } from '../format'
-import { toast } from '../toast'
+import CopyButton from '@/components/CopyButton.vue'
+import EmptyState from '@/components/EmptyState.vue'
+import Icon from '@/components/Icon.vue'
+import { api } from '@/api'
+import { price } from '@/utils/format'
+import { toast } from '@/toast'
 
 const items = ref([])
 const loading = ref(true)

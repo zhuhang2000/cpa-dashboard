@@ -1,6 +1,6 @@
 import { reactive } from 'vue'
-import { api } from '../api'
-import { toast } from '../toast'
+import { api } from '@/api'
+import { toast } from '@/toast'
 
 // State and loader for a paged list endpoint, which returns { items, total, page, page_size }.
 // `query` returns the current filters. The whole response is merged into the state, so an

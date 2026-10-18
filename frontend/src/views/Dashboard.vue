@@ -56,14 +56,26 @@
       <div class="card-header">
         <div>
           <div class="card-title">消费趋势</div>
-          <div class="card-sub">近 {{ days }} 天 · {{ money(summary?.range.cost || 0) }} · {{ num(summary?.range.requests || 0) }} 次请求</div>
+          <div class="card-sub">
+            近 {{ days }} 天 · {{ money(summary?.range.cost || 0) }} · {{ num(summary?.range.requests || 0) }} 次请求
+          </div>
         </div>
         <div class="row wrap">
           <div class="tabs">
-            <button v-for="m in metrics" :key="m.key" class="tab" :class="{ active: metric === m.key }" @click="metric = m.key">{{ m.label }}</button>
+            <button
+              v-for="m in metrics"
+              :key="m.key"
+              class="tab"
+              :class="{ active: metric === m.key }"
+              @click="metric = m.key"
+            >
+              {{ m.label }}
+            </button>
           </div>
           <div class="tabs">
-            <button v-for="d in [7, 30]" :key="d" class="tab" :class="{ active: days === d }" @click="setDays(d)">{{ d }} 天</button>
+            <button v-for="d in [7, 30]" :key="d" class="tab" :class="{ active: days === d }" @click="setDays(d)">
+              {{ d }} 天
+            </button>
           </div>
         </div>
       </div>
@@ -89,7 +101,9 @@
             <div class="card-title">快速开始</div>
             <div class="card-sub">推荐使用 Cockpit Tools 管理 Base URL 与 API 密钥</div>
           </div>
-          <a v-if="guideUrl" :href="guideUrl" target="_blank" rel="noopener" class="btn btn-sm">图文教程<Icon name="external" :size="14" /></a>
+          <a v-if="guideUrl" :href="guideUrl" target="_blank" rel="noopener" class="btn btn-sm"
+            >图文教程<Icon name="external" :size="14"
+          /></a>
         </div>
         <div class="card-body stack" style="gap: 18px">
           <div>
@@ -122,13 +136,20 @@
             <div class="card-title">模型消费排行</div>
             <div class="card-sub">近 {{ days }} 天</div>
           </div>
-          <RouterLink to="/usage" class="btn btn-sm btn-ghost">查看明细<Icon name="chevron-right" :size="14" /></RouterLink>
+          <RouterLink to="/usage" class="btn btn-sm btn-ghost"
+            >查看明细<Icon name="chevron-right" :size="14"
+          /></RouterLink>
         </div>
         <div class="card-body">
           <div v-if="!summary" class="stack" style="gap: 14px">
             <div v-for="i in 4" :key="i" class="skeleton" style="height: 34px" />
           </div>
-          <EmptyState v-else-if="!summary.by_model.length" icon="chart" title="暂无调用记录" desc="使用 API 密钥调用后，这里会显示各模型的消费" />
+          <EmptyState
+            v-else-if="!summary.by_model.length"
+            icon="chart"
+            title="暂无调用记录"
+            desc="使用 API 密钥调用后，这里会显示各模型的消费"
+          />
           <div v-else class="rank">
             <div v-for="m in summary.by_model" :key="m.model" class="rank-item">
               <div class="row-between">
@@ -147,15 +168,15 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import BarChart from '../components/BarChart.vue'
-import CopyButton from '../components/CopyButton.vue'
-import EmptyState from '../components/EmptyState.vue'
-import Icon from '../components/Icon.vue'
-import StatCard from '../components/StatCard.vue'
-import { api } from '../api'
-import { refreshUser, store } from '../store'
-import { currency, money, num, tokens } from '../format'
-import { toast } from '../toast'
+import BarChart from '@/components/BarChart.vue'
+import CopyButton from '@/components/CopyButton.vue'
+import EmptyState from '@/components/EmptyState.vue'
+import Icon from '@/components/Icon.vue'
+import StatCard from '@/components/StatCard.vue'
+import { api } from '@/api'
+import { refreshUser, store } from '@/store'
+import { currency, dayLabel, money, num, tokens } from '@/utils/format'
+import { toast } from '@/toast'
 
 const summary = ref(null)
 const days = ref(30)
@@ -172,17 +193,10 @@ const metrics = [
   { key: 'tokens', label: 'Tokens', format: (v) => tokens(v), axis: (v) => tokens(v) },
 ]
 const currentMetric = computed(() => metrics.find((m) => m.key === metric.value))
-const chartSeries = computed(() => [
-  { key: metric.value, label: currentMetric.value.label, color: 'var(--chart-1)' },
-])
+const chartSeries = computed(() => [{ key: metric.value, label: currentMetric.value.label, color: 'var(--chart-1)' }])
 
 function trimNum(v) {
   return Number(v.toFixed(v < 1 ? 3 : 2)).toLocaleString('zh-CN')
-}
-function dayLabel(d, full) {
-  if (!d) return ''
-  const [, m, day] = d.split('-')
-  return full ? d : `${Number(m)}/${Number(day)}`
 }
 function share(cost) {
   const max = Math.max(...summary.value.by_model.map((m) => m.cost), 0)

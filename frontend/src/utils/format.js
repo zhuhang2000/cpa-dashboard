@@ -1,4 +1,4 @@
-import { store } from './store'
+import { store } from '@/store'
 
 export function currency() {
   return store.status?.currency_symbol || '$'
@@ -81,4 +81,11 @@ export function fromInputDate(value, endOfDay = false) {
   const dt = new Date(y, m - 1, d)
   if (endOfDay) dt.setDate(dt.getDate() + 1)
   return dt.getTime()
+}
+
+// Chart label for a yyyy-mm-dd day: m/d on the axis, the full date when `full` (tooltips).
+export function dayLabel(d, full) {
+  if (!d) return ''
+  const [, m, day] = d.split('-')
+  return full ? d : `${Number(m)}/${Number(day)}`
 }

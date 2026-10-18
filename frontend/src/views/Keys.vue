@@ -28,7 +28,12 @@
       <div v-if="loading && !items.length" class="card-body stack" style="gap: 12px">
         <div v-for="i in 3" :key="i" class="skeleton" style="height: 40px" />
       </div>
-      <EmptyState v-else-if="!items.length" icon="key" title="还没有 API 密钥" desc="创建一个密钥，即可开始调用模型接口">
+      <EmptyState
+        v-else-if="!items.length"
+        icon="key"
+        title="还没有 API 密钥"
+        desc="创建一个密钥，即可开始调用模型接口"
+      >
         <button class="btn btn-primary" @click="openCreate"><Icon name="plus" :size="16" />创建密钥</button>
       </EmptyState>
       <div v-else class="table-wrap">
@@ -74,7 +79,9 @@
               </td>
               <td class="actions">
                 <button class="link-btn" @click="openEdit(k)">编辑</button>
-                <button class="link-btn" @click="toggle(k)">{{ k.status === KeyStatus.ACTIVE ? '禁用' : '启用' }}</button>
+                <button class="link-btn" @click="toggle(k)">
+                  {{ k.status === KeyStatus.ACTIVE ? '禁用' : '启用' }}
+                </button>
                 <button class="link-btn danger" @click="removing = k">删除</button>
               </td>
             </tr>
@@ -87,7 +94,8 @@
       <div class="row" style="gap: 10px; align-items: flex-start">
         <Icon name="info" :size="16" class="muted" style="margin-top: 2px; flex: none" />
         <div class="muted" style="font-size: 13px">
-          状态说明：<b>余额不足</b> 时所有密钥会被暂停，充值后自动恢复；<b>额度用尽</b> 表示该密钥已达到你设置的额度上限，可在编辑中调高；禁用、删除的密钥会在数秒内失效。
+          状态说明：<b>余额不足</b> 时所有密钥会被暂停，充值后自动恢复；<b>额度用尽</b>
+          表示该密钥已达到你设置的额度上限，可在编辑中调高；禁用、删除的密钥会在数秒内失效。
         </div>
       </div>
     </div>
@@ -97,15 +105,31 @@
       <form id="key-form" @submit.prevent="save">
         <div class="field">
           <label for="key-name">名称</label>
-          <input id="key-name" v-model.trim="form.name" class="input" maxlength="32" placeholder="例如：生产环境、我的笔记本" />
+          <input
+            id="key-name"
+            v-model.trim="form.name"
+            class="input"
+            maxlength="32"
+            placeholder="例如：生产环境、我的笔记本"
+          />
         </div>
         <div class="field">
           <label for="key-quota">额度上限 <span class="faint">（选填）</span></label>
           <div class="input-group has-prefix">
             <span class="input-prefix">{{ currency() }}</span>
-            <input id="key-quota" v-model="form.quota" class="input" type="number" min="0" step="0.01" placeholder="不填表示不限额" />
+            <input
+              id="key-quota"
+              v-model="form.quota"
+              class="input"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="不填表示不限额"
+            />
           </div>
-          <div class="field-hint">该密钥累计消费达到上限后自动停用{{ editing ? `，当前已用 ${money(editing.used)}` : '' }}</div>
+          <div class="field-hint">
+            该密钥累计消费达到上限后自动停用{{ editing ? `，当前已用 ${money(editing.used)}` : '' }}
+          </div>
         </div>
         <div class="field">
           <label for="key-exp">过期日期 <span class="faint">（选填）</span></label>
@@ -115,7 +139,9 @@
       </form>
       <template #footer>
         <button class="btn" @click="formOpen = false">取消</button>
-        <button class="btn btn-primary" form="key-form" :disabled="saving">{{ saving ? '保存中…' : editing ? '保存' : '创建' }}</button>
+        <button class="btn btn-primary" form="key-form" :disabled="saving">
+          {{ saving ? '保存中…' : editing ? '保存' : '创建' }}
+        </button>
       </template>
     </Modal>
 
@@ -136,7 +162,9 @@
 
     <Modal :open="!!removing" title="删除密钥" @close="removing = null">
       <p>
-        确定删除密钥 <b>{{ removing?.name }}</b>（<code>{{ removing?.masked }}</code>）吗？删除后使用该密钥的请求会立即失败，且无法恢复。
+        确定删除密钥 <b>{{ removing?.name }}</b
+        >（<code>{{ removing?.masked }}</code
+        >）吗？删除后使用该密钥的请求会立即失败，且无法恢复。
       </p>
       <template #footer>
         <button class="btn" @click="removing = null">取消</button>
@@ -149,16 +177,16 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import CopyButton from '../components/CopyButton.vue'
-import EmptyState from '../components/EmptyState.vue'
-import Icon from '../components/Icon.vue'
-import Modal from '../components/Modal.vue'
-import StatusBadge from '../components/StatusBadge.vue'
-import { api } from '../api'
-import { KEY_STATES, KeyStatus } from '../constants'
-import { refreshUser, store } from '../store'
-import { currency, date, dateTime, fromInputDate, money, num, relative, toInputDate } from '../format'
-import { toast } from '../toast'
+import CopyButton from '@/components/CopyButton.vue'
+import EmptyState from '@/components/EmptyState.vue'
+import Icon from '@/components/Icon.vue'
+import Modal from '@/components/Modal.vue'
+import StatusBadge from '@/components/StatusBadge.vue'
+import { api } from '@/api'
+import { KEY_STATES, KeyStatus } from '@/constants'
+import { refreshUser, store } from '@/store'
+import { currency, date, dateTime, fromInputDate, money, num, relative, toInputDate } from '@/utils/format'
+import { toast } from '@/toast'
 
 const route = useRoute()
 const router = useRouter()

@@ -15,11 +15,17 @@
     <template v-if="data">
       <div v-if="data.sync.cpamp.ok === false" class="alert alert-danger">
         <Icon name="alert" :size="16" />
-        <div class="alert-body"><b>用量同步失败：</b>{{ data.sync.cpamp.error }}（数据库：<code>{{ data.config.cpamp_usage_db }}</code>）</div>
+        <div class="alert-body">
+          <b>用量同步失败：</b>{{ data.sync.cpamp.error }}（数据库：<code>{{ data.config.cpamp_usage_db }}</code
+          >）
+        </div>
       </div>
       <div v-if="!data.config.cpa_configured" class="alert alert-warning">
         <Icon name="alert" :size="16" />
-        <div class="alert-body">未配置 CPA 管理密钥：用户创建的密钥不会写入 CPA，余额不足时也无法自动停用。请在 config.json 的 <code>cpa.management_key</code> 中填写。</div>
+        <div class="alert-body">
+          未配置 CPA 管理密钥：用户创建的密钥不会写入 CPA，余额不足时也无法自动停用。请在 config.json 的
+          <code>cpa.management_key</code> 中填写。
+        </div>
       </div>
       <div v-else-if="data.sync.cpa.ok === false" class="alert alert-danger">
         <Icon name="alert" :size="16" />
@@ -29,17 +35,47 @@
         <Icon name="tag" :size="16" />
         <div class="alert-body">
           近 24 小时有未定价模型被调用（未扣费）：
-          <span v-for="(m, i) in data.unpriced_models" :key="m.model"><code>{{ m.model }}</code>×{{ m.calls }}<template v-if="i < data.unpriced_models.length - 1">、</template></span>
+          <span v-for="(m, i) in data.unpriced_models" :key="m.model"
+            ><code>{{ m.model }}</code
+            >×{{ m.calls }}<template v-if="i < data.unpriced_models.length - 1">、</template></span
+          >
           。<RouterLink to="/admin/prices">去设置价格</RouterLink>
         </div>
       </div>
     </template>
 
     <div class="grid grid-4">
-      <StatCard label="用户总数" icon="users" :loading="!data" :value="num(data?.users.total || 0)" :sub="`今日新增 ${num(data?.users.today || 0)} · 活跃密钥 ${num(data?.keys_active || 0)}`" />
-      <StatCard label="今日消费" icon="zap" tone="amber" :loading="!data" :value="money(data?.usage.today.cost || 0)" :sub="`${num(data?.usage.today.requests || 0)} 次请求 · 本月 ${money(data?.usage.month.cost || 0)}`" />
-      <StatCard label="今日充值" icon="wallet" tone="green" :loading="!data" :value="money(data?.recharge.today || 0)" :sub="`本月 ${money(data?.recharge.month || 0)}`" />
-      <StatCard label="用户余额总计" icon="coins" tone="blue" :loading="!data" :value="money(data?.balance_total || 0)" sub="所有用户当前余额之和" />
+      <StatCard
+        label="用户总数"
+        icon="users"
+        :loading="!data"
+        :value="num(data?.users.total || 0)"
+        :sub="`今日新增 ${num(data?.users.today || 0)} · 活跃密钥 ${num(data?.keys_active || 0)}`"
+      />
+      <StatCard
+        label="今日消费"
+        icon="zap"
+        tone="amber"
+        :loading="!data"
+        :value="money(data?.usage.today.cost || 0)"
+        :sub="`${num(data?.usage.today.requests || 0)} 次请求 · 本月 ${money(data?.usage.month.cost || 0)}`"
+      />
+      <StatCard
+        label="今日充值"
+        icon="wallet"
+        tone="green"
+        :loading="!data"
+        :value="money(data?.recharge.today || 0)"
+        :sub="`本月 ${money(data?.recharge.month || 0)}`"
+      />
+      <StatCard
+        label="用户余额总计"
+        icon="coins"
+        tone="blue"
+        :loading="!data"
+        :value="money(data?.balance_total || 0)"
+        sub="所有用户当前余额之和"
+      />
     </div>
 
     <div class="card">
@@ -84,7 +120,9 @@
               <tr v-for="u in data?.top_users || []" :key="u.id">
                 <td class="cell-main">{{ u.username }}</td>
                 <td class="right num">{{ num(u.requests) }}</td>
-                <td class="right num"><b>{{ money(u.cost) }}</b></td>
+                <td class="right num">
+                  <b>{{ money(u.cost) }}</b>
+                </td>
               </tr>
             </tbody>
           </table>
@@ -137,13 +175,13 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
-import BarChart from '../../components/BarChart.vue'
-import EmptyState from '../../components/EmptyState.vue'
-import Icon from '../../components/Icon.vue'
-import StatCard from '../../components/StatCard.vue'
-import { api } from '../../api'
-import { currency, dateTime, money, num } from '../../format'
-import { toast } from '../../toast'
+import BarChart from '@/components/BarChart.vue'
+import EmptyState from '@/components/EmptyState.vue'
+import Icon from '@/components/Icon.vue'
+import StatCard from '@/components/StatCard.vue'
+import { api } from '@/api'
+import { currency, dateTime, dayLabel, money, num } from '@/utils/format'
+import { toast } from '@/toast'
 
 const data = ref(null)
 const syncing = ref(false)
@@ -152,10 +190,6 @@ const series = [
   { key: 'recharge', label: '充值', color: 'var(--chart-2)' },
 ]
 
-function dayLabel(d, full) {
-  const [, m, day] = d.split('-')
-  return full ? d : `${Number(m)}/${Number(day)}`
-}
 function badge(ok) {
   return ok === true ? 'badge-success' : ok === false ? 'badge-danger' : ''
 }

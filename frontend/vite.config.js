@@ -1,3 +1,4 @@
+import { fileURLToPath, URL } from 'node:url'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
@@ -5,6 +6,10 @@ import vue from '@vitejs/plugin-vue'
 // which the backend serves directly (see backend/config.json -> frontend_dir).
 export default defineConfig({
   plugins: [vue()],
+  resolve: {
+    // '@/x' is src/x. jsconfig.json declares the same alias for the editor.
+    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+  },
   server: {
     host: '127.0.0.1',
     port: 5173,

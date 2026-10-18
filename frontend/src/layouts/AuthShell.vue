@@ -27,8 +27,8 @@
 <script setup>
 import { computed } from 'vue'
 import AuthArt from './AuthArt.vue'
-import Icon from './Icon.vue'
-import { store } from '../store'
+import Icon from '@/components/Icon.vue'
+import { store } from '@/store'
 
 const siteName = computed(() => store.status?.site_name || 'API 控制台')
 const year = new Date().getFullYear()

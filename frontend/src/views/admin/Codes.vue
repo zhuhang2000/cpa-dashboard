@@ -14,9 +14,23 @@
       <div class="card-header">
         <div class="row wrap">
           <div class="tabs">
-            <button v-for="s in statuses" :key="s.key" class="tab" :class="{ active: status === s.key }" @click="setStatus(s.key)">{{ s.label }}</button>
+            <button
+              v-for="s in statuses"
+              :key="s.key"
+              class="tab"
+              :class="{ active: status === s.key }"
+              @click="setStatus(s.key)"
+            >
+              {{ s.label }}
+            </button>
           </div>
-          <select v-model="batch" class="select input-sm" style="width: auto; min-width: 140px" aria-label="批次" @change="codes.load(1)">
+          <select
+            v-model="batch"
+            class="select input-sm"
+            style="width: auto; min-width: 140px"
+            aria-label="批次"
+            @change="codes.load(1)"
+          >
             <option value="">全部批次</option>
             <option v-for="b in codes.batches" :key="b" :value="b">{{ b }}</option>
           </select>
@@ -51,7 +65,9 @@
                   <CopyButton :text="c.code" />
                 </div>
               </td>
-              <td class="right num"><b>{{ money(c.amount) }}</b></td>
+              <td class="right num">
+                <b>{{ money(c.amount) }}</b>
+              </td>
               <td>{{ c.batch || '—' }}</td>
               <td>
                 <StatusBadge :map="REDEEM_STATES" :value="codeState(c)" />
@@ -68,7 +84,9 @@
                 <span v-else class="faint">—</span>
               </td>
               <td class="actions">
-                <button v-if="c.status === RedeemStatus.UNUSED" class="link-btn danger" @click="disable(c)">停用</button>
+                <button v-if="c.status === RedeemStatus.UNUSED" class="link-btn danger" @click="disable(c)">
+                  停用
+                </button>
               </td>
             </tr>
           </tbody>
@@ -96,11 +114,25 @@
         </div>
         <div class="field">
           <label for="gen-batch">批次名称 <span class="faint">（选填）</span></label>
-          <input id="gen-batch" v-model.trim="gen.batch" class="input" maxlength="32" placeholder="例如：2026-10 发卡平台" />
+          <input
+            id="gen-batch"
+            v-model.trim="gen.batch"
+            class="input"
+            maxlength="32"
+            placeholder="例如：2026-10 发卡平台"
+          />
         </div>
         <div class="field">
           <label for="gen-exp">有效期（天） <span class="faint">（选填）</span></label>
-          <input id="gen-exp" v-model="gen.expires_days" class="input" type="number" min="1" max="3650" placeholder="不填表示永久有效" />
+          <input
+            id="gen-exp"
+            v-model="gen.expires_days"
+            class="input"
+            type="number"
+            min="1"
+            max="3650"
+            placeholder="不填表示永久有效"
+          />
         </div>
       </form>
       <template #footer>
@@ -111,7 +143,8 @@
 
     <Modal :open="!!generated" title="兑换码已生成" wide @close="generated = null">
       <p class="muted" style="margin-bottom: 10px">
-        共 {{ generated?.codes.length }} 个，面额 {{ money(generated?.amount || 0) }}{{ generated?.batch ? `，批次「${generated.batch}」` : '' }}。
+        共 {{ generated?.codes.length }} 个，面额 {{ money(generated?.amount || 0)
+        }}{{ generated?.batch ? `，批次「${generated.batch}」` : '' }}。
       </p>
       <textarea class="textarea mono" readonly rows="10" :value="generated?.codes.join('\n')" style="font-size: 13px" />
       <template #footer>
@@ -125,17 +158,17 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
-import CopyButton from '../../components/CopyButton.vue'
-import EmptyState from '../../components/EmptyState.vue'
-import Icon from '../../components/Icon.vue'
-import Modal from '../../components/Modal.vue'
-import Pagination from '../../components/Pagination.vue'
-import StatusBadge from '../../components/StatusBadge.vue'
-import { api } from '../../api'
-import { usePagedList } from '../../composables/usePagedList'
-import { REDEEM_STATES, RedeemState, RedeemStatus } from '../../constants'
-import { currency, date, dateTime, money } from '../../format'
-import { toast } from '../../toast'
+import CopyButton from '@/components/CopyButton.vue'
+import EmptyState from '@/components/EmptyState.vue'
+import Icon from '@/components/Icon.vue'
+import Modal from '@/components/Modal.vue'
+import Pagination from '@/components/Pagination.vue'
+import StatusBadge from '@/components/StatusBadge.vue'
+import { api } from '@/api'
+import { usePagedList } from '@/composables/usePagedList'
+import { REDEEM_STATES, RedeemState, RedeemStatus } from '@/constants'
+import { currency, date, dateTime, money } from '@/utils/format'
+import { toast } from '@/toast'
 
 const statuses = [
   { key: '', label: '全部' },
@@ -144,7 +177,9 @@ const statuses = [
 const status = ref('')
 const batch = ref('')
 const q = ref('')
-const codes = usePagedList('/api/admin/codes', () => ({ status: status.value, batch: batch.value, q: q.value }), { batches: [] })
+const codes = usePagedList('/api/admin/codes', () => ({ status: status.value, batch: batch.value, q: q.value }), {
+  batches: [],
+})
 const saving = ref(false)
 const genOpen = ref(false)
 const generated = ref(null)

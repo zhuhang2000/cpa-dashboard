@@ -6,7 +6,9 @@
     </div>
     <div v-if="loading" class="skeleton" style="height: 32px; width: 60%" />
     <div v-else class="stat-value" :class="valueClass">{{ value }}</div>
-    <div class="stat-sub"><slot name="sub">{{ sub }}</slot></div>
+    <div class="stat-sub">
+      <slot name="sub">{{ sub }}</slot>
+    </div>
     <div v-if="$slots.action" class="stat-action"><slot name="action" /></div>
   </div>
 </template>

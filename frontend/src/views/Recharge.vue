@@ -58,7 +58,9 @@
             <Icon v-if="redeeming" name="loader" :size="16" />
             {{ redeeming ? '兑换中…' : '立即兑换' }}
           </button>
-          <p class="muted" style="font-size: 12.5px; margin-top: 12px">兑换码可向管理员或授权渠道购买，每个兑换码仅可使用一次。</p>
+          <p class="muted" style="font-size: 12.5px; margin-top: 12px">
+            兑换码可向管理员或授权渠道购买，每个兑换码仅可使用一次。
+          </p>
         </form>
       </div>
 
@@ -134,7 +136,9 @@
         <div class="card-title">充值记录</div>
         <div class="tabs">
           <button class="tab" :class="{ active: tab === 'tx' }" @click="switchTab('tx')">余额流水</button>
-          <button v-if="online" class="tab" :class="{ active: tab === 'orders' }" @click="switchTab('orders')">支付订单</button>
+          <button v-if="online" class="tab" :class="{ active: tab === 'orders' }" @click="switchTab('orders')">
+            支付订单
+          </button>
         </div>
       </div>
       <template v-if="tab === 'tx'">
@@ -213,16 +217,16 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import EmptyState from '../components/EmptyState.vue'
-import Icon from '../components/Icon.vue'
-import Pagination from '../components/Pagination.vue'
-import StatusBadge from '../components/StatusBadge.vue'
-import { api } from '../api'
-import { usePagedList } from '../composables/usePagedList'
-import { ORDER_STATUSES, PAY_CHANNELS, TX_TYPES } from '../constants'
-import { refreshUser, store } from '../store'
-import { currency, dateTime, money } from '../format'
-import { toast } from '../toast'
+import EmptyState from '@/components/EmptyState.vue'
+import Icon from '@/components/Icon.vue'
+import Pagination from '@/components/Pagination.vue'
+import StatusBadge from '@/components/StatusBadge.vue'
+import { api } from '@/api'
+import { usePagedList } from '@/composables/usePagedList'
+import { ORDER_STATUSES, PAY_CHANNELS, TX_TYPES } from '@/constants'
+import { refreshUser, store } from '@/store'
+import { currency, dateTime, money } from '@/utils/format'
+import { toast } from '@/toast'
 
 const route = useRoute()
 const router = useRouter()
