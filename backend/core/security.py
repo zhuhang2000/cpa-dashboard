@@ -1,4 +1,5 @@
 """Password hashing, random secrets and a small in-memory rate limiter."""
+
 import base64
 import hashlib
 import hmac
@@ -54,7 +55,7 @@ def new_api_key(prefix="sk-"):
 
 def new_redeem_code():
     raw = "".join(secrets.choice(_CODE_ALPHABET) for _ in range(16))
-    return "-".join(raw[i:i + 4] for i in range(0, 16, 4))
+    return "-".join(raw[i : i + 4] for i in range(0, 16, 4))
 
 
 class RateLimiter:

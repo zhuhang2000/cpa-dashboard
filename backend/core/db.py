@@ -1,4 +1,5 @@
-"""SQLite storage for the portal (users, keys, billing). Python 3.8+ / SQLite 3.22+."""
+"""SQLite storage for the portal (users, keys, billing). Python 3.10+ / SQLite 3.22+."""
+
 import contextlib
 import json
 import sqlite3
@@ -194,3 +195,7 @@ def set_setting(conn, key, value):
         (key, json.dumps(value, ensure_ascii=False), now_ms()),
     )
 
+
+def like_pattern(text):
+    """Escape an SQL LIKE substring while keeping parameter binding at the caller."""
+    return "%" + text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"

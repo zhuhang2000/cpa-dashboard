@@ -19,14 +19,19 @@ class UserStatus:
 
 class KeyStatus:
     """Stored in api_keys.status."""
+
     ACTIVE = "active"
     DISABLED = "disabled"
     DELETED = "deleted"
-    SETTABLE = (ACTIVE, DISABLED)  # what a user may PATCH; deletion goes through keys.soft_delete
+    SETTABLE = (
+        ACTIVE,
+        DISABLED,
+    )  # what a user may PATCH; deletion goes through api_keys.soft_delete
 
 
 class KeyState:
-    """Extra values keys.state() derives for a stored ACTIVE key."""
+    """Extra values api_keys.state() derives for a stored ACTIVE key."""
+
     EXPIRED = "expired"
     EXHAUSTED = "exhausted"
     SUSPENDED = "suspended"
@@ -46,8 +51,13 @@ class OrderStatus:
 
 class TxType:
     """transactions.type. Usage charges are not written to the ledger."""
+
     REDEEM = "redeem"
     ONLINE = "online"
     ADMIN = "admin"
     BONUS = "bonus"
     RECHARGE = (REDEEM, ONLINE, ADMIN)  # counted in users.total_recharge_micro
+
+
+VERSION = "1.0.0"
+DAY_MS = 86400000

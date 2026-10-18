@@ -1,0 +1,10 @@
+-r base.txt
+pytest==9.1.1
+httpx2==2.14.0
+httpcore2==2.14.0
+truststore==0.10.5
+iniconfig==2.3.1
+packaging==26.3
+pluggy==1.7.0
+Pygments==2.21.0
+ruff==0.17.1

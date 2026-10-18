@@ -1,11 +1,8 @@
-"""Application state shared by the HTTP handlers and the sync worker."""
-import os
+"""Admin-editable settings and their cache, initially read from config/config.json."""
+
 import threading
 
-from .cpa import CPAClient
-from .db import connect, get_setting, init_db, set_setting
-from .security import RateLimiter
-from .sync import SyncWorker
+from core.db import get_setting, set_setting
 
 # Settings an admin may change at runtime: name -> (type, path in config.json).
 EDITABLE_SETTINGS = {
@@ -21,37 +18,25 @@ EDITABLE_SETTINGS = {
 }
 
 
-class App:
-    def __init__(self, cfg):
+class RuntimeSettings:
+    def __init__(self, cfg, connect):
         self.cfg = cfg
-        os.makedirs(cfg["data_dir"], exist_ok=True)
-        self.db_path = os.path.join(cfg["data_dir"], "portal.sqlite")
-        init_db(self.db_path)
-        self.limiter = RateLimiter()
-        self.cpa = CPAClient(
-            cfg["cpa"].get("base_url"),
-            cfg["cpa"].get("management_key"),
-            timeout=float(cfg["cpa"].get("timeout_seconds") or 8),
-        )
-        self.worker = SyncWorker(self)
+        self.connect = connect
         self._runtime = None
         self._runtime_lock = threading.Lock()
-
-    def db(self):
-        return connect(self.db_path)
 
     # -- runtime settings ----------------------------------------------------------
     def _runtime_settings(self):
         with self._runtime_lock:
             if self._runtime is None:
-                conn = self.db()
+                conn = self.connect()
                 try:
                     self._runtime = get_setting(conn, "runtime_settings", {}) or {}
                 finally:
                     conn.close()
             return self._runtime
 
-    def setting(self, name):
+    def get(self, name):
         runtime = self._runtime_settings()
         if name in runtime:
             return runtime[name]
@@ -63,10 +48,10 @@ class App:
             value = value.get(part) if isinstance(value, dict) else None
         return kind() if value is None else value
 
-    def all_settings(self):
-        return {name: self.setting(name) for name in EDITABLE_SETTINGS}
+    def all(self):
+        return {name: self.get(name) for name in EDITABLE_SETTINGS}
 
-    def update_settings(self, values):
+    def update(self, values):
         clean = {}
         for name, value in values.items():
             if name not in EDITABLE_SETTINGS:
@@ -82,7 +67,7 @@ class App:
             else:
                 clean[name] = str(value or "").strip()
         with self._runtime_lock:
-            conn = self.db()
+            conn = self.connect()
             try:
                 current = get_setting(conn, "runtime_settings", {}) or {}
                 current.update(clean)
@@ -90,4 +75,4 @@ class App:
             finally:
                 conn.close()
             self._runtime = current
-        return self.all_settings()
+        return self.all()

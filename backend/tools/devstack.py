@@ -10,6 +10,7 @@ CPAMP-shaped usage.sqlite, so the portal bills them exactly like production:
 a key removed from CPA (balance 0, disabled, ...) stops producing traffic.
 Never point this at real data.
 """
+
 import argparse
 import hashlib
 import html
@@ -111,8 +112,16 @@ def cpamp_conn():
             "cache_read_per_1m, cache_creation_per_1m, prompt_configured, completion_configured, "
             "cache_read_configured, cache_creation_configured, source, updated_at_ms) "
             "VALUES (?, ?, ?, ?, ?, ?, 1, 1, 1, ?, 'mock', ?)",
-            (model, prompt, completion, cache_read, cache_read, cache_creation or 0,
-             1 if cache_creation else 0, now),
+            (
+                model,
+                prompt,
+                completion,
+                cache_read,
+                cache_read,
+                cache_creation or 0,
+                1 if cache_creation else 0,
+                now,
+            ),
         )
     conn.commit()
     return conn
@@ -131,7 +140,11 @@ def fake_event(conn, api_key, ts_ms, model=None):
     if failed:
         uncached = cache_read = cache_creation = output = reasoning = 0
         input_tokens = 0
-    endpoint = "/v1/messages" if claude else ("/v1beta/models" if model.startswith("gemini") else "/v1/responses")
+    endpoint = (
+        "/v1/messages"
+        if claude
+        else ("/v1beta/models" if model.startswith("gemini") else "/v1/responses")
+    )
     conn.execute(
         "INSERT INTO usage_events (request_id, event_hash, timestamp_ms, timestamp, provider, model, "
         "requested_model, endpoint, method, path, api_key_hash, input_tokens, output_tokens, "
@@ -139,12 +152,33 @@ def fake_event(conn, api_key, ts_ms, model=None):
         "normalized_uncached_input_tokens, normalized_total_input_tokens, normalized_cache_read_tokens, "
         "normalized_cache_creation_tokens, total_tokens, latency_ms, failed, stream, created_at_ms) "
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'POST', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (uuid.uuid4().hex, uuid.uuid4().hex, ts_ms,
-         time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(ts_ms / 1000)), model.split("-")[0], model,
-         model, endpoint, endpoint, hashlib.sha256(api_key.encode()).hexdigest(), input_tokens, output,
-         reasoning, cache_read, cache_read, cache_creation, uncached, input_tokens, cache_read,
-         cache_creation, input_tokens + output, random.randint(400, 30000) if not failed else 120,
-         failed, random.choice([0, 1]), int(time.time() * 1000)),
+        (
+            uuid.uuid4().hex,
+            uuid.uuid4().hex,
+            ts_ms,
+            time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(ts_ms / 1000)),
+            model.split("-")[0],
+            model,
+            model,
+            endpoint,
+            endpoint,
+            hashlib.sha256(api_key.encode()).hexdigest(),
+            input_tokens,
+            output,
+            reasoning,
+            cache_read,
+            cache_read,
+            cache_creation,
+            uncached,
+            input_tokens,
+            cache_read,
+            cache_creation,
+            input_tokens + output,
+            random.randint(400, 30000) if not failed else 120,
+            failed,
+            random.choice([0, 1]),
+            int(time.time() * 1000),
+        ),
     )
 
 
@@ -166,8 +200,11 @@ class KeyStore:
 
 
 def epay_sign(params, key):
-    items = sorted((k, str(v)) for k, v in params.items()
-                   if k not in ("sign", "sign_type") and v is not None and str(v) != "")
+    items = sorted(
+        (k, str(v))
+        for k, v in params.items()
+        if k not in ("sign", "sign_type") and v is not None and str(v) != ""
+    )
     return hashlib.md5(("&".join("%s=%s" % kv for kv in items) + key).encode()).hexdigest()
 
 
@@ -252,22 +289,32 @@ def make_handler(store):
             if not ok:
                 self._send(400, "签名错误".encode(), "text/plain; charset=utf-8")
                 return
-            hidden = "".join('<input type="hidden" name="%s" value="%s">' % (html.escape(k), html.escape(v))
-                             for k, v in query.items())
+            hidden = "".join(
+                '<input type="hidden" name="%s" value="%s">' % (html.escape(k), html.escape(v))
+                for k, v in query.items()
+            )
             page = """<!doctype html><meta charset="utf-8"><title>模拟收银台</title>
 <body style="font-family:system-ui;max-width:420px;margin:80px auto;text-align:center">
 <h2>模拟收银台（仅本地开发）</h2><p>%s</p><p style="font-size:32px;font-weight:700">¥%s</p>
 <p>支付方式：%s</p><form method="post" action="/epay/pay">%s
 <button style="padding:10px 28px;font-size:16px">确认支付</button></form></body>""" % (
-                html.escape(query.get("name", "")), html.escape(query.get("money", "")),
-                html.escape(query.get("type", "")), hidden)
+                html.escape(query.get("name", "")),
+                html.escape(query.get("money", "")),
+                html.escape(query.get("type", "")),
+                hidden,
+            )
             self._send(200, page.encode(), "text/html; charset=utf-8")
 
         def _epay_pay(self, form):
-            params = {"pid": EPAY_PID, "trade_no": "MOCK" + uuid.uuid4().hex[:16],
-                      "out_trade_no": form.get("out_trade_no", ""), "type": form.get("type", ""),
-                      "name": form.get("name", ""), "money": form.get("money", ""),
-                      "trade_status": "TRADE_SUCCESS"}
+            params = {
+                "pid": EPAY_PID,
+                "trade_no": "MOCK" + uuid.uuid4().hex[:16],
+                "out_trade_no": form.get("out_trade_no", ""),
+                "type": form.get("type", ""),
+                "name": form.get("name", ""),
+                "money": form.get("money", ""),
+                "trade_status": "TRADE_SUCCESS",
+            }
             params["sign"] = epay_sign(params, EPAY_KEY)
             params["sign_type"] = "MD5"
             query = urllib.parse.urlencode(params)
@@ -303,8 +350,14 @@ def cmd_run(args):
     cpamp_conn().close()
     threading.Thread(target=traffic_loop, args=(store, args.interval), daemon=True).start()
     server = ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(store))
-    print("mock CPA management API : http://127.0.0.1:%d/v0/management (key: %s)" % (args.port, MANAGEMENT_KEY))
-    print("mock EPay gateway       : http://127.0.0.1:%d/epay (pid %s, key %s)" % (args.port, EPAY_PID, EPAY_KEY))
+    print(
+        "mock CPA management API : http://127.0.0.1:%d/v0/management (key: %s)"
+        % (args.port, MANAGEMENT_KEY)
+    )
+    print(
+        "mock EPay gateway       : http://127.0.0.1:%d/epay (pid %s, key %s)"
+        % (args.port, EPAY_PID, EPAY_KEY)
+    )
     print("mock CPAMP usage db     : %s" % CPAMP_DB)
     server.serve_forever()
 
@@ -312,9 +365,9 @@ def cmd_run(args):
 def cmd_seed_demo(args):
     """Create demo/demo12345 with two keys and 30 days of billed history."""
     sys.path.insert(0, BACKEND)
-    from portal.billing import apply_credit, to_micro
-    from portal.db import init_db, transaction
-    from portal.security import hash_password, new_api_key, sha256_hex
+    from core.db import init_db, transaction
+    from core.security import hash_password, new_api_key, sha256_hex
+    from services.billing import apply_credit, to_micro
 
     portal_db = os.path.join(DATA, "portal.sqlite")
     init_db(portal_db)
@@ -328,13 +381,18 @@ def cmd_seed_demo(args):
     with transaction(conn):
         uid = conn.execute(
             "INSERT INTO users (username, email, password_hash, created_at) VALUES (?, ?, ?, ?)",
-            ("demo", "demo@example.com", hash_password("demo12345"), created)).lastrowid
-        apply_credit(conn, uid, to_micro(200), "redeem", ref="DEMO-SEED-CODE-0001", note="兑换码充值")
+            ("demo", "demo@example.com", hash_password("demo12345"), created),
+        ).lastrowid
+        apply_credit(
+            conn, uid, to_micro(200), "redeem", ref="DEMO-SEED-CODE-0001", note="兑换码充值"
+        )
         keys = []
         for name in ("生产环境", "本地开发"):
             key = new_api_key()
-            conn.execute("INSERT INTO api_keys (user_id, name, key, key_hash, created_at) VALUES (?, ?, ?, ?, ?)",
-                         (uid, name, key, sha256_hex(key), created))
+            conn.execute(
+                "INSERT INTO api_keys (user_id, name, key, key_hash, created_at) VALUES (?, ?, ?, ?, ?)",
+                (uid, name, key, sha256_hex(key), created),
+            )
             keys.append(key)
     src = cpamp_conn()
     for day in range(30, -1, -1):
@@ -343,11 +401,15 @@ def cmd_seed_demo(args):
             if ts < now:
                 fake_event(src, random.choice(keys), ts)
     src.commit()
-    print("已创建 demo / demo12345（余额 200，两个密钥，30 天调用记录）。等待一个同步周期后即可看到账单。")
+    print(
+        "已创建 demo / demo12345（余额 200，两个密钥，30 天调用记录）。等待一个同步周期后即可看到账单。"
+    )
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+    )
     sub = parser.add_subparsers(dest="command", required=True)
     p = sub.add_parser("run")
     p.add_argument("--port", type=int, default=18399)

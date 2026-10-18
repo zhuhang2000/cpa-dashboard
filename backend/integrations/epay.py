@@ -4,6 +4,7 @@ Compatible with the common "彩虹易支付" style gateways: submit.php with
 pid/type/out_trade_no/notify_url/return_url/name/money, signed by sorting the
 non-empty params (except sign/sign_type), joining as k=v&k=v and appending KEY.
 """
+
 import hashlib
 import hmac
 import urllib.parse
@@ -11,7 +12,8 @@ import urllib.parse
 
 def sign(params, key):
     items = sorted(
-        (k, str(v)) for k, v in params.items()
+        (k, str(v))
+        for k, v in params.items()
         if k not in ("sign", "sign_type") and v is not None and str(v) != ""
     )
     payload = "&".join("%s=%s" % (k, v) for k, v in items) + key
