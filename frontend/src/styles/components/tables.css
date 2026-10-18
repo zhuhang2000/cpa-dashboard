@@ -1,0 +1,80 @@
+/**
+ * ==============================================================================
+ * 样式模块: 数据表格组件 (Data Tables)
+ * 文件路径: styles/components/tables.css
+ * 职责描述:
+ *   定义通用数据展示表格结构 (.table-wrap, .table)，包括表头样式、
+ *   行悬浮背景高亮 (hover)、单元格主次文本排版 (.cell-main, .cell-sub)、
+ *   操作列与对齐方式 (.actions, .right)。
+ *
+ * 使用该样式的组件 / 页面:
+ *   - src/layouts/AppLayout.vue (.table)
+ *   - src/views/Dashboard.vue (.table, .cell-sub)
+ *   - src/views/Keys.vue (.table-wrap, .table, .cell-main, .cell-sub, .actions)
+ *   - src/views/Pricing.vue (.table-wrap, .table, .cell-main, .right)
+ *   - src/views/Usage.vue (.table-wrap, .table, .cell-sub, .right)
+ *   - src/views/admin/Overview.vue (.table-wrap, .table, .cell-main, .right)
+ *   - src/views/admin/Users.vue (.table-wrap, .table, .cell-main, .cell-sub, .actions, .right)
+ *   - src/views/admin/Codes.vue (.table-wrap, .table, .cell-sub, .actions, .right)
+ *   - src/views/admin/Prices.vue (.table-wrap, .table, .cell-main, .cell-sub, .actions, .right)
+ *   - src/views/recharge/OnlinePayCard.vue (.cell-sub)
+ *   - src/views/recharge/OrderTable.vue (.table-wrap, .table, .right)
+ *   - src/views/recharge/TransactionTable.vue (.table-wrap, .table, .cell-sub, .right)
+ * ==============================================================================
+ */
+
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13.5px;
+}
+.table th {
+  text-align: left;
+  font-weight: 500;
+  font-size: 12.5px;
+  color: var(--muted);
+  background: var(--surface-2);
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.table th:first-child,
+.table td:first-child {
+  padding-left: 20px;
+}
+.table th:last-child,
+.table td:last-child {
+  padding-right: 20px;
+}
+.table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.table tbody tr:hover td {
+  background: var(--surface-2);
+}
+.table .right {
+  text-align: right;
+}
+.table .actions {
+  text-align: right;
+  white-space: nowrap;
+}
+.table .actions .link-btn + .link-btn {
+  margin-left: 12px;
+}
+.cell-main {
+  font-weight: 500;
+}
+.cell-sub {
+  font-size: 12px;
+  color: var(--muted);
+}

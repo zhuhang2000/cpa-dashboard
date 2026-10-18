@@ -1,0 +1,70 @@
+/**
+ * ==============================================================================
+ * 样式模块: 卡片容器组件 (Cards)
+ * 文件路径: styles/components/cards.css
+ * 职责描述:
+ *   定义统一的内容卡片容器 (.card) 及其标准子结构：
+ *   卡片头部 (.card-header)、标题与副标题 (.card-title, .card-sub)、
+ *   主体内容区 (.card-body)、底部操作栏 (.card-footer)。
+ *
+ * 使用该样式的组件 / 页面:
+ *   - src/components/StatCard.vue (.card)
+ *   - src/views/Dashboard.vue (.card, .card-header, .card-title, .card-sub, .card-body)
+ *   - src/views/Keys.vue (.card, .card-header, .card-title, .card-body)
+ *   - src/views/Pricing.vue (.card, .card-header, .card-body, .card-footer)
+ *   - src/views/Settings.vue (.card, .card-header, .card-title, .card-sub, .card-body)
+ *   - src/views/Usage.vue (.card, .card-body, .card-footer)
+ *   - src/views/admin/Overview.vue (.card, .card-header, .card-title, .card-sub, .card-body)
+ *   - src/views/admin/Users.vue (.card, .card-header, .card-body, .card-footer)
+ *   - src/views/admin/Codes.vue (.card, .card-header, .card-body, .card-footer)
+ *   - src/views/admin/Prices.vue (.card, .card-header)
+ *   - src/views/admin/Settings.vue (.card, .card-header, .card-title, .card-body, .card-footer)
+ *   - src/views/recharge/index.vue (.card, .card-header, .card-title)
+ *   - src/views/recharge/OnlinePayCard.vue (.card, .card-header, .card-title, .card-sub, .card-body)
+ *   - src/views/recharge/RedeemCard.vue (.card, .card-header, .card-title, .card-sub, .card-body)
+ *   - src/views/recharge/OrderTable.vue (.card-body, .card-footer)
+ *   - src/views/recharge/TransactionTable.vue (.card-body, .card-footer)
+ * ==============================================================================
+ */
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  min-width: 0;
+}
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.card-header.plain {
+  border-bottom: 0;
+  padding-bottom: 4px;
+}
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+.card-sub {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.card-body {
+  padding: 20px;
+}
+.card-footer {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}

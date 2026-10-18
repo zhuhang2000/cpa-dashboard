@@ -1,0 +1,44 @@
+/**
+ * ==============================================================================
+ * 样式模块: 选项卡切换栏 (Segmented Tabs)
+ * 文件路径: styles/components/tabs.css
+ * 职责描述:
+ *   定义胶囊式轻量选项卡容器 (.tabs) 与选项按钮 (.tab, .tab.active)。
+ *
+ * 使用该样式的组件 / 页面:
+ *   - src/views/Dashboard.vue (.tabs, .tab)
+ *   - src/views/Pricing.vue (.tabs, .tab)
+ *   - src/views/Usage.vue (.tabs, .tab)
+ *   - src/views/admin/Users.vue (.tabs, .tab)
+ *   - src/views/admin/Codes.vue (.tabs, .tab)
+ *   - src/views/recharge/index.vue (.tabs, .tab)
+ * ==============================================================================
+ */
+
+.tabs {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  background: var(--surface-3);
+  border-radius: 9px;
+}
+.tab {
+  height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tab:hover {
+  color: var(--text);
+}
+.tab.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}

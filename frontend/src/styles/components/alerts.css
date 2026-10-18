@@ -1,0 +1,66 @@
+/**
+ * ==============================================================================
+ * 样式模块: 警告与消息提示条 (Alerts & Banners)
+ * 文件路径: styles/components/alerts.css
+ * 职责描述:
+ *   定义页面内嵌入式通知横幅 (.alert)，包含图标对齐、文字主体 (.alert-body)、
+ *   关闭按钮 (.alert-close) 及四种主题状态：
+ *   .alert-info, .alert-success, .alert-warning, .alert-danger。
+ *
+ * 使用该样式的组件 / 页面:
+ *   - src/views/Dashboard.vue (.alert, .alert-info, .alert-body, .alert-close)
+ *   - src/views/Keys.vue (.alert, .alert-warning, .alert-body)
+ *   - src/views/Login.vue (.alert, .alert-danger, .alert-body)
+ *   - src/views/Register.vue (.alert, .alert-danger, .alert-warning, .alert-body)
+ *   - src/views/admin/Overview.vue (.alert, .alert-warning, .alert-danger, .alert-body)
+ *   - src/views/admin/Prices.vue (.alert, .alert-info, .alert-body)
+ *   - src/views/admin/Settings.vue (.alert, .alert-warning, .alert-body)
+ *   - src/views/recharge/index.vue (.alert, .alert-success, .alert-warning, .alert-body, .alert-close)
+ * ==============================================================================
+ */
+
+.alert {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  font-size: 13.5px;
+}
+.alert svg {
+  flex: none;
+  margin-top: 2px;
+}
+.alert-info {
+  background: var(--info-soft);
+  color: var(--info);
+  border-color: color-mix(in srgb, var(--info) 22%, transparent);
+}
+.alert-success {
+  background: var(--success-soft);
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 22%, transparent);
+}
+.alert-warning {
+  background: var(--warning-soft);
+  color: var(--warning);
+  border-color: color-mix(in srgb, var(--warning) 22%, transparent);
+}
+.alert-danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 22%, transparent);
+}
+.alert .alert-body {
+  flex: 1;
+  min-width: 0;
+}
+.alert .alert-close {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.7;
+  padding: 0;
+}

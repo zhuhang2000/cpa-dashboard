@@ -1,0 +1,49 @@
+/**
+ * ==============================================================================
+ * 样式模块: 全局消息轻提示 (Toast Notifications)
+ * 文件路径: styles/components/toast.css
+ * 职责描述:
+ *   定义顶部居中悬浮容器 (.toast-host)、提示气泡卡片 (.toast, pop-in 动画)
+ *   以及成功/错误/信息状态图标色彩 (.toast.success, .toast.error, .toast.info)。
+ *
+ * 使用该样式的组件 / 页面:
+ *   - src/components/ToastHost.vue (.toast-host, .toast)
+ * ==============================================================================
+ */
+
+.toast-host {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  pointer-events: none;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  font-weight: 500;
+  pointer-events: auto;
+  animation: pop-in 0.18s ease-out;
+}
+.toast.success svg {
+  color: var(--success);
+}
+.toast.error svg {
+  color: var(--danger);
+}
+.toast.info svg {
+  color: var(--info);
+}

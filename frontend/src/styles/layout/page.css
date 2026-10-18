@@ -1,0 +1,139 @@
+/**
+ * ==============================================================================
+ * 样式模块: 页面结构与网格系统 (Page Scaffolding & Grid)
+ * 文件路径: styles/layout/page.css
+ * 职责描述:
+ *   定义页面级统一头部排版 (.page-header, .page-title, .page-desc, .page-actions)、
+ *   多列栅格布局 (.grid, .grid-4, .grid-2, .grid-main-side)、
+ *   垂直与水平间距堆叠 (.stack, .row, .row-between) 以及指标统计卡片 (.stat, .stat-value 等)。
+ *
+ * 使用该样式的组件 / 页面:
+ *   - src/components/StatCard.vue (.stat, .stat-label, .stat-icon, .stat-value, .stat-sub, .stat-action)
+ *   - src/components/Pagination.vue (.row-between)
+ *   - src/components/BarChart.vue (.row)
+ *   - src/views/Dashboard.vue (.grid, .grid-4, .grid-main-side, .stack, .row, .row-between)
+ *   - src/views/Keys.vue (.page-header, .page-title, .page-desc, .page-actions, .stack, .row)
+ *   - src/views/Pricing.vue (.page-header, .page-title, .page-desc, .page-actions, .stack, .row)
+ *   - src/views/Settings.vue (.page-header, .page-title, .page-desc, .grid, .grid-2, .stack, .row-between)
+ *   - src/views/Usage.vue (.page-header, .page-title, .page-desc, .page-actions, .stack)
+ *   - src/views/admin/Overview.vue (.page-header, .page-title, .page-desc, .page-actions, .grid, .grid-4, .grid-2, .stack, .row, .row-between)
+ *   - src/views/admin/Users.vue (.page-header, .page-title, .page-desc, .stack, .row)
+ *   - src/views/admin/Codes.vue (.page-header, .page-title, .page-desc, .page-actions, .grid, .grid-2, .stack, .row)
+ *   - src/views/admin/Prices.vue (.page-header, .page-title, .page-desc, .page-actions, .grid, .grid-2, .stack)
+ *   - src/views/admin/Settings.vue (.page-header, .page-title, .page-desc, .grid, .grid-2, .stack)
+ *   - src/views/recharge/index.vue (.page-header, .page-title, .page-desc, .grid, .grid-2, .stack)
+ *   - src/views/recharge/OnlinePayCard.vue (.stat-icon, .row)
+ *   - src/views/recharge/RedeemCard.vue (.stat-icon)
+ *   - src/views/recharge/OrderTable.vue (.stack)
+ *   - src/views/recharge/TransactionTable.vue (.stack)
+ * ==============================================================================
+ */
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.page-title {
+  font-size: 20px;
+  font-weight: 650;
+}
+.page-desc {
+  color: var(--muted);
+  margin-top: 4px;
+}
+.page-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.grid {
+  display: grid;
+  gap: 16px;
+}
+.grid-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.grid-main-side {
+  grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+}
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.wrap {
+  flex-wrap: wrap;
+}
+
+/* stat cards */
+.stat {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  overflow: hidden;
+}
+.stat-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+.stat-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+.stat-icon.green {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.stat-icon.amber {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.stat-icon.blue {
+  background: var(--info-soft);
+  color: var(--info);
+}
+.stat-value {
+  font-size: 26px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.25;
+}
+.stat-sub {
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.stat-action {
+  position: absolute;
+  right: 16px;
+  top: 16px;
+}

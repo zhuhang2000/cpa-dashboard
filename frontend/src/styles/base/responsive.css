@@ -1,0 +1,97 @@
+/**
+ * ==============================================================================
+ * 样式模块: 全局响应式与断点适配 (Responsive Overrides)
+ * 文件路径: styles/base/responsive.css
+ * 职责描述:
+ *   提供媒体查询断点（1100px、900px、860px、560px）适配规则，
+ *   负责主侧边栏移动端抽屉化收起展开、顶栏自适应、移动端认证页自适应、
+ *   卡片与表格在小屏下的内边距调整与列网格折叠。
+ *
+ * 使用该样式的组件 / 页面:
+ *   - 布局骨架自适应:
+ *     - src/layouts/AppLayout.vue (.sidebar, .layout.nav-open, .backdrop, .main, .menu-btn, .topbar, .content, .hide-sm)
+ *     - src/layouts/AuthShell.vue (.auth, .auth-brand, .auth-panel, .auth-mobile-logo)
+ *   - 指标与卡片尺寸自适应:
+ *     - src/components/StatCard.vue (.stat-value)
+ *     - 各数据页面卡片与栅格适配 (src/views/*, src/views/admin/*, src/views/recharge/*)
+ * ==============================================================================
+ */
+
+@media (max-width: 1100px) {
+  .grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .grid-main-side {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 900px) {
+  .auth {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .auth-brand {
+    display: none;
+  }
+  .auth-panel {
+    background: radial-gradient(560px 320px at 50% 0%, rgba(99, 110, 240, 0.1), transparent 70%);
+  }
+  .auth-mobile-logo {
+    display: flex;
+  }
+  .grid-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 860px) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+    box-shadow: var(--shadow-lg);
+  }
+  .layout.nav-open .sidebar {
+    transform: none;
+  }
+  .layout.nav-open .backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 35;
+    background: rgba(10, 12, 18, 0.4);
+  }
+  .main {
+    margin-left: 0;
+  }
+  .menu-btn {
+    display: inline-flex;
+  }
+  .topbar {
+    padding: 0 16px;
+  }
+  .content {
+    padding: 16px;
+  }
+  .hide-sm {
+    display: none !important;
+  }
+}
+@media (max-width: 560px) {
+  .grid-4 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .stat-value {
+    font-size: 22px;
+  }
+  .card-body {
+    padding: 16px;
+  }
+  .card-header {
+    padding: 14px 16px;
+  }
+  .table th,
+  .table td {
+    padding: 10px 12px;
+  }
+  .topbar-title {
+    font-size: 15px;
+  }
+}

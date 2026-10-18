@@ -1,0 +1,121 @@
+/**
+ * ==============================================================================
+ * 样式模块: 认证页面专属样式 (Authentication Views: Login / Register)
+ * 文件路径: styles/views/auth.css
+ * 职责描述:
+ *   定义登录与注册页面的双栏分屏布局 (.auth)、左侧品牌营销区 (.auth-brand,
+ *   .auth-hero, .auth-art, .auth-copy)、右侧登录/注册表单面板 (.auth-panel,
+ *   .auth-card, .auth-title, .auth-sub, .auth-foot) 以及专属按钮/输入框尺寸微调。
+ *
+ * 使用该样式的组件 / 页面:
+ *   - src/layouts/AuthShell.vue (.auth, .auth-brand, .auth-hero, .auth-art, .auth-copy, .auth-panel, .auth-card, .auth-mobile-logo)
+ *   - src/views/Login.vue (.auth-title, .auth-sub, .auth-foot)
+ *   - src/views/Register.vue (.auth-title, .auth-sub, .auth-foot)
+ * ==============================================================================
+ */
+
+.auth {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  background: var(--surface);
+  color: var(--text);
+}
+.auth-brand {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 40px 56px;
+  background:
+    radial-gradient(720px 480px at 0% 0%, rgba(99, 110, 240, 0.14), transparent 70%),
+    radial-gradient(640px 480px at 100% 100%, rgba(168, 108, 247, 0.14), transparent 70%), #f6f7fc;
+  border-right: 1px solid var(--border);
+  overflow: hidden;
+}
+.auth-brand::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(79, 91, 213, 0.16) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: radial-gradient(ellipse at 55% 60%, #000 0%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at 55% 60%, #000 0%, transparent 70%);
+  pointer-events: none;
+}
+.auth-brand > * {
+  position: relative;
+  z-index: 1;
+}
+.auth-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 650;
+  font-size: 16px;
+}
+.auth-hero {
+  width: 100%;
+  max-width: 540px;
+  margin: 0 auto;
+}
+.auth-hero h2 {
+  font-size: 32px;
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.auth-hero p {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 15px;
+}
+.auth-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 48vh;
+  margin-top: 36px;
+}
+.auth-copy {
+  color: var(--faint);
+  font-size: 12.5px;
+}
+.auth-panel {
+  display: grid;
+  place-items: center;
+  padding: 40px 24px;
+}
+.auth-card {
+  width: 100%;
+  max-width: 360px;
+}
+.auth-mobile-logo {
+  display: none;
+  align-items: center;
+  gap: 10px;
+  font-weight: 650;
+  margin-bottom: 32px;
+}
+.auth-title {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+.auth-sub {
+  color: var(--muted);
+  margin: 6px 0 28px;
+}
+.auth .input {
+  height: 42px;
+}
+.auth .btn-primary {
+  margin-top: 8px;
+  box-shadow: 0 8px 20px -10px rgba(79, 91, 213, 0.7);
+}
+.auth-foot {
+  margin-top: 24px;
+  text-align: center;
+  color: var(--muted);
+}

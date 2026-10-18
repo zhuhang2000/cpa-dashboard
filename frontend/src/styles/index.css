@@ -1,0 +1,32 @@
+/* Global styles, categorized by function.
+   The imports are in cascade order: later files can override earlier ones
+   (responsive.css must stay last), so add new sections in place. */
+
+/* 1. Base tokens & reset */
+@import './base/tokens.css';
+@import './base/base.css';
+
+/* 2. Common UI Components (ordered to maintain cascade specificity) */
+@import './components/buttons.css';
+@import './components/inputs.css';
+@import './components/cards.css';
+
+/* 3. Layout & Page Scaffolding */
+@import './layout/layout.css';
+@import './layout/page.css';
+
+/* 4. Additional UI Components */
+@import './components/tables.css';
+@import './components/badges.css';
+@import './components/alerts.css';
+@import './components/tabs.css';
+@import './components/misc.css';
+@import './components/pagination.css';
+@import './components/modal.css';
+@import './components/toast.css';
+
+/* 5. View-Specific Styles */
+@import './views/auth.css';
+
+/* 6. Responsive Overrides (must stay last) */
+@import './base/responsive.css';

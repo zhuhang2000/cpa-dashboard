@@ -1,0 +1,126 @@
+/**
+ * ==============================================================================
+ * 样式模块: 杂项功能与微交互组件 (Miscellaneous Utilities & Micro-Components)
+ * 文件路径: styles/components/misc.css
+ * 职责描述:
+ *   定义功能性小控件：API Key 密钥框展示 (.key-box)、
+ *   空状态占位图文 (.empty, .empty-icon, .empty-title)、
+ *   骨架屏微光动效 (.skeleton, shimmer 动画)、水平分割线 (.divider)、
+ *   进度条 (.progress, .warn, .full)、键值对排版 (.kv)、旋转动画 (.spin)。
+ *
+ * 使用该样式的组件 / 页面:
+ *   - src/components/EmptyState.vue (.empty, .empty-icon, .empty-title)
+ *   - src/components/StatCard.vue (.skeleton)
+ *   - src/views/Dashboard.vue (.key-box, .progress, .skeleton)
+ *   - src/views/Keys.vue (.key-box, .progress, .skeleton)
+ *   - src/views/Settings.vue (.kv)
+ *   - src/views/Usage.vue (.skeleton)
+ *   - src/views/Pricing.vue (.skeleton)
+ *   - src/views/admin/Overview.vue (.kv, .divider, .skeleton)
+ *   - src/views/admin/Users.vue (.skeleton)
+ *   - src/views/admin/Codes.vue (.skeleton)
+ *   - src/views/admin/Settings.vue (.skeleton)
+ *   - src/views/recharge/OrderTable.vue (.skeleton)
+ *   - src/views/recharge/TransactionTable.vue (.skeleton)
+ * ==============================================================================
+ */
+
+.key-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px dashed var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-family: var(--mono);
+  font-size: 13px;
+  word-break: break-all;
+}
+.key-box span {
+  flex: 1;
+}
+
+/* ----------------------------------------------------------- empty / misc */
+.empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 48px 20px;
+  color: var(--muted);
+  text-align: center;
+}
+.empty-icon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--surface-3);
+  color: var(--faint);
+  margin-bottom: 6px;
+}
+.empty-title {
+  color: var(--text);
+  font-weight: 600;
+  font-size: 15px;
+}
+.skeleton {
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--surface-3) 25%, var(--surface-2) 50%, var(--surface-3) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.3s infinite;
+}
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 16px 0;
+}
+.progress {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--chart-track);
+  overflow: hidden;
+}
+.progress > div {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+}
+.progress.warn > div {
+  background: var(--warning);
+}
+.progress.full > div {
+  background: var(--danger);
+}
+.kv {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 10px 16px;
+  font-size: 13.5px;
+}
+.kv dt {
+  color: var(--muted);
+}
+.kv dd {
+  margin: 0;
+  min-width: 0;
+  word-break: break-all;
+}
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

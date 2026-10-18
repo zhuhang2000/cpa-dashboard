@@ -1,0 +1,231 @@
+/**
+ * ==============================================================================
+ * 样式模块: 应用主框架布局 (App Shell Layout)
+ * 文件路径: styles/layout/layout.css
+ * 职责描述:
+ *   定义系统主界面的骨架布局结构，包含固定侧边栏 (.sidebar)、品牌区 (.brand, .brand-logo)、
+ *   侧边导航 (.nav, .nav-section, .nav-link)、顶部导航栏 (.topbar)、余额胶囊 (.balance-pill)、
+ *   用户下拉菜单 (.dropdown, .dropdown-menu, .dropdown-item)、主内容区域 (.content) 等。
+ *
+ * 使用该样式的组件 / 页面:
+ *   - src/layouts/AppLayout.vue (主框架整体布局结构及所有布局类名)
+ *   - src/layouts/AuthShell.vue (.brand-logo 品牌图标)
+ *   - src/layouts/AuthArt.vue (.brand 品牌展示)
+ *   - src/views/admin/Users.vue (.dropdown-menu, .dropdown-item 更多操作菜单)
+ * ==============================================================================
+ */
+
+.layout {
+  min-height: 100vh;
+}
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: var(--sidebar-w);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  z-index: 40;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: var(--topbar-h);
+  padding: 0 18px;
+  font-weight: 650;
+  font-size: 15px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+.brand:hover {
+  text-decoration: none;
+}
+.brand-logo {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), #8b5cf6);
+  color: #fff;
+  flex: none;
+}
+.nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 10px;
+}
+.nav-section {
+  padding: 14px 10px 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--faint);
+}
+.nav-section:first-child {
+  padding-top: 4px;
+}
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 38px;
+  padding: 0 10px;
+  margin-bottom: 2px;
+  border-radius: var(--radius-sm);
+  color: var(--text-2);
+  font-weight: 500;
+}
+.nav-link:hover {
+  background: var(--surface-3);
+  text-decoration: none;
+  color: var(--text);
+}
+.nav-link.router-link-exact-active {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+.nav-link svg {
+  flex: none;
+  opacity: 0.85;
+}
+.sidebar-foot {
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--faint);
+  display: flex;
+  justify-content: space-between;
+}
+.main {
+  margin-left: var(--sidebar-w);
+  min-width: 0;
+}
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: var(--topbar-h);
+  padding: 0 24px;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: saturate(160%) blur(10px);
+  -webkit-backdrop-filter: saturate(160%) blur(10px);
+  border-bottom: 1px solid var(--border);
+}
+.topbar-title {
+  font-size: 16px;
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+}
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.menu-btn {
+  display: none;
+}
+.balance-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+.balance-pill:hover {
+  text-decoration: none;
+  border-color: var(--accent);
+}
+.balance-pill.low {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 40%, var(--border));
+}
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-weight: 600;
+  font-size: 13px;
+  flex: none;
+}
+.user-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 8px 0 4px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+.user-btn:hover {
+  background: var(--surface-3);
+}
+.dropdown {
+  position: relative;
+}
+.dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 200px;
+  padding: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-lg);
+  z-index: 50;
+}
+.dropdown-head {
+  padding: 8px 10px 10px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 6px;
+}
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-2);
+  cursor: pointer;
+  text-align: left;
+}
+.dropdown-item:hover {
+  background: var(--surface-3);
+  color: var(--text);
+  text-decoration: none;
+}
+.dropdown-item.danger {
+  color: var(--danger);
+}
+.content {
+  padding: 24px;
+  max-width: 1320px;
+  margin: 0 auto;
+}
+.backdrop {
+  display: none;
+}

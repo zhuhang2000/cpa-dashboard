@@ -1,0 +1,83 @@
+# 前端样式架构说明 (Styles Architecture)
+
+本项目前端样式采用模块化原生 CSS 架构，由入口文件 [`index.css`](./index.css) 按照严格的级联优先级（Cascade Order）进行统一聚合，既避免了 CSS 框架的臃肿包体积，又保持了样式的高可维护性与高复用度。
+
+---
+
+## 一、 目录分类结构
+
+```text
+src/styles/
+├── base/                      # 1. 基础体系与全局适配
+│   ├── tokens.css             # 全局设计令牌（色彩/变量/浅深主题/阴影/字体/间距）
+│   ├── base.css               # 标签样式重置与全局排版工具类 (.num, .muted, .mono 等)
+│   └── responsive.css         # 全局媒体查询响应式与移动端断点适配 (必须最后引入)
+│
+├── layout/                    # 2. 布局骨架与页面脚手架
+│   ├── layout.css             # 系统主框架布局 (.layout, .sidebar, .topbar, .nav, .dropdown 等)
+│   └── page.css               # 页面头部/栅格系统 (.page-header, .grid, .stack) 与统计卡片 (.stat)
+│
+├── components/                # 3. 通用 UI 组件样式
+│   ├── buttons.css            # 按钮与操作链接 (.btn, .btn-primary, .link-btn 等)
+│   ├── inputs.css             # 表单输入控件 (.field, .input, .select, .textarea, .toggle 等)
+│   ├── cards.css              # 卡片容器 (.card, .card-header, .card-body, .card-footer)
+│   ├── tables.css             # 数据表格 (.table-wrap, .table, .cell-main, .cell-sub 等)
+│   ├── badges.css             # 状态胶囊徽章 (.badge, .badge-success, .badge-danger 等)
+│   ├── alerts.css             # 警告与提示横幅 (.alert, .alert-info, .alert-warning 等)
+│   ├── tabs.css               # 胶囊式选项卡切换栏 (.tabs, .tab)
+│   ├── pagination.css         # 分页组件控件 (.pagination, .page-btn)
+│   ├── modal.css              # 模态弹窗对话框与蒙层 (.modal-overlay, .modal, .modal-header 等)
+│   ├── toast.css              # 全局 Toast 轻提示气泡 (.toast-host, .toast)
+│   └── misc.css               # 杂项小组件与微交互 (.key-box, .empty, .skeleton, .progress, .kv 等)
+│
+├── views/                     # 4. 业务页面专属样式
+│   └── auth.css               # 登录/注册认证页双栏分屏与插图排版 (.auth, .auth-brand, .auth-hero 等)
+│
+├── index.css                  # 全局样式总入口，按层级与级联权重顺序引入
+└── README.md                  # 样式架构说明与使用方对照文档
+```
+
+---
+
+## 二、 样式文件与使用方对照表
+
+| 分类目录 | CSS 样式文件 | 核心职责与定义类名 | 主要使用的组件 / 页面 |
+| :--- | :--- | :--- | :--- |
+| **base/** | [`tokens.css`](./base/tokens.css) | **全局设计令牌**<br>定义 `:root` 与 `[data-theme='dark']` 色彩变量、浅深模式配色、字体、阴影、圆角、TopBar/Sidebar 尺寸等 | **全局生效**（所有组件及 CSS 均依赖变量系统）<br>• 直接在代码中读取变量的组件：<br>&nbsp;&nbsp;- `src/components/BarChart.vue` (`--chart-1`, `--chart-2`)<br>&nbsp;&nbsp;- `src/layouts/AuthArt.vue` (`--accent`, `--bg` 等渐变色) |
+| | [`base.css`](./base/base.css) | **基础重置与文本排版工具类**<br>`*`, `html`, `body`, `a`, `h1~h4`, `p`, `code`<br>工具类：`.num`, `.muted`, `.faint`, `.text-success`, `.text-danger`, `.nowrap`, `.truncate`, `.mono` | **全局生效**（所有页面基础排版）<br>• 使用排版工具类的组件与视图：<br>&nbsp;&nbsp;- `src/layouts/AppLayout.vue`<br>&nbsp;&nbsp;- `src/components/Pagination.vue`<br>&nbsp;&nbsp;- `src/views/Dashboard.vue`<br>&nbsp;&nbsp;- `src/views/Keys.vue`, `Pricing.vue`, `Settings.vue`, `Usage.vue`<br>&nbsp;&nbsp;- `src/views/Register.vue`, `NotFound.vue`<br>&nbsp;&nbsp;- `src/views/admin/Overview.vue`, `Users.vue`, `Codes.vue`, `Prices.vue`, `Settings.vue`<br>&nbsp;&nbsp;- `src/views/recharge/*` (各类充值订单与流水表格) |
+| | [`responsive.css`](./base/responsive.css) | **全局媒体查询响应式与断点覆盖**<br>涵盖 `1100px`、`900px`、`860px`、`560px` 断点适配，处理移动端侧边抽屉栏展开/收起、顶栏折叠、卡片与表格内边距自适应 | **全局级联覆盖**<br>• 框架自适应：<br>&nbsp;&nbsp;- `src/layouts/AppLayout.vue` (`.sidebar`, `.layout.nav-open`, `.backdrop`, `.menu-btn`, `.hide-sm`)<br>&nbsp;&nbsp;- `src/layouts/AuthShell.vue` (`.auth`, `.auth-brand`, `.auth-mobile-logo`)<br>• 卡片与指标：`src/components/StatCard.vue` (`.stat-value`)<br>• 所有包含数据表格与栅格的视图 |
+| **layout/** | [`layout.css`](./layout/layout.css) | **应用主框架骨架布局**<br>`.layout`, `.sidebar`, `.brand`, `.brand-logo`, `.nav`, `.nav-section`, `.nav-link`, `.topbar`, `.topbar-title`, `.balance-pill`, `.avatar`, `.user-btn`, `.dropdown`, `.dropdown-menu`, `.dropdown-item`, `.content` | • `src/layouts/AppLayout.vue` (整体后台主框架)<br>• `src/layouts/AuthShell.vue` (`.brand-logo`)<br>• `src/layouts/AuthArt.vue` (`.brand`)<br>• `src/views/admin/Users.vue` (`.dropdown-menu`, `.dropdown-item` 更多操作下拉) |
+| | [`page.css`](./layout/page.css) | **页面排版骨架、栅格与指标统计卡片**<br>页面头部：`.page-header`, `.page-title`, `.page-desc`, `.page-actions`<br>栅格与间距：`.grid`, `.grid-4`, `.grid-2`, `.grid-main-side`, `.stack`, `.row`, `.row-between`<br>指标卡片：`.stat`, `.stat-label`, `.stat-icon`, `.stat-value`, `.stat-sub` | • `src/components/StatCard.vue` (`.stat` 统计指标卡片)<br>• `src/components/Pagination.vue` (`.row-between`)<br>• `src/components/BarChart.vue` (`.row`)<br>• `src/views/Dashboard.vue` (`.grid-4`, `.grid-main-side`, `.stack`)<br>• `src/views/Keys.vue`, `Pricing.vue`, `Settings.vue`, `Usage.vue`<br>• `src/views/admin/*` (全部管理员页面头部与栅格)<br>• `src/views/recharge/*` (充值中心卡片与表格间距) |
+| **components/** | [`buttons.css`](./components/buttons.css) | **按钮组件与操作链接**<br>`.btn`, `.btn-primary`, `.btn-danger`, `.btn-ghost`, `.btn-sm`, `.btn-lg`, `.btn-block`, `.btn-icon`, `.link-btn` | • `src/components/CopyButton.vue` (`.btn-ghost`, `.btn-icon`, `.btn-sm`)<br>• `src/components/Modal.vue` (`.btn-ghost`, `.btn-icon`, `.btn-sm`)<br>• `src/layouts/AppLayout.vue` (`.btn-ghost`, `.btn-icon`)<br>• `src/views/Login.vue`, `Register.vue` (`.btn-primary`, `.btn-lg`, `.btn-block`)<br>• `src/views/Keys.vue`, `admin/Users.vue`, `admin/Codes.vue`, `admin/Prices.vue` (`.link-btn`)<br>• 所有页面的新建、编辑、保存、删除等操作按钮 |
+| | [`inputs.css`](./components/inputs.css) | **表单控件与输入组件**<br>`.field`, `.field-label`, `.field-hint`, `.input`, `.select`, `.textarea`, `.input-sm`, `.input-group`, `.input-addon`, `.input-prefix`, `.check`, `.toggle`, `.toggle-track` | • `src/views/Login.vue`, `Register.vue` (账号密码表单)<br>• `src/views/Keys.vue` (创建 Key 弹窗与前缀输入)<br>• `src/views/admin/Prices.vue`, `admin/Settings.vue` (`.toggle` 开关、配置表单)<br>• `src/views/admin/Codes.vue` (`.textarea` 兑换码批量生成)<br>• `src/views/admin/Users.vue` (`.input-sm`, `.select` 筛选与配额调整)<br>• `src/views/recharge/OnlinePayCard.vue`, `RedeemCard.vue` (金额与卡密表单)<br>• `src/components/CopyButton.vue` (`.check` 复制完成态) |
+| | [`cards.css`](./components/cards.css) | **卡片容器组件**<br>`.card`, `.card-header`, `.card-title`, `.card-sub`, `.card-body`, `.card-footer` | • `src/components/StatCard.vue` (`.card`)<br>• `src/views/Dashboard.vue` (各分析面板容器)<br>• `src/views/Keys.vue` (API Key 列表卡片)<br>• `src/views/Pricing.vue` (计费说明与卡片底部操作)<br>• `src/views/admin/*` (管理员概览、价格表、用户表等)<br>• `src/views/recharge/*` (在线充值、卡密充值、订单记录与流水卡片) |
+| | [`tables.css`](./components/tables.css) | **数据表格排版组件**<br>`.table-wrap`, `.table`, `.cell-main`, `.cell-sub`, `.actions`, `.right` | • `src/views/Keys.vue` (API Key 数据表)<br>• `src/views/Pricing.vue` (模型价格费率表)<br>• `src/views/Usage.vue` (使用量与请求日志表)<br>• `src/views/admin/Users.vue` (用户管理列表)<br>• `src/views/admin/Codes.vue` (兑换码列表)<br>• `src/views/admin/Prices.vue` (价格策略表)<br>• `src/views/recharge/OrderTable.vue`, `TransactionTable.vue` (订单与资金流水) |
+| | [`badges.css`](./components/badges.css) | **状态胶囊徽章**<br>`.badge`, `.badge-success`, `.badge-danger`, `.badge-warning`, `.badge-info`, `.badge-accent`, `.badge.plain` | • `src/components/StatusBadge.vue` (通用状态徽章封装组件)<br>• `src/views/Usage.vue` (请求成功/失败状态)<br>• `src/views/admin/Overview.vue` (系统运行健康度状态徽章) |
+| | [`alerts.css`](./components/alerts.css) | **警告与提示横幅**<br>`.alert`, `.alert-info`, `.alert-success`, `.alert-warning`, `.alert-danger`, `.alert-body`, `.alert-close` | • `src/views/Dashboard.vue` (顶部公告与更新提示)<br>• `src/views/Keys.vue` (密钥创建警示与保管提示)<br>• `src/views/Login.vue`, `Register.vue` (表单提交错误提示)<br>• `src/views/admin/Overview.vue`, `admin/Settings.vue` (告警配置与异常提醒)<br>• `src/views/recharge/index.vue` (充值到账与维护提示) |
+| | [`tabs.css`](./components/tabs.css) | **胶囊式分段选项卡**<br>`.tabs`, `.tab`, `.tab.active` | • `src/views/Dashboard.vue`, `Usage.vue` (时间周期筛选 7天/30天/全部)<br>• `src/views/Pricing.vue` (分类切换)<br>• `src/views/admin/Users.vue`, `admin/Codes.vue` (状态筛选切换)<br>• `src/views/recharge/index.vue` (充值渠道与历史记录切换) |
+| | [`pagination.css`](./components/pagination.css) | **分页器控件**<br>`.pagination`, `.page-btn`, `.page-btn.active` | • `src/components/Pagination.vue` (全系统表格分页器的通用组件封装) |
+| | [`modal.css`](./components/modal.css) | **模态弹窗与遮罩**<br>`.modal-overlay`, `.modal`, `.modal.wide`, `.modal-header`, `.modal-title`, `.modal-body`, `.modal-footer` | • `src/components/Modal.vue` (全系统对话框封装组件，Keys 创建、用户充值、配额编辑弹窗等均基于此) |
+| | [`toast.css`](./components/toast.css) | **消息轻提示浮层**<br>`.toast-host`, `.toast`, `.toast.success`, `.toast.error`, `.toast.info` | • `src/components/ToastHost.vue` (挂载于根节点下的全局轻提示组件) |
+| | [`misc.css`](./components/misc.css) | **杂项功能组件与微交互**<br>`.key-box` (带复制的 Key 展示框)<br>`.empty`, `.empty-icon`, `.empty-title` (空数据占位)<br>`.skeleton` (骨架屏流动光效)<br>`.divider` (分割线)<br>`.progress`, `.progress.warn`, `.progress.full` (额度进度条)<br>`.kv` (键值信息列表)<br>`.spin` (旋转 Loading) | • `src/components/EmptyState.vue` (空状态图文组件)<br>• `src/components/StatCard.vue` (数据加载中的骨架屏态)<br>• `src/views/Dashboard.vue`, `Keys.vue` (`.key-box`, 额度 `.progress`, `.skeleton`)<br>• `src/views/Settings.vue`, `admin/Overview.vue` (`.kv` 键值配置详情展示)<br>• 各数据列表加载时的 `.skeleton` 骨架屏 |
+| **views/** | [`auth.css`](./views/auth.css) | **用户认证页面专属样式**<br>`.auth`, `.auth-brand`, `.auth-hero`, `.auth-art`, `.auth-copy`, `.auth-panel`, `.auth-card`, `.auth-mobile-logo`, `.auth-title`, `.auth-sub`, `.auth-foot` | • `src/layouts/AuthShell.vue` (登录/注册外层双栏布局与左侧插画区)<br>• `src/views/Login.vue` (登录表单卡片标题、副标题与底部切换链接)<br>• `src/views/Register.vue` (注册表单卡片标题、副标题与底部切换链接) |
+
+---
+
+## 三、 级联引入机制 (Cascade Order)
+
+在 [`index.css`](./index.css) 中，导入顺序经过精心组织以维持正确的 CSS 级联优先级：
+
+1. **基础底座** (`base/tokens.css` → `base/base.css`)：先确立色彩变量与 HTML 标签通用重置；
+2. **基础控件** (`components/buttons.css` → `components/inputs.css` → `components/cards.css`)：通用的按钮、表单和容器；
+3. **框架骨架** (`layout/layout.css` → `layout/page.css`)：整体后台布局与页面网格；
+4. **扩展组件** (`components/tables.css` ~ `components/toast.css`)：复杂展示型组件与浮层；
+5. **视图专属** (`views/auth.css`)：业务页面专属微调；
+6. **响应式覆盖** (`base/responsive.css`，**必须位于最后**)：对以上所有层级的规则进行媒体查询断点覆盖。
+
+---
+
+## 四、 样式规范与扩展指南
+
+1. **色彩与间距**：请优先使用 `var(--accent)`, `var(--surface)`, `var(--text)`, `var(--radius)` 等在 [`tokens.css`](./base/tokens.css) 中定义的全局变量，确保亮色与暗色模式平滑切换；
+2. **新增通用组件**：若新增基础组件样式，请放置于 `src/styles/components/` 下，并在顶部补充说明注释，同时在 [`index.css`](./index.css) 的对应区域添加 `@import`；
+3. **响应式规则**：小屏幕或移动端的适配规则，统一写在 [`base/responsive.css`](./base/responsive.css) 中，避免分散在各个文件中导致断点冲突。

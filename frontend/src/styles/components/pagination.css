@@ -1,0 +1,43 @@
+/**
+ * ==============================================================================
+ * 样式模块: 分页控件 (Pagination)
+ * 文件路径: styles/components/pagination.css
+ * 职责描述:
+ *   定义表格与列表的分页容器 (.pagination) 与页码/翻页操作按钮 (.page-btn, .page-btn.active)。
+ *
+ * 使用该样式的组件 / 页面:
+ *   - src/components/Pagination.vue (.pagination, .page-btn)
+ * ==============================================================================
+ */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.page-btn {
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--surface);
+  color: var(--text-2);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  display: inline-grid;
+  place-items: center;
+}
+.page-btn:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+.page-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+.page-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}

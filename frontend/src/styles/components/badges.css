@@ -1,0 +1,60 @@
+/**
+ * ==============================================================================
+ * 样式模块: 状态徽章 (Status Badges)
+ * 文件路径: styles/components/badges.css
+ * 职责描述:
+ *   定义胶囊状态徽章 (.badge)，带有点状状态指示灯（或 .plain 无圆点），
+ *   提供成功、危险、警告、信息、主色等多种色彩变体：
+ *   .badge-success, .badge-danger, .badge-warning, .badge-info, .badge-accent。
+ *
+ * 使用该样式的组件 / 页面:
+ *   - src/components/StatusBadge.vue (通用徽章封装组件 .badge)
+ *   - src/views/Usage.vue (.badge, .badge-success, .badge-danger)
+ *   - src/views/admin/Overview.vue (.badge, .badge-success, .badge-danger)
+ * ==============================================================================
+ */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  background: var(--surface-3);
+  color: var(--text-2);
+}
+.badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.85;
+}
+.badge.plain::before {
+  display: none;
+}
+.badge-success {
+  background: var(--success-soft);
+  color: var(--success);
+}
+.badge-danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+.badge-warning {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+.badge-info {
+  background: var(--info-soft);
+  color: var(--info);
+}
+.badge-accent {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}

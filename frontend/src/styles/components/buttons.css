@@ -1,0 +1,120 @@
+/**
+ * ==============================================================================
+ * 样式模块: 按钮控件 (Buttons & Links)
+ * 文件路径: styles/components/buttons.css
+ * 职责描述:
+ *   定义系统通用按钮样式体系 (.btn, .btn-primary, .btn-danger, .btn-ghost,
+ *   .btn-sm, .btn-lg, .btn-block, .btn-icon, .link-btn)，支持禁用与悬浮过渡动效。
+ *
+ * 使用该样式的组件 / 页面:
+ *   - src/components/CopyButton.vue (.btn, .btn-ghost, .btn-sm, .btn-icon)
+ *   - src/components/Modal.vue (.btn, .btn-ghost, .btn-sm, .btn-icon)
+ *   - src/layouts/AppLayout.vue (.btn, .btn-ghost, .btn-icon)
+ *   - src/views/Login.vue (.btn, .btn-primary, .btn-lg, .btn-block)
+ *   - src/views/Register.vue (.btn, .btn-primary, .btn-lg, .btn-block)
+ *   - src/views/Dashboard.vue (.btn, .btn-primary, .btn-ghost, .btn-sm)
+ *   - src/views/Keys.vue (.btn, .btn-primary, .btn-danger, .link-btn)
+ *   - src/views/Pricing.vue (.btn, .btn-primary, .btn-sm)
+ *   - src/views/Settings.vue (.btn, .btn-primary)
+ *   - src/views/Usage.vue (.btn, .btn-primary)
+ *   - src/views/NotFound.vue (.btn, .btn-primary)
+ *   - src/views/admin/Overview.vue (.btn, .btn-primary)
+ *   - src/views/admin/Users.vue (.btn, .btn-primary, .link-btn)
+ *   - src/views/admin/Codes.vue (.btn, .btn-primary, .link-btn)
+ *   - src/views/admin/Prices.vue (.btn, .btn-primary, .link-btn)
+ *   - src/views/admin/Settings.vue (.btn, .btn-primary)
+ *   - src/views/recharge/OnlinePayCard.vue (.btn, .btn-primary, .btn-lg, .btn-block)
+ *   - src/views/recharge/RedeemCard.vue (.btn, .btn-primary, .btn-block)
+ * ==============================================================================
+ */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s,
+    box-shadow 0.15s;
+  box-shadow: var(--shadow-sm);
+  text-decoration: none;
+}
+.btn:hover {
+  background: var(--surface-2);
+  text-decoration: none;
+}
+.btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+.btn-primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+.btn-danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+.btn-danger:hover {
+  filter: brightness(0.95);
+  background: var(--danger);
+}
+.btn-ghost {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: var(--text-2);
+}
+.btn-ghost:hover {
+  background: var(--surface-3);
+}
+.btn-sm {
+  height: 30px;
+  padding: 0 10px;
+  font-size: 13px;
+}
+.btn-lg {
+  height: 42px;
+  padding: 0 20px;
+  font-size: 15px;
+}
+.btn-block {
+  width: 100%;
+}
+.btn-icon {
+  width: 36px;
+  padding: 0;
+}
+.btn-icon.btn-sm {
+  width: 30px;
+}
+.link-btn {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--accent-text);
+  cursor: pointer;
+}
+.link-btn:hover {
+  text-decoration: underline;
+}
+.link-btn.danger {
+  color: var(--danger);
+}
