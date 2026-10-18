@@ -1,4 +1,4 @@
-"""Exercise every legacy business endpoint through FastAPI with real temporary databases."""
+"""Exercise business endpoints through FastAPI with real temporary databases."""
 
 import sqlite3
 from copy import deepcopy
@@ -38,6 +38,8 @@ EXPECTED_ROUTES = {
     ("GET", "/api/admin/overview"),
     ("GET", "/api/admin/users"),
     ("PATCH", "/api/admin/users/{user_id}"),
+    ("GET", "/api/admin/users/{user_id}/keys"),
+    ("DELETE", "/api/admin/users/{user_id}/keys/{key_id}"),
     ("POST", "/api/admin/users/{user_id}/balance"),
     ("GET", "/api/admin/codes"),
     ("POST", "/api/admin/codes"),
@@ -179,6 +181,17 @@ def run_portal_scenario(admin, user, bootstrap_admin, append_usage, payment_key=
 
     users, _ = call(admin, "GET", "/api/admin/users", params={"q": "scenario-user"})
     assert users["total"] == 1 and users["items"][0]["key_count"] == 1
+    extra, _ = call(user, "POST", "/api/keys", json={"name": "unused-admin-cleanup"})
+    managed, _ = call(
+        admin, "GET", f"/api/admin/users/{user_id}/keys", route="/api/admin/users/{user_id}/keys"
+    )
+    assert {item["key"] for item in managed["items"]} == {secret, extra["key"]}
+    call(
+        admin,
+        "DELETE",
+        f"/api/admin/users/{user_id}/keys/{extra['item']['id']}",
+        route="/api/admin/users/{user_id}/keys/{key_id}",
+    )
     call(
         admin,
         "PATCH",
@@ -331,7 +344,7 @@ def run_portal_scenario(admin, user, bootstrap_admin, append_usage, payment_key=
     return covered, records
 
 
-def test_all_37_legacy_endpoints_through_fastapi(tmp_path):
+def test_all_business_endpoints_through_fastapi(tmp_path):
     cfg = deepcopy(load_config())
     cfg["data_dir"] = str(tmp_path / "portal")
     cfg["frontend_dir"] = str(tmp_path)
@@ -405,10 +418,10 @@ def test_all_37_legacy_endpoints_through_fastapi(tmp_path):
             for method in operations
             if method in {"get", "post", "put", "patch", "delete"}
         }
-    assert len(EXPECTED_ROUTES) == 37
+    assert len(EXPECTED_ROUTES) == 39
     assert covered == EXPECTED_ROUTES
     assert actual_routes == EXPECTED_ROUTES
-    assert len(records) > 37
+    assert len(records) > 39
     assert runtime.cpa.keys == ["foreign-key"]
     conn = runtime.db()
     try:
