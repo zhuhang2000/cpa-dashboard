@@ -86,8 +86,13 @@
                 <span v-else class="faint">—</span>
               </td>
               <td class="actions">
-                <button v-if="c.status === RedeemStatus.UNUSED" class="link-btn danger" @click="disable(c)">
-                  停用
+                <button
+                  v-if="c.status === RedeemStatus.UNUSED || c.status === RedeemStatus.DISABLED"
+                  class="link-btn danger"
+                  :disabled="!!deletingCode"
+                  @click="remove(c)"
+                >
+                  删除
                 </button>
               </td>
             </tr>
@@ -192,6 +197,7 @@ const codes = usePagedList(billingApi.listCodes, () => ({ status: status.value, 
   batches: [],
 })
 const saving = ref(false)
+const deletingCode = ref(null)
 const genOpen = ref(false)
 const generated = ref(null)
 const gen = reactive({ amount: 50, count: 10, type: RedeemType.RECHARGE, batch: '', expires_days: '' })
@@ -224,13 +230,18 @@ async function generate() {
   }
 }
 
-async function disable(c) {
+async function remove(c) {
+  if (deletingCode.value) return
+  deletingCode.value = c.code
   try {
-    await billingApi.disableCode(c.code)
-    toast.success('已停用')
-    await codes.load()
+    await billingApi.deleteCode(c.code)
+    toast.success('已删除兑换码')
+    const lastPage = Math.max(1, Math.ceil((codes.total - 1) / codes.page_size))
+    await codes.load(Math.min(codes.page, lastPage))
   } catch (e) {
     toast.error(e.message)
+  } finally {
+    deletingCode.value = null
   }
 }
 

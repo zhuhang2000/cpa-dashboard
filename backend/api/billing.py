@@ -96,8 +96,8 @@ def create_codes(
 
 
 @router.delete("/api/admin/codes/{code}")
-def disable_code(code: str, admin=Depends(require_admin), conn=Depends(get_connection)):
-    return billing.disable_code(conn, code)
+def delete_code(code: str, admin=Depends(require_admin), conn=Depends(get_connection)):
+    return billing.delete_code(conn, code)
 
 
 async def _callback_params(request):

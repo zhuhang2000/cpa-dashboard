@@ -279,13 +279,13 @@ def create_codes(conn, operator_id, data):
     return {"codes": codes, "amount": money(amount), "batch": batch or "", "type": code_type}
 
 
-def disable_code(conn, code):
+def delete_code(conn, code):
     changed = conn.execute(
-        "UPDATE redeem_codes SET status = ? WHERE code = ? AND status = ?",
-        (RedeemStatus.DISABLED, code.upper(), RedeemStatus.UNUSED),
+        "DELETE FROM redeem_codes WHERE code = ? AND status IN (?, ?)",
+        (code.upper(), RedeemStatus.UNUSED, RedeemStatus.DISABLED),
     ).rowcount
     if not changed:
-        raise ApiError(400, "只能停用未使用的兑换码")
+        raise ApiError(400, "兑换码不存在或已使用，无法删除")
     return {"ok": True}
 
 

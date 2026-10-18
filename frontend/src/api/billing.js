@@ -8,5 +8,5 @@ export const billingApi = {
   adjustBalance: (userId, body) => http.post(`/api/admin/users/${userId}/balance`, body),
   listCodes: (query) => http.get('/api/admin/codes', query),
   createCodes: (body) => http.post('/api/admin/codes', body),
-  disableCode: (code) => http.del(`/api/admin/codes/${encodeURIComponent(code)}`),
+  deleteCode: (code) => http.del(`/api/admin/codes/${encodeURIComponent(code)}`),
 }
