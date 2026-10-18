@@ -1,8 +1,11 @@
-# frontend/dist is committed on purpose: the server pulls it as-is and has no Node.js.
 node_modules/
+# Built by deploy/deploy.sh on every release
+frontend/dist/
 backend/data/
 backend/data-dev/
 backend/config.json
+# Real server address; copy from deploy/deploy.example.sh
+deploy/deploy.sh
 __pycache__/
 *.pyc
 *.tar.gz

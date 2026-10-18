@@ -2,7 +2,7 @@
 
 给 CLIProxyAPI（CPA）+ CPA Manager Plus（CPAMP）配套的用户端：用户注册登录、自助创建 API 密钥、查看每一笔调用花销、兑换码 / 在线充值；管理员发兑换码、调余额、定价、看收支。
 
-- **前端**：Vue 3 + Vite，构建产物是纯静态文件（约 300 KB，gzip 后约 80 KB），已构建好放在 `frontend/dist/`，服务器上不需要 Node.js。
+- **前端**：Vue 3 + Vite，构建产物是纯静态文件（约 300 KB，gzip 后约 80 KB），部署脚本在本机构建后上传，服务器上不需要 Node.js。
 - **后端**：Python 3.8+ 标准库（零第三方依赖），自带静态文件服务，常驻内存约 **25–30 MB**。
 - **数据**：自己的 `backend/data/portal.sqlite`；用量 **只读** CPAMP 的 `usage.sqlite`。
 
@@ -49,8 +49,8 @@ api-portal/
 │   └── tools/devstack.py      # 本地开发用的模拟 CPA / CPAMP / 易支付
 ├── frontend/
 │   ├── src/                   # Vue 源码
-│   └── dist/                  # 已构建的静态文件（部署用）
-└── deploy/                    # systemd、Nginx 配置与服务器更新脚本
+│   └── dist/                  # 构建产物（不入库，部署时生成）
+└── deploy/                    # systemd、Nginx 配置与部署脚本模板
 ```
 
 ## 部署
@@ -64,15 +64,17 @@ api-portal/
 - 门户与 CPA 在同一台机器，通过 `127.0.0.1` 访问，不需要打开 `allow-remote`。
 - CPAMP 正常运行，并且在它的面板里能看到请求记录（说明 usage queue 采集正常）。
 
-### 2. 获取代码
+### 2. 上传
 
-仓库里包含构建好的 `frontend/dist/`，服务器直接克隆即可，不需要 Node.js：
+在本机复制部署脚本，填写服务器地址（`deploy.sh` 已在 `.gitignore` 中，不会提交）：
 
 ```bash
-git clone <仓库地址> /opt/services/api-portal
+cp deploy/deploy.example.sh deploy/deploy.sh
+# 编辑 deploy/deploy.sh 中的 HOST、PORT（SSH 端口），需要时改 USER_NAME、REMOTE_DIR
+bash deploy/deploy.sh
 ```
 
-`config.json` 和 `data/` 在 `.gitignore` 中，之后 `git pull` 不会覆盖它们。
+脚本会构建前端，把服务器需要的文件（后端代码、`frontend/dist/`、`deploy/`、README，约 140 KB）打包上传到 `/opt/services` 并解压。首次部署时服务器还没有 `config.json`，脚本解压后会停下，按下面第 3-5 步完成配置即可。
 
 ### 3. 配置
 
@@ -131,29 +133,7 @@ journalctl -u api-portal -f      # 看到 "listening on http://127.0.0.1:18400" 
 
 ### 8. 更新版本
 
-本机修改后，前端有改动先执行 `npm run build`（`frontend/dist/` 要一起提交），然后提交并推送：
-
-```bash
-cd frontend && npm run build && cd ..
-git add -A && git commit -m "说明" && git push
-```
-
-服务器上拉取并重启（已是最新版本时不会重启）：
-
-```bash
-bash /opt/services/api-portal/deploy/update.sh
-```
-
-原来用压缩包部署的目录可以原地改成 git 管理，`config.json` 和 `data/` 不受影响：
-
-```bash
-cd /opt/services/api-portal
-git init -b main
-git remote add origin <仓库地址>
-git fetch origin
-git reset --hard origin/main
-git branch --set-upstream-to=origin/main main
-```
+本机再执行一次 `bash deploy/deploy.sh`：重新构建、上传、解压覆盖并重启服务。包里不含 `config.json` 和 `data/`，配置与数据不会被覆盖。
 
 ## 计费规则
 
@@ -226,7 +206,7 @@ python3 tools/devstack.py seed-demo        # 可选：demo / demo12345，带 30 
 cd frontend && npm install && npm run dev
 ```
 
-修改前端后执行 `npm run build` 重新生成 `frontend/dist/`，和源码一起提交，再按"更新版本"同步到服务器。
+改完后执行 `bash deploy/deploy.sh` 发布到服务器（脚本会自动重新构建前端，后端代码一并更新）。
 
 ## 安全说明
 
