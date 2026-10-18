@@ -2,7 +2,7 @@
   <div v-if="list.loading && !list.items.length" class="card-body stack" style="gap: 10px">
     <div v-for="i in 6" :key="i" class="skeleton" style="height: 34px" />
   </div>
-  <EmptyState v-else-if="!list.items.length" icon="receipt" title="暂无充值记录" />
+  <EmptyState v-else-if="!list.items.length" icon="receipt" title="暂无余额记录" />
   <div v-else class="table-wrap">
     <table class="table">
       <thead>

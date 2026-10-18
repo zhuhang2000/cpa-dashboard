@@ -3,7 +3,7 @@
     <div class="page-header">
       <div>
         <h1 class="page-title">兑换码</h1>
-        <p class="page-desc">批量生成兑换码，通过发卡平台或线下渠道售卖，用户在充值中心兑换后立即到账。</p>
+        <p class="page-desc">批量生成充值或赠送兑换码，用户兑换后余额立即到账。赠送不计入充值统计。</p>
       </div>
       <div class="page-actions">
         <button class="btn btn-primary" @click="genOpen = true"><Icon name="plus" :size="16" />生成兑换码</button>
@@ -50,6 +50,7 @@
             <tr>
               <th>兑换码</th>
               <th class="right">面额</th>
+              <th>类型</th>
               <th>批次</th>
               <th>状态</th>
               <th>创建时间</th>
@@ -68,6 +69,7 @@
               <td class="right num">
                 <b>{{ money(c.amount) }}</b>
               </td>
+              <td><StatusBadge :map="REDEEM_TYPES" :value="c.type" /></td>
               <td>{{ c.batch || '—' }}</td>
               <td>
                 <StatusBadge :map="REDEEM_STATES" :value="codeState(c)" />
@@ -113,6 +115,15 @@
           </div>
         </div>
         <div class="field">
+          <label for="gen-type">类型</label>
+          <select id="gen-type" v-model="gen.type" class="select">
+            <option v-for="(entry, value) in REDEEM_TYPES" :key="value" :value="value">{{ entry.label }}</option>
+          </select>
+          <div class="field-hint">
+            {{ gen.type === RedeemType.GIFT ? '赠送仅增加余额，不计入充值统计。' : '充值增加余额，并计入充值统计。' }}
+          </div>
+        </div>
+        <div class="field">
           <label for="gen-batch">批次名称 <span class="faint">（选填）</span></label>
           <input
             id="gen-batch"
@@ -143,8 +154,8 @@
 
     <Modal :open="!!generated" title="兑换码已生成" wide @close="generated = null">
       <p class="muted" style="margin-bottom: 10px">
-        共 {{ generated?.codes.length }} 个，面额 {{ money(generated?.amount || 0)
-        }}{{ generated?.batch ? `，批次「${generated.batch}」` : '' }}。
+        类型：{{ REDEEM_TYPES[generated?.type]?.label }}，共 {{ generated?.codes.length }} 个，面额
+        {{ money(generated?.amount || 0) }}{{ generated?.batch ? `，批次「${generated.batch}」` : '' }}。
       </p>
       <textarea class="textarea mono" readonly rows="10" :value="generated?.codes.join('\n')" style="font-size: 13px" />
       <template #footer>
@@ -166,7 +177,7 @@ import Pagination from '@/components/Pagination.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { billingApi } from '@/api/billing'
 import { usePagedList } from '@/composables/usePagedList'
-import { REDEEM_STATES, RedeemState, RedeemStatus } from '@/constants'
+import { REDEEM_STATES, REDEEM_TYPES, RedeemState, RedeemStatus, RedeemType } from '@/constants'
 import { currency, date, dateTime, money } from '@/utils/format'
 import { toast } from '@/toast'
 
@@ -183,7 +194,7 @@ const codes = usePagedList(billingApi.listCodes, () => ({ status: status.value, 
 const saving = ref(false)
 const genOpen = ref(false)
 const generated = ref(null)
-const gen = reactive({ amount: 50, count: 10, batch: '', expires_days: '' })
+const gen = reactive({ amount: 50, count: 10, type: RedeemType.RECHARGE, batch: '', expires_days: '' })
 
 function codeState(c) {
   const expired = c.status === RedeemStatus.UNUSED && c.expires_at && c.expires_at <= Date.now()
@@ -200,6 +211,7 @@ async function generate() {
     generated.value = await billingApi.createCodes({
       amount: gen.amount,
       count: Number(gen.count),
+      type: gen.type,
       batch: gen.batch,
       expires_days: gen.expires_days ? Number(gen.expires_days) : null,
     })
@@ -226,7 +238,7 @@ function download() {
   const blob = new Blob([generated.value.codes.join('\n') + '\n'], { type: 'text/plain;charset=utf-8' })
   const a = document.createElement('a')
   a.href = URL.createObjectURL(blob)
-  a.download = `redeem-codes-${generated.value.batch || 'batch'}-${Date.now()}.txt`
+  a.download = `redeem-codes-${generated.value.type}-${generated.value.batch || 'batch'}-${Date.now()}.txt`
   a.click()
   setTimeout(() => URL.revokeObjectURL(a.href), 1000)
 }

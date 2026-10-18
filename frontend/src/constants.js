@@ -14,12 +14,14 @@ export const KeyState = { EXPIRED: 'expired', EXHAUSTED: 'exhausted', SUSPENDED:
 
 export const RedeemStatus = { UNUSED: 'unused', USED: 'used', DISABLED: 'disabled' }
 
+export const RedeemType = { RECHARGE: 'recharge', GIFT: 'gift' }
+
 // Not stored: the UI shows an unused code past its expiry date as expired.
 export const RedeemState = { EXPIRED: 'expired' }
 
 export const OrderStatus = { PENDING: 'pending', PAID: 'paid' }
 
-export const TxType = { REDEEM: 'redeem', ONLINE: 'online', ADMIN: 'admin', BONUS: 'bonus' }
+export const TxType = { REDEEM: 'redeem', REDEEM_GIFT: 'redeem_gift', ONLINE: 'online', ADMIN: 'admin', BONUS: 'bonus' }
 
 // Label and badge tone (badge-<tone>, '' for neutral) of each value, shown by <StatusBadge>.
 export const ROLES = {
@@ -47,6 +49,11 @@ export const REDEEM_STATES = {
   [RedeemState.EXPIRED]: { label: '已过期', tone: 'warning' },
 }
 
+export const REDEEM_TYPES = {
+  [RedeemType.RECHARGE]: { label: '充值', tone: 'success' },
+  [RedeemType.GIFT]: { label: '赠送', tone: 'accent' },
+}
+
 export const ORDER_STATUSES = {
   [OrderStatus.PENDING]: { label: '待支付', tone: 'warning' },
   [OrderStatus.PAID]: { label: '已到账', tone: 'success' },
@@ -54,6 +61,7 @@ export const ORDER_STATUSES = {
 
 export const TX_TYPES = {
   [TxType.REDEEM]: { label: '兑换码充值', tone: 'success' },
+  [TxType.REDEEM_GIFT]: { label: '兑换码赠送', tone: 'accent' },
   [TxType.ONLINE]: { label: '在线充值', tone: 'success' },
   [TxType.ADMIN]: { label: '管理员调整', tone: 'info' },
   [TxType.BONUS]: { label: '赠送', tone: 'accent' },

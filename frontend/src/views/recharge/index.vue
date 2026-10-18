@@ -39,7 +39,7 @@
 
     <div class="card">
       <div class="card-header">
-        <div class="card-title">充值记录</div>
+        <div class="card-title">余额记录</div>
         <div class="tabs">
           <button class="tab" :class="{ active: tab === 'tx' }" @click="switchTab('tx')">余额流水</button>
           <button v-if="online" class="tab" :class="{ active: tab === 'orders' }" @click="switchTab('orders')">
