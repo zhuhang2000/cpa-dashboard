@@ -9,7 +9,7 @@
 ## 工作原理
 
 ```
-用户浏览器 ──HTTPS──▶ Nginx / Caddy ──▶ API Portal (127.0.0.1:18400)
+用户浏览器 ──HTTPS──▶ Nginx ──▶ API Portal (127.0.0.1:18400)
                                            │
                      ┌─────────────────────┴──────────────────────┐
                      ▼                                            ▼
@@ -50,7 +50,7 @@ api-portal/
 ├── frontend/
 │   ├── src/                   # Vue 源码
 │   └── dist/                  # 已构建的静态文件（部署用）
-└── deploy/                    # systemd、Caddy、Nginx 配置示例
+└── deploy/                    # systemd、Nginx 配置与服务器更新脚本
 ```
 
 ## 部署
@@ -64,42 +64,15 @@ api-portal/
 - 门户与 CPA 在同一台机器，通过 `127.0.0.1` 访问，不需要打开 `allow-remote`。
 - CPAMP 正常运行，并且在它的面板里能看到请求记录（说明 usage queue 采集正常）。
 
-### 2. 上传
+### 2. 获取代码
 
-**用 git（推荐）**：仓库里包含构建好的 `frontend/dist/`，服务器直接克隆即可，不需要 Node.js：
+仓库里包含构建好的 `frontend/dist/`，服务器直接克隆即可，不需要 Node.js：
 
 ```bash
 git clone <仓库地址> /opt/services/api-portal
 ```
 
 `config.json` 和 `data/` 在 `.gitignore` 中，之后 `git pull` 不会覆盖它们。
-
-**或者打包上传**：服务器只需要这些文件（约 140 KB）：
-
-```
-api-portal/
-├── backend/server.py
-├── backend/portal/              # 后端代码
-├── backend/config.example.json
-├── frontend/dist/               # 已构建好的前端
-├── deploy/                      # systemd / Caddy / Nginx 配置
-└── README.md
-```
-
-不需要上传：`frontend/src`、`node_modules`、`package*.json`、`vite.config.js`、`backend/tools`、`backend/config.dev.json`、`backend/data-dev`。
-
-在本机打包（脚本只收集上面这些文件，有 `node_modules` 时会先重新构建前端），生成的 `api-portal-release.tar.gz` 在 `api-portal` 的同级目录：
-
-```bash
-bash api-portal/deploy/package.sh
-scp api-portal-release.tar.gz root@你的服务器:/opt/services/
-```
-
-在服务器上解压：
-
-```bash
-cd /opt/services && tar xzf api-portal-release.tar.gz && rm api-portal-release.tar.gz
-```
 
 ### 3. 配置
 
@@ -114,7 +87,7 @@ chmod 600 config.json
 | 字段 | 说明 |
 | --- | --- |
 | `public_api_base` | 用户调用接口的地址（CPA 对外地址），显示在概览页的接入示例里 |
-| `trust_proxy` | 放在 Nginx / Caddy 后面时保持 `true` |
+| `trust_proxy` | 放在 Nginx 后面时保持 `true` |
 | `cpa.base_url` | CPA 地址，默认 `http://127.0.0.1:8317` |
 | `cpa.management_key` | CPA 管理密钥的**明文**（见第 1 步）。也可以不写进文件，改用环境变量 `PORTAL_CPA_MANAGEMENT_KEY`。留空则不同步密钥，管理后台会提示。填错时门户只尝试一次就暂停重试，因为 CPA 对同一 IP 连续认证失败 5 次会封禁 30 分钟，而 CPA Manager Plus 也是从 127.0.0.1 调用 |
 | `cpamp.usage_db` | CPAMP 数据库路径，默认 `/opt/services/cpa-manager-plus/data/usage.sqlite` |
@@ -145,10 +118,7 @@ journalctl -u api-portal -f      # 看到 "listening on http://127.0.0.1:18400" 
 
 ### 6. 域名与 HTTPS
 
-二选一：
-
-- **Caddy（推荐，自动申请证书）**：把 `deploy/Caddyfile` 里的域名改成你的，合并进 `/etc/caddy/Caddyfile`，`systemctl reload caddy`。
-- **Nginx**：`cp deploy/nginx.conf /etc/nginx/conf.d/api-portal.conf`，改域名后 `nginx -t && systemctl reload nginx`，再 `certbot --nginx -d 你的域名`。
+`cp deploy/nginx.conf /etc/nginx/conf.d/api-portal.conf`，改域名后 `nginx -t && systemctl reload nginx`，再 `certbot --nginx -d 你的域名`。
 
 门户默认只监听 `127.0.0.1:18400`，不要把这个端口直接暴露到公网。
 
@@ -161,7 +131,7 @@ journalctl -u api-portal -f      # 看到 "listening on http://127.0.0.1:18400" 
 
 ### 8. 更新版本
 
-**git**：本机修改后，前端有改动先执行 `npm run build`（`frontend/dist/` 要一起提交），然后提交并推送：
+本机修改后，前端有改动先执行 `npm run build`（`frontend/dist/` 要一起提交），然后提交并推送：
 
 ```bash
 cd frontend && npm run build && cd ..
@@ -184,8 +154,6 @@ git fetch origin
 git reset --hard origin/main
 git branch --set-upstream-to=origin/main main
 ```
-
-**压缩包**：本机重新执行 `bash api-portal/deploy/package.sh`（或一步完成的 `deploy/deploy.sh`），上传后同样在 `/opt/services` 解压覆盖。包里不含 `config.json` 和 `data/`，配置与数据不会被覆盖。然后 `systemctl restart api-portal`。
 
 ## 计费规则
 

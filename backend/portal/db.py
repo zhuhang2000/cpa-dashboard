@@ -194,6 +194,3 @@ def set_setting(conn, key, value):
         (key, json.dumps(value, ensure_ascii=False), now_ms()),
     )
 
-
-def delete_setting(conn, key):
-    conn.execute("DELETE FROM settings WHERE key = ?", (key,))

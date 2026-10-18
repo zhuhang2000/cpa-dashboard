@@ -22,7 +22,7 @@ DEFAULTS = {
     "tz_offset_minutes": 480,
     "data_dir": "./data",
     "frontend_dir": "../frontend/dist",
-    # Set true when running behind Nginx/Caddy so X-Forwarded-For/Proto are honoured.
+    # Set true when running behind Nginx so X-Forwarded-For/Proto are honoured.
     "trust_proxy": False,
     # "auto" marks the session cookie Secure when the request arrived over HTTPS.
     "cookie_secure": "auto",
