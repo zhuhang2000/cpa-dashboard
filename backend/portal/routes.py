@@ -6,14 +6,12 @@ import time
 import urllib.parse
 from decimal import ROUND_DOWN, Decimal, InvalidOperation
 
-from . import __version__, billing, epay
+from . import __version__, billing, epay, keys
 from .billing import MICRO, apply_credit, to_micro
 from .common import (DAY_MS, EMAIL_RE, USERNAME_RE, daily_series, day_start, epay_conf, money,
-                     month_start, paginate, parse_money, parse_optional_ts, time_label,
-                     tz_offset_ms, user_public)
+                     month_start, paginate, time_label, tz_offset_ms, user_public)
 from .db import get_setting, now_ms, transaction
-from .security import (hash_password, new_api_key, new_session_token, sha256_hex,
-                       verify_password)
+from .security import hash_password, new_session_token, sha256_hex, verify_password
 from .web import SESSION_COOKIE, ApiError, Response
 
 # Balances, prices and recharge credits are all denominated in US dollars.
@@ -39,7 +37,7 @@ def get_status(req):
         "allow_register": bool(app.setting("allow_register")),
         "signup_bonus": app.setting("signup_bonus"),
         "currency_symbol": app.cfg["currency_symbol"],
-        "max_keys_per_user": int(app.cfg.get("max_keys_per_user") or 10),
+        "max_keys_per_user": keys.max_keys(app),
         "payment": {
             "online": conf is not None,
             "channels": list(conf.get("channels") or []) if conf else [],
@@ -177,10 +175,7 @@ def get_me(req):
     user = req.user
     if user is None:  # lets the SPA probe the session without a 401 in the console
         return {"user": None, "key_count": 0}
-    key_count = req.conn.execute(
-        "SELECT COUNT(*) FROM api_keys WHERE user_id = ? AND status != 'deleted'", (user["id"],)
-    ).fetchone()[0]
-    return {"user": user_public(user), "key_count": key_count}
+    return {"user": user_public(user), "key_count": keys.count_live(req.conn, user["id"])}
 
 
 def update_profile(req):
@@ -215,128 +210,33 @@ def change_password(req):
 
 
 # -- API keys ------------------------------------------------------------------------
-def _key_state(row, user, min_balance_micro, now):
-    if row["status"] == "disabled":
-        return "disabled"
-    if row["expires_at"] and row["expires_at"] <= now:
-        return "expired"
-    if row["quota_micro"] is not None and row["used_micro"] >= row["quota_micro"]:
-        return "exhausted"
-    if user["balance_micro"] <= min_balance_micro or user["status"] != "active":
-        return "suspended"
-    return "active"
-
-
-def _key_public(req, row, user=None):
-    user = user or req.user
-    key = row["key"]
-    return {
-        "id": row["id"],
-        "name": row["name"],
-        "masked": key[:7] + "…" + key[-4:],
-        "status": row["status"],
-        "state": _key_state(row, user, to_micro(req.app.cfg.get("min_balance_to_call") or 0), now_ms()),
-        "quota": None if row["quota_micro"] is None else money(row["quota_micro"]),
-        "used": money(row["used_micro"]),
-        "request_count": row["request_count"],
-        "expires_at": row["expires_at"],
-        "created_at": row["created_at"],
-        "last_used_at": row["last_used_at"],
-    }
-
-
-def _own_key(req, key_id):
-    row = req.conn.execute(
-        "SELECT * FROM api_keys WHERE id = ? AND user_id = ? AND status != 'deleted'",
-        (key_id, req.user["id"]),
-    ).fetchone()
-    if row is None:
-        raise ApiError(404, "密钥不存在")
-    return row
-
-
-def _parse_quota(value):
-    if value in (None, "", 0, "0"):
-        return None
-    return parse_money(value, "额度上限", minimum=0)
-
-
 def list_keys(req):
-    rows = req.conn.execute(
-        "SELECT * FROM api_keys WHERE user_id = ? AND status != 'deleted' ORDER BY id DESC",
-        (req.user["id"],),
-    ).fetchall()
-    return {"items": [_key_public(req, row) for row in rows],
-            "max_keys": int(req.app.cfg.get("max_keys_per_user") or 10)}
+    rows = keys.list_for_user(req.conn, req.user["id"])
+    return {"items": [keys.to_public(req.app, row, req.user) for row in rows],
+            "max_keys": keys.max_keys(req.app)}
 
 
 def create_key(req):
-    app = req.app
-    data = req.json()
-    name = str(data.get("name") or "").strip() or "默认密钥"
-    if len(name) > 32:
-        raise ApiError(400, "名称不能超过 32 个字符")
-    quota = _parse_quota(data.get("quota"))
-    expires_at = parse_optional_ts(data.get("expires_at"), "过期时间")
-    limit = int(app.cfg.get("max_keys_per_user") or 10)
-    conn = req.conn
-    with transaction(conn):
-        count = conn.execute(
-            "SELECT COUNT(*) FROM api_keys WHERE user_id = ? AND status != 'deleted'",
-            (req.user["id"],),
-        ).fetchone()[0]
-        if count >= limit:
-            raise ApiError(400, "每个账号最多创建 %d 个密钥" % limit)
-        key = new_api_key(app.cfg.get("key_prefix") or "sk-")
-        key_id = conn.execute(
-            "INSERT INTO api_keys (user_id, name, key, key_hash, quota_micro, expires_at, created_at) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (req.user["id"], name, key, sha256_hex(key), quota, expires_at, now_ms()),
-        ).lastrowid
-    app.worker.trigger()
-    row = conn.execute("SELECT * FROM api_keys WHERE id = ?", (key_id,)).fetchone()
-    return {"key": key, "item": _key_public(req, row)}
+    row = keys.create(req.conn, req.app, req.user["id"], req.json())
+    req.app.worker.trigger()
+    return {"key": row["key"], "item": keys.to_public(req.app, row, req.user)}
 
 
 def update_key(req, key_id):
-    row = _own_key(req, key_id)
-    data = req.json()
-    fields, args = [], []
-    if "name" in data:
-        name = str(data.get("name") or "").strip()
-        if not name or len(name) > 32:
-            raise ApiError(400, "名称需为 1-32 个字符")
-        fields.append("name = ?")
-        args.append(name)
-    if "status" in data:
-        if data["status"] not in ("active", "disabled"):
-            raise ApiError(400, "状态不正确")
-        fields.append("status = ?")
-        args.append(data["status"])
-    if "quota" in data:
-        fields.append("quota_micro = ?")
-        args.append(_parse_quota(data.get("quota")))
-    if "expires_at" in data:
-        fields.append("expires_at = ?")
-        args.append(parse_optional_ts(data.get("expires_at"), "过期时间"))
-    if fields:
-        req.conn.execute("UPDATE api_keys SET %s WHERE id = ?" % ", ".join(fields),
-                         args + [row["id"]])
-        req.app.worker.trigger()
-    row = req.conn.execute("SELECT * FROM api_keys WHERE id = ?", (row["id"],)).fetchone()
-    return {"item": _key_public(req, row)}
+    row = keys.get_owned(req.conn, req.user["id"], key_id)
+    row = keys.update(req.conn, row, req.json())
+    req.app.worker.trigger()
+    return {"item": keys.to_public(req.app, row, req.user)}
 
 
 def delete_key(req, key_id):
-    row = _own_key(req, key_id)
-    req.conn.execute("UPDATE api_keys SET status = 'deleted', deleted_at = ? WHERE id = ?",
-                     (now_ms(), row["id"]))
+    keys.soft_delete(req.conn, keys.get_owned(req.conn, req.user["id"], key_id))
     req.app.worker.trigger()
     return {"ok": True}
 
 
 def reveal_key(req, key_id):
-    return {"key": _own_key(req, key_id)["key"]}
+    return {"key": keys.get_owned(req.conn, req.user["id"], key_id)["key"]}
 
 
 # -- usage ---------------------------------------------------------------------------

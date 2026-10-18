@@ -4,6 +4,7 @@ from .billing import RECHARGE_TYPES, apply_credit
 from .common import (DAY_MS, daily_series, day_start, epay_conf, like_pattern, money, month_start,
                      paginate, parse_money, tz_offset_ms, user_public)
 from .db import get_setting, now_ms, set_setting, transaction
+from .keys import live_counts
 from .security import new_redeem_code
 from .web import ApiError
 
@@ -86,14 +87,14 @@ def list_users(req):
     conn = req.conn
     total = conn.execute("SELECT COUNT(*) FROM users u WHERE " + where, args).fetchone()[0]
     rows = conn.execute(
-        "SELECT u.*, (SELECT COUNT(*) FROM api_keys k WHERE k.user_id = u.id "
-        "AND k.status != 'deleted') AS key_count FROM users u WHERE " + where +
-        " ORDER BY u.id DESC LIMIT ? OFFSET ?", args + [size, offset]
+        "SELECT u.* FROM users u WHERE " + where + " ORDER BY u.id DESC LIMIT ? OFFSET ?",
+        args + [size, offset]
     ).fetchall()
+    key_counts = live_counts(conn, [row["id"] for row in rows])
     items = []
     for row in rows:
         item = user_public(row)
-        item.update(key_count=row["key_count"], last_login_ip=row["last_login_ip"] or "")
+        item.update(key_count=key_counts.get(row["id"], 0), last_login_ip=row["last_login_ip"] or "")
         items.append(item)
     return {"items": items, "total": total, "page": page, "page_size": size}
 

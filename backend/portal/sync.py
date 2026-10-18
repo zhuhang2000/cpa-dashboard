@@ -4,8 +4,8 @@
    (read-only), matches api_key_hash = sha256(api key) to portal keys, prices
    each request and deducts it from the owner's balance.
 2. Syncs keys: makes CLIProxyAPI's client api-keys list contain exactly the
-   portal keys that may currently be used (active, not expired, under quota,
-   owner has balance). Keys the portal does not know about are never touched.
+   portal keys that may currently be used (see keys.state). Keys the portal
+   does not know about are never touched.
 """
 import logging
 import os
@@ -17,6 +17,7 @@ import time
 from . import billing
 from .cpa import CPAError
 from .db import get_setting, now_ms, set_setting, transaction
+from .keys import desired_and_managed
 
 log = logging.getLogger("portal.sync")
 
@@ -33,13 +34,6 @@ REQUIRED_COLUMNS = {"id", "event_hash", "timestamp_ms", "model", "api_key_hash"}
 KEY_CLOCK_SKEW_MS = 5 * 60 * 1000
 PRICE_REFRESH_SECONDS = 300
 BULK_SYNC_THRESHOLD = 3
-
-DESIRED_KEYS_SQL = """
-SELECT k.key FROM api_keys k JOIN users u ON u.id = k.user_id
-WHERE k.status = 'active' AND u.status = 'active' AND u.balance_micro > ?
-  AND (k.expires_at IS NULL OR k.expires_at > ?)
-  AND (k.quota_micro IS NULL OR k.used_micro < k.quota_micro)
-"""
 
 
 def _int(value):
@@ -294,9 +288,7 @@ class SyncWorker:
             return
         conn = self.app.db()
         try:
-            min_balance = billing.to_micro(self.app.cfg.get("min_balance_to_call") or 0)
-            desired = {row[0] for row in conn.execute(DESIRED_KEYS_SQL, (min_balance, now_ms()))}
-            managed = {row[0] for row in conn.execute("SELECT key FROM api_keys")}
+            desired, managed = desired_and_managed(conn, self.app)
         finally:
             conn.close()
         try:
