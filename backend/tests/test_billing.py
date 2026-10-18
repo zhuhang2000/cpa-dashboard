@@ -136,6 +136,46 @@ def test_usage_charge_rolls_back_with_its_caller(billing_conn):
     assert (user["balance_micro"], user["total_spent_micro"]) == (7500000, 2500000)
 
 
+def test_admin_balance_gift_recharge_and_deduction_statistics(admin_client, runtime):
+    client = admin_client
+    user_id = client.get("/api/user/me").json()["user"]["id"]
+    url = f"/api/admin/users/{user_id}/balance"
+    for payload, balance, recharge, tx_type, note in (
+        ({"amount": 7, "type": "gift"}, 7, 0, "bonus", "管理员赠送"),
+        ({"amount": 5, "type": "recharge", "note": "线下收款"}, 12, 5, "admin", "线下收款"),
+        ({"amount": -3}, 9, 5, "admin", "管理员扣款"),
+    ):
+        response = client.post(url, json=payload)
+        assert response.status_code == 200
+        assert response.json() == {"balance": balance}
+        user = client.get("/api/user/me").json()["user"]
+        assert user["total_recharge"] == recharge and user["total_spent"] == 0
+        overview = client.get("/api/admin/overview").json()
+        assert overview["recharge"] == {"today": recharge, "month": recharge}
+        assert sum(row["recharge"] for row in overview["daily"]) == recharge
+        latest = client.get("/api/billing/transactions").json()["items"][0]
+        assert latest["type"] == tx_type and latest["note"] == note
+        assert latest["amount"] == payload["amount"] and latest["balance_after"] == balance
+    conn = runtime.db()
+    try:
+        assert [row[0] for row in conn.execute("SELECT operator_id FROM transactions")] == [
+            user_id,
+            user_id,
+            user_id,
+        ]
+    finally:
+        conn.close()
+
+
+def test_admin_positive_adjustment_requires_type(admin_client):
+    client = admin_client
+    user_id = client.get("/api/user/me").json()["user"]["id"]
+    for payload in ({"amount": 5}, *({"amount": 5, "type": t} for t in (None, "", "bonus", []))):
+        assert client.post(f"/api/admin/users/{user_id}/balance", json=payload).status_code == 400
+    assert client.get("/api/user/me").json()["user"]["balance"] == 0
+    assert client.get("/api/billing/transactions").json()["total"] == 0
+
+
 def test_pricing_precedence_aliases_and_public_visibility(billing_conn):
     settings = {
         "default_input_price": 7,

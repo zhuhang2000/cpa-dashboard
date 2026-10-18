@@ -101,15 +101,20 @@ def recharge_daily(conn, start, tz_offset_minutes):
 
 def adjust_balance(conn, user_id, operator_id, data):
     amount = parse_money(data.get("amount"), "调整金额", minimum=-1000000, maximum=1000000)
-    note = str(data.get("note") or "").strip()[:100] or (
-        "管理员充值" if amount > 0 else "管理员扣款"
-    )
+    tx_type, default_note = TxType.ADMIN, "管理员扣款"
+    if amount > 0:
+        credit_type = data.get("type")
+        if credit_type not in RedeemType.ALL:
+            raise ApiError(400, "请选择充值或赠送")
+        if credit_type == RedeemType.GIFT:
+            tx_type, default_note = TxType.BONUS, "管理员赠送"
+        else:
+            default_note = "管理员充值"
+    note = str(data.get("note") or "").strip()[:100] or default_note
     with transaction(conn):
         if conn.execute("SELECT 1 FROM users WHERE id = ?", (user_id,)).fetchone() is None:
             raise ApiError(404, "用户不存在")
-        balance = apply_credit(
-            conn, user_id, amount, TxType.ADMIN, note=note, operator_id=operator_id
-        )
+        balance = apply_credit(conn, user_id, amount, tx_type, note=note, operator_id=operator_id)
     return {"balance": money(balance)}
 
 

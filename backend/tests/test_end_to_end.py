@@ -204,7 +204,7 @@ def run_portal_scenario(admin, user, bootstrap_admin, append_usage, payment_key=
         "POST",
         f"/api/admin/users/{user_id}/balance",
         route="/api/admin/users/{user_id}/balance",
-        json={"amount": 10, "note": "initial credit"},
+        json={"amount": 10, "type": "recharge", "note": "initial credit"},
     )
     assert balance["balance"] == 10
     generated, _ = call(
