@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { setUnauthorizedHandler } from './api'
+import { Role } from './constants'
 import { ensureStatus, ensureUser, store } from './store'
 import AppLayout from './components/AppLayout.vue'
 import Login from './views/Login.vue'
@@ -44,7 +45,7 @@ router.beforeEach(async (to) => {
     return { path: '/login', query: to.fullPath !== '/' ? { redirect: to.fullPath } : {} }
   }
   if (to.meta.guest && store.user) return { path: '/' }
-  if (to.meta.admin && store.user?.role !== 'admin') return { path: '/' }
+  if (to.meta.admin && store.user?.role !== Role.ADMIN) return { path: '/' }
   return true
 })
 

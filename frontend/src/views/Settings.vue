@@ -16,9 +16,7 @@
             <dd>{{ store.user?.username }}</dd>
             <dt>账号类型</dt>
             <dd>
-              <span class="badge" :class="store.user?.role === 'admin' ? 'badge-accent' : 'plain'">
-                {{ store.user?.role === 'admin' ? '管理员' : '普通用户' }}
-              </span>
+              <StatusBadge class="plain" :map="ROLES" :value="store.user?.role" />
             </dd>
             <dt>注册时间</dt>
             <dd>{{ dateTime(store.user?.created_at) }}</dd>
@@ -72,7 +70,9 @@
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Icon from '../components/Icon.vue'
+import StatusBadge from '../components/StatusBadge.vue'
 import { api } from '../api'
+import { ROLES } from '../constants'
 import { logout, setUser, store } from '../store'
 import { dateTime, money } from '../format'
 import { toast } from '../toast'

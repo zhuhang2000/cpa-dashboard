@@ -9,13 +9,16 @@
 
     <div class="card">
       <div class="card-header">
-        <form class="input-group has-prefix search" @submit.prevent="search">
+        <form class="input-group has-prefix search" @submit.prevent="users.load(1)">
           <span class="input-prefix"><Icon name="search" :size="15" /></span>
           <input v-model.trim="q" class="input input-sm" placeholder="搜索用户名或邮箱，回车确认" aria-label="搜索用户" />
         </form>
-        <span class="muted">{{ num(total) }} 位用户</span>
+        <span class="muted">{{ num(users.total) }} 位用户</span>
       </div>
-      <EmptyState v-if="!loading && !items.length" icon="users" title="没有找到用户" />
+      <div v-if="users.loading && !users.items.length" class="card-body stack" style="gap: 10px">
+        <div v-for="i in 6" :key="i" class="skeleton" style="height: 34px" />
+      </div>
+      <EmptyState v-else-if="!users.items.length" icon="users" title="没有找到用户" />
       <div v-else class="table-wrap">
         <table class="table">
           <thead>
@@ -28,12 +31,12 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="u in items" :key="u.id">
+            <tr v-for="u in users.items" :key="u.id">
               <td class="nowrap">
                 <div class="row" style="gap: 6px">
                   <span class="cell-main">{{ u.username }}</span>
-                  <span v-if="u.role === 'admin'" class="badge badge-accent plain">管理员</span>
-                  <span v-if="u.status !== 'active'" class="badge badge-danger">已禁用</span>
+                  <StatusBadge v-if="u.role === Role.ADMIN" class="plain" :map="ROLES" :value="u.role" />
+                  <StatusBadge v-if="u.status !== UserStatus.ACTIVE" :map="USER_STATUSES" :value="u.status" />
                 </div>
                 <div class="cell-sub">#{{ u.id }} · {{ u.email || '未填写邮箱' }} · {{ u.key_count }} 个密钥</div>
               </td>
@@ -56,19 +59,19 @@
           </tbody>
         </table>
       </div>
-      <div v-if="total" class="card-footer">
-        <Pagination :page="page" :total="total" :page-size="20" @change="load" />
+      <div v-if="users.total" class="card-footer">
+        <Pagination :page="users.page" :total="users.total" :page-size="users.page_size" @change="users.load" />
       </div>
     </div>
 
     <Teleport to="body">
       <div v-if="menu" class="dropdown-menu" :style="menu.style" role="menu" @click.stop>
-        <button class="dropdown-item" :class="{ danger: menu.user.status === 'active' }" @click="toggleStatus(menu.user)">
-          <Icon :name="menu.user.status === 'active' ? 'lock' : 'check-circle'" :size="15" />
-          {{ menu.user.status === 'active' ? '禁用账号' : '启用账号' }}
+        <button class="dropdown-item" :class="{ danger: menu.user.status === UserStatus.ACTIVE }" @click="toggleStatus(menu.user)">
+          <Icon :name="menu.user.status === UserStatus.ACTIVE ? 'lock' : 'check-circle'" :size="15" />
+          {{ menu.user.status === UserStatus.ACTIVE ? '禁用账号' : '启用账号' }}
         </button>
         <button class="dropdown-item" @click="toggleRole(menu.user)">
-          <Icon name="shield" :size="15" />{{ menu.user.role === 'admin' ? '取消管理员' : '设为管理员' }}
+          <Icon name="shield" :size="15" />{{ menu.user.role === Role.ADMIN ? '取消管理员' : '设为管理员' }}
         </button>
       </div>
     </Teleport>
@@ -112,16 +115,16 @@ import EmptyState from '../../components/EmptyState.vue'
 import Icon from '../../components/Icon.vue'
 import Modal from '../../components/Modal.vue'
 import Pagination from '../../components/Pagination.vue'
+import StatusBadge from '../../components/StatusBadge.vue'
 import { api } from '../../api'
+import { usePagedList } from '../../composables/usePagedList'
+import { ROLES, Role, USER_STATUSES, UserStatus } from '../../constants'
 import { store } from '../../store'
 import { currency, date, money, num, relative } from '../../format'
 import { toast } from '../../toast'
 
-const items = ref([])
-const total = ref(0)
-const page = ref(1)
 const q = ref('')
-const loading = ref(false)
+const users = usePagedList('/api/admin/users', () => ({ q: q.value }))
 const saving = ref(false)
 const adjusting = ref(null)
 const menu = ref(null)
@@ -140,23 +143,6 @@ function closeMenu() {
   menu.value = null
 }
 
-async function load(p = page.value) {
-  loading.value = true
-  try {
-    const data = await api.get('/api/admin/users', { page: p, q: q.value })
-    items.value = data.items
-    total.value = data.total
-    page.value = data.page
-  } catch (e) {
-    toast.error(e.message)
-  } finally {
-    loading.value = false
-  }
-}
-function search() {
-  load(1)
-}
-
 function openAdjust(u) {
   adjusting.value = u
   Object.assign(form, { mode: 'add', amount: '', note: '' })
@@ -171,7 +157,7 @@ async function adjust() {
     const data = await api.post(`/api/admin/users/${adjusting.value.id}/balance`, { amount, note: form.note })
     toast.success(`已调整，当前余额 ${money(data.balance)}`)
     adjusting.value = null
-    await load()
+    await users.load()
   } catch (e) {
     toast.error(e.message)
   } finally {
@@ -184,25 +170,25 @@ async function update(u, payload, message) {
   try {
     await api.patch(`/api/admin/users/${u.id}`, payload)
     toast.success(message)
-    await load()
+    await users.load()
   } catch (e) {
     toast.error(e.message)
   }
 }
 function toggleStatus(u) {
-  const status = u.status === 'active' ? 'banned' : 'active'
-  update(u, { status }, status === 'active' ? '已启用' : '已禁用，该用户的密钥将停止工作')
+  const status = u.status === UserStatus.ACTIVE ? UserStatus.BANNED : UserStatus.ACTIVE
+  update(u, { status }, status === UserStatus.ACTIVE ? '已启用' : '已禁用，该用户的密钥将停止工作')
 }
 function toggleRole(u) {
-  const role = u.role === 'admin' ? 'user' : 'admin'
-  update(u, { role }, role === 'admin' ? '已设为管理员' : '已取消管理员')
+  const role = u.role === Role.ADMIN ? Role.USER : Role.ADMIN
+  update(u, { role }, role === Role.ADMIN ? '已设为管理员' : '已取消管理员')
 }
 
 onMounted(() => {
   document.addEventListener('click', closeMenu)
   window.addEventListener('scroll', closeMenu, true)
   window.addEventListener('resize', closeMenu)
-  load(1)
+  users.load(1)
 })
 onBeforeUnmount(() => {
   document.removeEventListener('click', closeMenu)

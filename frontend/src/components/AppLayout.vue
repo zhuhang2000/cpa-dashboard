@@ -50,7 +50,7 @@
               <div class="dropdown-head">
                 <div style="font-weight: 600">{{ store.user?.username }}</div>
                 <div class="muted" style="font-size: 12.5px">
-                  {{ store.user?.email || (isAdmin ? '管理员' : '普通用户') }}
+                  {{ store.user?.email || ROLES[store.user?.role]?.label }}
                 </div>
               </div>
               <RouterLink to="/settings" class="dropdown-item"><Icon name="user" :size="16" />个人设置</RouterLink>
@@ -71,6 +71,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Icon from './Icon.vue'
+import { ROLES, Role } from '../constants'
 import { effectiveTheme, logout, refreshUser, store, toggleTheme } from '../store'
 import { money } from '../format'
 
@@ -97,7 +98,7 @@ const adminNav = [
 ]
 
 const siteName = computed(() => store.status?.site_name || 'API 控制台')
-const isAdmin = computed(() => store.user?.role === 'admin')
+const isAdmin = computed(() => store.user?.role === Role.ADMIN)
 const initial = computed(() => (store.user?.username || '?').slice(0, 1).toUpperCase())
 const lowBalance = computed(() => (store.user?.balance ?? 1) <= 0)
 const isDark = computed(() => (store.theme, effectiveTheme() === 'dark'))

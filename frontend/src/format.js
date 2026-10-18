@@ -82,24 +82,3 @@ export function fromInputDate(value, endOfDay = false) {
   if (endOfDay) dt.setDate(dt.getDate() + 1)
   return dt.getTime()
 }
-
-export const TX_TYPES = {
-  redeem: { label: '兑换码充值', tone: 'success' },
-  online: { label: '在线充值', tone: 'success' },
-  admin: { label: '管理员调整', tone: 'info' },
-  bonus: { label: '赠送', tone: 'accent' },
-}
-
-export const KEY_STATES = {
-  active: { label: '正常', tone: 'success' },
-  disabled: { label: '已禁用', tone: '' },
-  expired: { label: '已过期', tone: 'warning' },
-  exhausted: { label: '额度用尽', tone: 'warning' },
-  suspended: { label: '余额不足', tone: 'danger' },
-}
-
-export const PAY_CHANNELS = {
-  alipay: '支付宝',
-  wxpay: '微信支付',
-  qqpay: 'QQ 钱包',
-}

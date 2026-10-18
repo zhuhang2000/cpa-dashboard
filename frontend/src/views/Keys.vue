@@ -56,7 +56,7 @@
                 </div>
               </td>
               <td>
-                <span class="badge" :class="toneClass(k.state)">{{ KEY_STATES[k.state]?.label || k.state }}</span>
+                <StatusBadge :map="KEY_STATES" :value="k.state" />
               </td>
               <td class="nowrap" style="min-width: 140px">
                 <div class="num">
@@ -74,7 +74,7 @@
               </td>
               <td class="actions">
                 <button class="link-btn" @click="openEdit(k)">编辑</button>
-                <button class="link-btn" @click="toggle(k)">{{ k.status === 'active' ? '禁用' : '启用' }}</button>
+                <button class="link-btn" @click="toggle(k)">{{ k.status === KeyStatus.ACTIVE ? '禁用' : '启用' }}</button>
                 <button class="link-btn danger" @click="removing = k">删除</button>
               </td>
             </tr>
@@ -153,9 +153,11 @@ import CopyButton from '../components/CopyButton.vue'
 import EmptyState from '../components/EmptyState.vue'
 import Icon from '../components/Icon.vue'
 import Modal from '../components/Modal.vue'
+import StatusBadge from '../components/StatusBadge.vue'
 import { api } from '../api'
+import { KEY_STATES, KeyStatus } from '../constants'
 import { refreshUser, store } from '../store'
-import { KEY_STATES, currency, date, dateTime, fromInputDate, money, num, relative, toInputDate } from '../format'
+import { currency, date, dateTime, fromInputDate, money, num, relative, toInputDate } from '../format'
 import { toast } from '../toast'
 
 const route = useRoute()
@@ -173,10 +175,6 @@ const form = reactive({ name: '', quota: '', expires: '' })
 const atLimit = computed(() => items.value.length >= maxKeys.value)
 const tomorrow = computed(() => toInputDate(Date.now() + 86400000))
 
-function toneClass(state) {
-  const tone = KEY_STATES[state]?.tone
-  return tone ? `badge-${tone}` : ''
-}
 function quotaClass(k) {
   const ratio = k.used / k.quota
   return ratio >= 1 ? 'full' : ratio >= 0.8 ? 'warn' : ''
@@ -251,10 +249,10 @@ async function save() {
 }
 
 async function toggle(k) {
-  const status = k.status === 'active' ? 'disabled' : 'active'
+  const status = k.status === KeyStatus.ACTIVE ? KeyStatus.DISABLED : KeyStatus.ACTIVE
   try {
     await api.patch(`/api/keys/${k.id}`, { status })
-    toast.success(status === 'active' ? '已启用' : '已禁用')
+    toast.success(status === KeyStatus.ACTIVE ? '已启用' : '已禁用')
     await load()
   } catch (e) {
     toast.error(e.message)

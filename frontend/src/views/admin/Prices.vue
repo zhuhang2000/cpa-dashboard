@@ -43,7 +43,7 @@
                 </div>
               </td>
               <td class="nowrap">
-                <span class="badge" :class="sourceMeta[m.source].tone">{{ sourceMeta[m.source].label }}</span>
+                <StatusBadge :map="PRICE_SOURCES" :value="m.source" />
                 <div v-if="m.cpamp" class="cell-sub num" title="CPA Manager Plus 官方价（美元 / 百万 tokens）">
                   官方 {{ usd(m.cpamp.input) }} / {{ usd(m.cpamp.output) }}
                 </div>
@@ -118,16 +118,11 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import EmptyState from '../../components/EmptyState.vue'
 import Icon from '../../components/Icon.vue'
 import Modal from '../../components/Modal.vue'
+import StatusBadge from '../../components/StatusBadge.vue'
 import { api } from '../../api'
+import { PRICE_SOURCES } from '../../constants'
 import { currency, num, price, relative } from '../../format'
 import { toast } from '../../toast'
-
-const sourceMeta = {
-  override: { label: '自定义', tone: 'badge-accent' },
-  cpamp: { label: '官方价×倍率', tone: 'badge-info' },
-  default: { label: '默认价格', tone: 'badge-warning' },
-  none: { label: '未定价', tone: 'badge-danger' },
-}
 
 const items = ref([])
 const cpampCount = ref(0)

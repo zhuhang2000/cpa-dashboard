@@ -16,17 +16,20 @@
           <div class="tabs">
             <button v-for="s in statuses" :key="s.key" class="tab" :class="{ active: status === s.key }" @click="setStatus(s.key)">{{ s.label }}</button>
           </div>
-          <select v-model="batch" class="select input-sm" style="width: auto; min-width: 140px" aria-label="批次" @change="load(1)">
+          <select v-model="batch" class="select input-sm" style="width: auto; min-width: 140px" aria-label="批次" @change="codes.load(1)">
             <option value="">全部批次</option>
-            <option v-for="b in batches" :key="b" :value="b">{{ b }}</option>
+            <option v-for="b in codes.batches" :key="b" :value="b">{{ b }}</option>
           </select>
-          <form class="input-group has-prefix search" @submit.prevent="load(1)">
+          <form class="input-group has-prefix search" @submit.prevent="codes.load(1)">
             <span class="input-prefix"><Icon name="search" :size="15" /></span>
             <input v-model.trim="q" class="input input-sm" placeholder="搜索兑换码" aria-label="搜索兑换码" />
           </form>
         </div>
       </div>
-      <EmptyState v-if="!loading && !items.length" icon="ticket" title="暂无兑换码" desc="点击右上角“生成兑换码”创建" />
+      <div v-if="codes.loading && !codes.items.length" class="card-body stack" style="gap: 10px">
+        <div v-for="i in 6" :key="i" class="skeleton" style="height: 34px" />
+      </div>
+      <EmptyState v-else-if="!codes.items.length" icon="ticket" title="暂无兑换码" desc="点击右上角“生成兑换码”创建" />
       <div v-else class="table-wrap">
         <table class="table">
           <thead>
@@ -41,7 +44,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="c in items" :key="c.code">
+            <tr v-for="c in codes.items" :key="c.code">
               <td>
                 <div class="row" style="gap: 4px">
                   <code class="nowrap">{{ c.code }}</code>
@@ -51,7 +54,7 @@
               <td class="right num"><b>{{ money(c.amount) }}</b></td>
               <td>{{ c.batch || '—' }}</td>
               <td>
-                <span class="badge" :class="statusTone(c)">{{ statusLabel(c) }}</span>
+                <StatusBadge :map="REDEEM_STATES" :value="codeState(c)" />
               </td>
               <td class="nowrap">
                 {{ dateTime(c.created_at) }}
@@ -65,14 +68,14 @@
                 <span v-else class="faint">—</span>
               </td>
               <td class="actions">
-                <button v-if="c.status === 'unused'" class="link-btn danger" @click="disable(c)">停用</button>
+                <button v-if="c.status === RedeemStatus.UNUSED" class="link-btn danger" @click="disable(c)">停用</button>
               </td>
             </tr>
           </tbody>
         </table>
       </div>
-      <div v-if="total" class="card-footer">
-        <Pagination :page="page" :total="total" :page-size="20" @change="load" />
+      <div v-if="codes.total" class="card-footer">
+        <Pagination :page="codes.page" :total="codes.total" :page-size="codes.page_size" @change="codes.load" />
       </div>
     </div>
 
@@ -127,58 +130,33 @@ import EmptyState from '../../components/EmptyState.vue'
 import Icon from '../../components/Icon.vue'
 import Modal from '../../components/Modal.vue'
 import Pagination from '../../components/Pagination.vue'
+import StatusBadge from '../../components/StatusBadge.vue'
 import { api } from '../../api'
+import { usePagedList } from '../../composables/usePagedList'
+import { REDEEM_STATES, RedeemState, RedeemStatus } from '../../constants'
 import { currency, date, dateTime, money } from '../../format'
 import { toast } from '../../toast'
 
 const statuses = [
   { key: '', label: '全部' },
-  { key: 'unused', label: '未使用' },
-  { key: 'used', label: '已使用' },
-  { key: 'disabled', label: '已停用' },
+  ...Object.values(RedeemStatus).map((key) => ({ key, label: REDEEM_STATES[key].label })),
 ]
-const items = ref([])
-const total = ref(0)
-const page = ref(1)
 const status = ref('')
 const batch = ref('')
-const batches = ref([])
 const q = ref('')
-const loading = ref(false)
+const codes = usePagedList('/api/admin/codes', () => ({ status: status.value, batch: batch.value, q: q.value }), { batches: [] })
 const saving = ref(false)
 const genOpen = ref(false)
 const generated = ref(null)
 const gen = reactive({ amount: 50, count: 10, batch: '', expires_days: '' })
 
-function expired(c) {
-  return c.status === 'unused' && c.expires_at && c.expires_at <= Date.now()
-}
-function statusLabel(c) {
-  if (expired(c)) return '已过期'
-  return { unused: '未使用', used: '已使用', disabled: '已停用' }[c.status] || c.status
-}
-function statusTone(c) {
-  if (expired(c)) return 'badge-warning'
-  return { unused: 'badge-success', used: 'badge-info', disabled: '' }[c.status] || ''
-}
-
-async function load(p = page.value) {
-  loading.value = true
-  try {
-    const data = await api.get('/api/admin/codes', { page: p, status: status.value, batch: batch.value, q: q.value })
-    items.value = data.items
-    total.value = data.total
-    page.value = data.page
-    batches.value = data.batches
-  } catch (e) {
-    toast.error(e.message)
-  } finally {
-    loading.value = false
-  }
+function codeState(c) {
+  const expired = c.status === RedeemStatus.UNUSED && c.expires_at && c.expires_at <= Date.now()
+  return expired ? RedeemState.EXPIRED : c.status
 }
 function setStatus(s) {
   status.value = s
-  load(1)
+  codes.load(1)
 }
 
 async function generate() {
@@ -191,7 +169,7 @@ async function generate() {
       expires_days: gen.expires_days ? Number(gen.expires_days) : null,
     })
     genOpen.value = false
-    await load(1)
+    await codes.load(1)
   } catch (e) {
     toast.error(e.message)
   } finally {
@@ -203,7 +181,7 @@ async function disable(c) {
   try {
     await api.del(`/api/admin/codes/${encodeURIComponent(c.code)}`)
     toast.success('已停用')
-    await load()
+    await codes.load()
   } catch (e) {
     toast.error(e.message)
   }
@@ -218,7 +196,7 @@ function download() {
   setTimeout(() => URL.revokeObjectURL(a.href), 1000)
 }
 
-onMounted(() => load(1))
+onMounted(() => codes.load(1))
 </script>
 
 <style scoped>

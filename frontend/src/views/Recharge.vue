@@ -138,7 +138,10 @@
         </div>
       </div>
       <template v-if="tab === 'tx'">
-        <EmptyState v-if="!tx.items.length" icon="receipt" title="暂无充值记录" />
+        <div v-if="tx.loading && !tx.items.length" class="card-body stack" style="gap: 10px">
+          <div v-for="i in 6" :key="i" class="skeleton" style="height: 34px" />
+        </div>
+        <EmptyState v-else-if="!tx.items.length" icon="receipt" title="暂无充值记录" />
         <div v-else class="table-wrap">
           <table class="table">
             <thead>
@@ -153,7 +156,7 @@
             <tbody>
               <tr v-for="t in tx.items" :key="t.id">
                 <td class="nowrap num">{{ dateTime(t.created_at) }}</td>
-                <td><span class="badge" :class="`badge-${TX_TYPES[t.type]?.tone || 'info'}`">{{ TX_TYPES[t.type]?.label || t.type }}</span></td>
+                <td><StatusBadge :map="TX_TYPES" :value="t.type" /></td>
                 <td class="right num nowrap" :class="t.amount >= 0 ? 'text-success' : 'text-danger'">
                   <b>{{ money(t.amount, { sign: true }) }}</b>
                 </td>
@@ -167,11 +170,14 @@
           </table>
         </div>
         <div v-if="tx.total" class="card-footer">
-          <Pagination :page="tx.page" :total="tx.total" :page-size="tx.page_size" @change="loadTx" />
+          <Pagination :page="tx.page" :total="tx.total" :page-size="tx.page_size" @change="tx.load" />
         </div>
       </template>
       <template v-else>
-        <EmptyState v-if="!orders.items.length" icon="receipt" title="暂无支付订单" />
+        <div v-if="orders.loading && !orders.items.length" class="card-body stack" style="gap: 10px">
+          <div v-for="i in 6" :key="i" class="skeleton" style="height: 34px" />
+        </div>
+        <EmptyState v-else-if="!orders.items.length" icon="receipt" title="暂无支付订单" />
         <div v-else class="table-wrap">
           <table class="table">
             <thead>
@@ -190,16 +196,14 @@
                 <td>{{ PAY_CHANNELS[o.channel] || o.channel }}</td>
                 <td class="right num">{{ currency() }}{{ o.pay_amount }}</td>
                 <td class="right num">{{ money(o.credit) }}</td>
-                <td>
-                  <span class="badge" :class="o.status === 'paid' ? 'badge-success' : 'badge-warning'">{{ o.status === 'paid' ? '已到账' : '待支付' }}</span>
-                </td>
+                <td><StatusBadge :map="ORDER_STATUSES" :value="o.status" /></td>
                 <td class="nowrap num">{{ dateTime(o.created_at) }}</td>
               </tr>
             </tbody>
           </table>
         </div>
         <div v-if="orders.total" class="card-footer">
-          <Pagination :page="orders.page" :total="orders.total" :page-size="orders.page_size" @change="loadOrders" />
+          <Pagination :page="orders.page" :total="orders.total" :page-size="orders.page_size" @change="orders.load" />
         </div>
       </template>
     </div>
@@ -207,14 +211,17 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import EmptyState from '../components/EmptyState.vue'
 import Icon from '../components/Icon.vue'
 import Pagination from '../components/Pagination.vue'
+import StatusBadge from '../components/StatusBadge.vue'
 import { api } from '../api'
+import { usePagedList } from '../composables/usePagedList'
+import { ORDER_STATUSES, PAY_CHANNELS, TX_TYPES } from '../constants'
 import { refreshUser, store } from '../store'
-import { PAY_CHANNELS, TX_TYPES, currency, dateTime, money } from '../format'
+import { currency, dateTime, money } from '../format'
 import { toast } from '../toast'
 
 const route = useRoute()
@@ -231,8 +238,8 @@ const customAmount = ref('')
 const channel = ref(payment.value.channels?.[0] || '')
 const paying = ref(false)
 const tab = ref('tx')
-const tx = reactive({ items: [], total: 0, page: 1, page_size: 20 })
-const orders = reactive({ items: [], total: 0, page: 1, page_size: 20 })
+const tx = usePagedList('/api/billing/transactions')
+const orders = usePagedList('/api/billing/orders')
 const resultMessage = ref('')
 const resultOk = ref(false)
 
@@ -252,7 +259,7 @@ async function redeem() {
     const data = await api.post('/api/billing/redeem', { code: code.value })
     toast.success(`兑换成功，到账 ${money(data.amount)}`)
     code.value = ''
-    await Promise.all([refreshUser(), loadTx(1)])
+    await Promise.all([refreshUser(), tx.load(1)])
   } catch (e) {
     toast.error(e.message)
   } finally {
@@ -277,26 +284,12 @@ async function pay() {
   }
 }
 
-async function loadTx(p = tx.page) {
-  try {
-    Object.assign(tx, await api.get('/api/billing/transactions', { page: p }))
-  } catch (e) {
-    toast.error(e.message)
-  }
-}
-async function loadOrders(p = orders.page) {
-  try {
-    Object.assign(orders, await api.get('/api/billing/orders', { page: p }))
-  } catch (e) {
-    toast.error(e.message)
-  }
-}
 function switchTab(t) {
   tab.value = t
-  if (t === 'orders') loadOrders(1)
+  if (t === 'orders') orders.load(1)
 }
 
-onMounted(async () => {
+onMounted(() => {
   const { order, result } = route.query
   if (order) {
     resultOk.value = result === 'success'
@@ -306,9 +299,9 @@ onMounted(async () => {
     router.replace({ query: {} })
     if (online.value) tab.value = 'orders'
   }
-  await refreshUser()
-  loadTx(1)
-  if (tab.value === 'orders') loadOrders(1)
+  refreshUser()
+  tx.load(1)
+  if (tab.value === 'orders') orders.load(1)
 })
 </script>
 
