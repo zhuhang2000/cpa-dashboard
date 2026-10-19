@@ -11,7 +11,7 @@
  *   - src/layouts/AppLayout.vue (.table)
  *   - src/views/Dashboard.vue (.table, .cell-sub)
  *   - src/views/Keys.vue (.table-wrap, .table, .cell-main, .cell-sub, .actions)
- *   - src/views/Pricing.vue (.table-wrap, .table, .cell-main, .right)
+ *   - src/views/Pricing.vue (.table-wrap, .table, .cell-main, .cell-sub, .right)
  *   - src/views/Usage.vue (.table-wrap, .table, .cell-sub, .right)
  *   - src/views/admin/Overview.vue (.table-wrap, .table, .cell-main, .right)
  *   - src/views/admin/Users.vue (.table-wrap, .table, .cell-main, .cell-sub, .actions, .right)

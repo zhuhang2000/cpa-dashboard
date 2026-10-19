@@ -39,22 +39,26 @@
               <th class="right">输出</th>
               <th class="right">缓存读取</th>
               <th class="right">缓存写入</th>
-              <th>说明</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="m in filtered" :key="m.model">
               <td>
-                <div class="row" style="gap: 4px">
-                  <span class="mono cell-main">{{ m.model }}</span>
-                  <CopyButton :text="m.model" />
+                <div class="row" style="gap: 10px">
+                  <ModelLogo :model="m.model" />
+                  <div>
+                    <div class="row" style="gap: 4px">
+                      <span class="mono cell-main">{{ m.model }}</span>
+                      <CopyButton :text="m.model" />
+                    </div>
+                    <div v-if="m.note" class="cell-sub">{{ m.note }}</div>
+                  </div>
                 </div>
               </td>
               <td class="right num">{{ show(m.input) }}</td>
               <td class="right num">{{ show(m.output) }}</td>
               <td class="right num muted">{{ show(m.cache_read) }}</td>
               <td class="right num muted">{{ show(m.cache_write) }}</td>
-              <td class="muted">{{ m.note }}</td>
             </tr>
           </tbody>
         </table>
@@ -74,6 +78,7 @@ import { computed, onMounted, ref } from 'vue'
 import CopyButton from '@/components/CopyButton.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import Icon from '@/components/Icon.vue'
+import ModelLogo from '@/components/ModelLogo.vue'
 import { pricingApi } from '@/api/pricing'
 import { price } from '@/utils/format'
 import { toast } from '@/toast'
