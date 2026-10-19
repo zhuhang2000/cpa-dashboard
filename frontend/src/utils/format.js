@@ -20,10 +20,14 @@ export function money(value, { sign = false } = {}) {
   return `${prefix}${currency()}${fixed(abs, 2, digits)}`
 }
 
-// Per-1M-token prices: trim trailing zeros, keep up to 4 decimals.
+// Token prices: 2–4 decimals; values under 0.1 keep 4 significant digits so per-1K prices never round to 0.
 export function price(value) {
   if (value === null || value === undefined) return '—'
-  return `${currency()}${fixed(value, 0, 4)}`
+  const v = Number(value)
+  if (v !== 0 && Math.abs(v) < 0.1) {
+    return `${currency()}${v.toLocaleString('zh-CN', { maximumSignificantDigits: 4 })}`
+  }
+  return `${currency()}${fixed(v, 2, 4)}`
 }
 
 export function num(value) {
