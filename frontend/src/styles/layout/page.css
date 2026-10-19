@@ -19,7 +19,7 @@
  *   - src/views/admin/Overview.vue (.page-header, .page-title, .page-desc, .page-actions, .grid, .grid-4, .grid-2, .stack, .row, .row-between)
  *   - src/views/admin/Users.vue (.page-header, .page-title, .page-desc, .stack, .row)
  *   - src/views/admin/Codes.vue (.page-header, .page-title, .page-desc, .page-actions, .grid, .grid-2, .stack, .row)
- *   - src/views/admin/Prices.vue (.page-header, .page-title, .page-desc, .page-actions, .grid, .grid-2, .stack)
+ *   - src/views/admin/Prices.vue (.page-header, .page-title, .page-desc, .page-actions, .grid, .grid-2, .stack, .row)
  *   - src/views/admin/Settings.vue (.page-header, .page-title, .page-desc, .grid, .grid-2, .stack)
  *   - src/views/recharge/index.vue (.page-header, .page-title, .page-desc, .grid, .grid-2, .stack)
  *   - src/views/recharge/OnlinePayCard.vue (.stat-icon, .row)

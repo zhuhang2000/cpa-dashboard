@@ -43,10 +43,15 @@
           <tbody>
             <tr v-for="m in filtered" :key="m.model">
               <td class="nowrap">
-                <div class="mono cell-main">{{ m.model }}</div>
-                <div class="cell-sub">
-                  <template v-if="m.override?.note">{{ m.override.note }} · </template>
-                  {{ m.calls ? `调用 ${num(m.calls)} 次 · ${relative(m.last_seen_ms)}` : '暂无调用' }}
+                <div class="row" style="gap: 10px">
+                  <ModelLogo :model="m.model" />
+                  <div>
+                    <div class="mono cell-main">{{ m.model }}</div>
+                    <div class="cell-sub">
+                      <template v-if="m.override?.note">{{ m.override.note }} · </template>
+                      {{ m.calls ? `调用 ${num(m.calls)} 次 · ${relative(m.last_seen_ms)}` : '暂无调用' }}
+                    </div>
+                  </div>
                 </div>
               </td>
               <td class="nowrap">
@@ -162,6 +167,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import EmptyState from '@/components/EmptyState.vue'
 import Icon from '@/components/Icon.vue'
 import Modal from '@/components/Modal.vue'
+import ModelLogo from '@/components/ModelLogo.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
 import { pricingApi } from '@/api/pricing'
 import { settingsApi } from '@/api/settings'
