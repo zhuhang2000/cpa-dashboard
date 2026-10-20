@@ -24,15 +24,22 @@
         <Icon v-if="redeeming" name="loader" :size="16" />
         {{ redeeming ? '兑换中…' : '立即兑换' }}
       </button>
-      <p class="muted" style="font-size: 12.5px; margin-top: 12px">
-        兑换码可向管理员或授权渠道购买，每个兑换码仅可使用一次。
-      </p>
+      <div class="buy">
+        <img :src="wechatQr" alt="管理员微信二维码" width="112" height="112" />
+        <div>
+          <div class="buy-title">还没有兑换码？</div>
+          <p class="muted">
+            微信扫码联系管理员购买。付款后管理员会发给你一串兑换码，填到上方输入框即可到账，每个兑换码仅可使用一次。
+          </p>
+        </div>
+      </div>
     </form>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
+import wechatQr from '@/assets/wechat-qr.jpg'
 import Icon from '@/components/Icon.vue'
 import { billingApi } from '@/api/billing'
 import { money } from '@/utils/format'
@@ -56,3 +63,29 @@ async function redeem() {
   }
 }
 </script>
+
+<style scoped>
+.buy {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+/* Keep the white quiet zone in dark mode too, or phones can't scan it. */
+.buy img {
+  flex: none;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: #fff;
+}
+.buy-title {
+  font-weight: 600;
+}
+.buy p {
+  margin-top: 4px;
+  font-size: 12.5px;
+}
+</style>
