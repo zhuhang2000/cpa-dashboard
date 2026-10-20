@@ -23,7 +23,7 @@ defineProps({
 
 // Stroke icons in the style of Lucide (ISC licence), inlined to avoid a dependency.
 const paths = {
-  logo: '<path d="M7 18 12 6l5 12M8.8 14h6.4"/>',
+  logo: '<path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16"/><path d="M2.5 21h13"/><path d="m10 7-2.5 4h3L8 15"/><path d="M14 9h2.5a1.5 1.5 0 0 1 1.5 1.5v5a1.5 1.5 0 0 0 3 0V8l-2.5-2.5"/>',
   grid: '<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
   key: '<circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/>',
   activity: '<path d="M22 12h-4l-3 9L9 3l-3 9H2"/>',
