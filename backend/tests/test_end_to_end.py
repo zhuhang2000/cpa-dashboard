@@ -41,6 +41,7 @@ EXPECTED_ROUTES = {
     ("GET", "/api/admin/users/{user_id}/keys"),
     ("DELETE", "/api/admin/users/{user_id}/keys/{key_id}"),
     ("POST", "/api/admin/users/{user_id}/balance"),
+    ("POST", "/api/admin/users/{user_id}/password"),
     ("GET", "/api/admin/codes"),
     ("POST", "/api/admin/codes"),
     ("DELETE", "/api/admin/codes/{code}"),
@@ -198,6 +199,15 @@ def run_portal_scenario(admin, user, bootstrap_admin, append_usage, payment_key=
         f"/api/admin/users/{user_id}",
         route="/api/admin/users/{user_id}",
         json={"role": "user", "status": "active"},
+    )
+    # A rejected reset keeps the user's session alive for the rest of the scenario.
+    call(
+        admin,
+        "POST",
+        f"/api/admin/users/{user_id}/password",
+        expected=400,
+        route="/api/admin/users/{user_id}/password",
+        json={"password": "short"},
     )
     balance, _ = call(
         admin,
@@ -421,7 +431,7 @@ def test_all_business_endpoints_through_fastapi(tmp_path):
             for method in operations
             if method in {"get", "post", "put", "patch", "delete"}
         }
-    assert len(EXPECTED_ROUTES) == 39
+    assert len(EXPECTED_ROUTES) == 40
     assert covered == EXPECTED_ROUTES
     assert actual_routes == EXPECTED_ROUTES
     assert len(records) > 39

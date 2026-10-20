@@ -237,6 +237,16 @@ def reset_password(conn, user_id, password):
         conn.execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))
 
 
+def admin_reset_password(conn, user_id, data, operator_id):
+    """Administrator reset for a forgotten password; the user must sign in again."""
+    row = get(conn, user_id)
+    if row["id"] == operator_id:
+        raise ApiError(400, "请在个人设置中修改自己的密码")
+    password = str(data.get("password") or "")
+    validate_password(password)
+    reset_password(conn, row["id"], password)
+
+
 def overview_counts(conn, today):
     return {
         "total": conn.execute("SELECT COUNT(*) FROM users").fetchone()[0],

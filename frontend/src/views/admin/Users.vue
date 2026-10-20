@@ -3,7 +3,7 @@
     <div class="page-header">
       <div>
         <h1 class="page-title">用户管理</h1>
-        <p class="page-desc">查看用户余额与消费，点击用户名查看 API 密钥，可调整余额、禁用账号或设置管理员。</p>
+        <p class="page-desc">查看用户余额与消费，点击用户名查看 API 密钥，可调整余额、重置密码、禁用账号或设置管理员。</p>
       </div>
     </div>
 
@@ -93,6 +93,9 @@
           <Icon :name="menu.user.status === UserStatus.ACTIVE ? 'lock' : 'check-circle'" :size="15" />
           {{ menu.user.status === UserStatus.ACTIVE ? '禁用账号' : '启用账号' }}
         </button>
+        <button class="dropdown-item" @click="openReset(menu.user)">
+          <Icon name="key" :size="15" />重置密码
+        </button>
         <button class="dropdown-item" @click="toggleRole(menu.user)">
           <Icon name="shield" :size="15" />{{ menu.user.role === Role.ADMIN ? '取消管理员' : '设为管理员' }}
         </button>
@@ -155,6 +158,43 @@
         </button>
       </template>
     </Modal>
+
+    <Modal :open="!!resetting" title="重置密码" @close="resetting = null">
+      <form id="reset-form" @submit.prevent="resetPassword">
+        <p class="muted" style="margin-bottom: 14px">
+          为用户 <b style="color: var(--text)">{{ resetting?.username }}</b> 设置新密码，重置后该用户需重新登录。
+        </p>
+        <div class="field">
+          <label for="reset-pass">新密码</label>
+          <div class="input-group">
+            <input
+              id="reset-pass"
+              v-model="newPassword"
+              class="input"
+              :type="showPassword ? 'text' : 'password'"
+              autocomplete="new-password"
+              minlength="8"
+              maxlength="128"
+              placeholder="至少 8 位"
+              required
+            />
+            <button
+              type="button"
+              class="input-addon"
+              :aria-label="showPassword ? '隐藏密码' : '显示密码'"
+              @click="showPassword = !showPassword"
+            >
+              <Icon :name="showPassword ? 'eye-off' : 'eye'" :size="16" />
+            </button>
+          </div>
+          <div class="field-hint">请通过安全渠道将新密码告知用户，并提醒其登录后在个人设置中修改。</div>
+        </div>
+      </form>
+      <template #footer>
+        <button class="btn" @click="resetting = null">取消</button>
+        <button class="btn btn-primary" form="reset-form" :disabled="saving">确认重置</button>
+      </template>
+    </Modal>
   </div>
 </template>
 
@@ -180,6 +220,9 @@ const saving = ref(false)
 const adjusting = ref(null)
 const keyUser = ref(null)
 const menu = ref(null)
+const resetting = ref(null)
+const newPassword = ref('')
+const showPassword = ref(false)
 const form = reactive({ mode: 'add', type: '', amount: '', note: '' })
 
 // The table scrolls horizontally, so the row menu is teleported and fixed-positioned.
@@ -225,6 +268,28 @@ async function adjust() {
     toast.success(`已调整，当前余额 ${money(data.balance)}`)
     adjusting.value = null
     await users.load()
+  } catch (e) {
+    toast.error(e.message)
+  } finally {
+    saving.value = false
+  }
+}
+
+function openReset(u) {
+  closeMenu()
+  resetting.value = u
+  newPassword.value = ''
+  showPassword.value = false
+}
+
+async function resetPassword() {
+  if (saving.value) return
+  if (newPassword.value.length < 8) return toast.error('密码至少 8 位')
+  saving.value = true
+  try {
+    await accountsApi.resetPassword(resetting.value.id, { password: newPassword.value })
+    toast.success(`已重置 ${resetting.value.username} 的密码`)
+    resetting.value = null
   } catch (e) {
     toast.error(e.message)
   } finally {

@@ -165,6 +165,24 @@ def test_password_change_keeps_current_session(account_db):
     assert accounts.authenticate_session(conn, other, 7) == (None, None)
 
 
+def test_admin_password_reset_revokes_sessions_and_rejects_self(account_db):
+    conn = account_db
+    admin = add_user(conn, "root", role=Role.ADMIN)
+    user = add_user(conn, "alice")
+    session, _ = accounts.start_session(conn, user["id"], "127.0.0.1", 7)
+
+    with pytest.raises(ApiError, match="至少 8 位"):
+        accounts.admin_reset_password(conn, user["id"], {"password": "short"}, admin["id"])
+    with pytest.raises(ApiError, match="个人设置"):
+        accounts.admin_reset_password(conn, admin["id"], {"password": "replacement"}, admin["id"])
+    with pytest.raises(ApiError, match="用户不存在"):
+        accounts.admin_reset_password(conn, 9999, {"password": "replacement"}, admin["id"])
+
+    accounts.admin_reset_password(conn, user["id"], {"password": "replacement"}, admin["id"])
+    assert verify_password("replacement", accounts.get(conn, user["id"])["password_hash"])
+    assert accounts.authenticate_session(conn, session, 7) == (None, None)
+
+
 def test_registration_rolls_back_account_and_bonus_when_session_creation_fails(account_db):
     conn = account_db
     conn.execute(

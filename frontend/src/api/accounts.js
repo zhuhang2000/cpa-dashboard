@@ -10,4 +10,5 @@ export const accountsApi = {
   changePassword: (body) => http.post('/api/user/password', body),
   listUsers: (query) => http.get('/api/admin/users', query),
   updateUser: (id, body) => http.patch(`/api/admin/users/${id}`, body),
+  resetPassword: (id, body) => http.post(`/api/admin/users/${id}/password`, body),
 }

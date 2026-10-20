@@ -142,3 +142,14 @@ def update_user(
     row = accounts.update_user(conn, user_id, data, admin["id"])
     runtime.worker.trigger()
     return {"user": user_public(row)}
+
+
+@router.post("/api/admin/users/{user_id:int}/password")
+def reset_user_password(
+    user_id: int,
+    admin=Depends(require_admin),
+    data: dict = Depends(json_body),
+    conn=Depends(get_connection),
+):
+    accounts.admin_reset_password(conn, user_id, data, admin["id"])
+    return {"ok": True}
