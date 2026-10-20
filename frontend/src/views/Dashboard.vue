@@ -1,6 +1,6 @@
 <template>
   <div class="stack">
-    <div v-if="announcement && !announcementHidden" class="alert alert-info">
+    <div v-if="announcement && !announcementHidden" class="alert alert-info announcement">
       <Icon name="megaphone" :size="16" />
       <div class="alert-body" style="white-space: pre-line">{{ announcement }}</div>
       <button class="alert-close" aria-label="关闭公告" @click="hideAnnouncement"><Icon name="x" :size="16" /></button>
@@ -205,6 +205,9 @@ function share(cost) {
 
 const announcement = computed(() => (store.status?.announcement || '').trim())
 const announcementKey = computed(() => `portal-ann-${hash(announcement.value)}`)
+// Closing hides the announcement for the current sign-in only: every login bumps last_login_at, so the
+// next one shows it again (as does a new announcement, which gets a new key).
+const loginSession = computed(() => `${store.user?.id}:${store.user?.last_login_at}`)
 const announcementHidden = ref(false)
 function hash(s) {
   let h = 0
@@ -214,7 +217,7 @@ function hash(s) {
 function hideAnnouncement() {
   announcementHidden.value = true
   try {
-    localStorage.setItem(announcementKey.value, '1')
+    localStorage.setItem(announcementKey.value, loginSession.value)
   } catch {
     /* ignore */
   }
@@ -239,7 +242,7 @@ function setDays(d) {
 
 onMounted(() => {
   try {
-    announcementHidden.value = localStorage.getItem(announcementKey.value) === '1'
+    announcementHidden.value = localStorage.getItem(announcementKey.value) === loginSession.value
   } catch {
     /* ignore */
   }
@@ -249,6 +252,10 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* As wide as its text rather than the full row. */
+.announcement {
+  align-self: flex-start;
+}
 .onboarding {
   display: flex;
   align-items: center;

@@ -27,6 +27,7 @@
           <Icon name="menu" />
         </button>
         <div class="topbar-title truncate">{{ route.meta.title }}</div>
+        <WelcomeMarquee />
         <div class="topbar-right">
           <RouterLink to="/recharge" class="balance-pill num" :class="{ low: lowBalance }" title="账户余额，点击充值">
             <Icon name="wallet" :size="16" />
@@ -65,13 +66,16 @@
         <RouterView />
       </main>
     </div>
+    <ContactAdmin />
   </div>
 </template>
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import ContactAdmin from '@/components/ContactAdmin.vue'
 import Icon from '@/components/Icon.vue'
+import WelcomeMarquee from '@/components/WelcomeMarquee.vue'
 import { ROLES, Role } from '@/constants'
 import { effectiveTheme, logout, refreshUser, store, toggleTheme } from '@/store'
 import { money } from '@/utils/format'
