@@ -4,11 +4,12 @@
  * 文件路径: styles/views/auth.css
  * 职责描述:
  *   定义登录与注册页面的双栏分屏布局 (.auth)、左侧品牌营销区 (.auth-brand,
- *   .auth-hero, .auth-art, .auth-copy)、右侧登录/注册表单面板 (.auth-panel,
- *   .auth-card, .auth-title, .auth-sub, .auth-foot) 以及专属按钮/输入框尺寸微调。
+ *   .auth-hero, .auth-eyebrow, .auth-highlight, .auth-art, .auth-points, .auth-copy)、
+ *   右侧登录/注册表单面板 (.auth-panel, .auth-card, .auth-title, .auth-sub, .auth-foot)
+ *   以及专属按钮/输入框尺寸微调。
  *
  * 使用该样式的组件 / 页面:
- *   - src/layouts/AuthShell.vue (.auth, .auth-brand, .auth-hero, .auth-art, .auth-copy, .auth-panel, .auth-card, .auth-mobile-logo)
+ *   - src/layouts/AuthShell.vue (.auth, .auth-brand, .auth-hero, .auth-eyebrow, .auth-highlight, .auth-art, .auth-points, .auth-point-icon, .auth-point-title, .auth-point-desc, .auth-copy, .auth-panel, .auth-card, .auth-mobile-logo)
  *   - src/views/Login.vue (.auth-title, .auth-sub, .auth-foot)
  *   - src/views/Register.vue (.auth-title, .auth-sub, .auth-foot)
  * ==============================================================================
@@ -60,11 +61,31 @@
   max-width: 540px;
   margin: 0 auto;
 }
+.auth-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  margin-bottom: 14px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  color: var(--accent-text);
+  font-size: 12.5px;
+  font-weight: 600;
+}
 .auth-hero h2 {
-  font-size: 32px;
-  line-height: 1.25;
+  font-size: 40px;
+  line-height: 1.2;
   font-weight: 700;
   letter-spacing: -0.02em;
+}
+.auth-highlight {
+  background: linear-gradient(135deg, var(--accent), #8b5cf6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 .auth-hero p {
   margin-top: 10px;
@@ -75,8 +96,50 @@
   display: block;
   width: 100%;
   height: auto;
-  max-height: 48vh;
-  margin-top: 36px;
+  max-height: 40vh;
+  margin-top: 28px;
+  /* The viewBox hugs the phone and power bank so they line up with the text; the glows and shadows spill past it. */
+  overflow: visible;
+}
+.auth-points {
+  container-type: inline-size;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 28px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.auth-points li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.auth-point-icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+.auth-point-title {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.auth-point-desc {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: 12.5px;
+}
+/* The left panel narrows with the window; below this the descriptions would wrap beside the icons, so stack them. */
+@container (max-width: 520px) {
+  .auth-points li {
+    flex-direction: column;
+    gap: 8px;
+  }
 }
 .auth-copy {
   color: var(--faint);
