@@ -2,17 +2,18 @@
 
 from fastapi import APIRouter, Depends
 
-from api.dependencies import get_runtime, json_body, require_admin
+from api.dependencies import get_connection, get_runtime, json_body, require_admin
 from core.constants import VERSION
 from core.errors import ApiError
 from services.api_keys import max_keys
 from services.billing import epay_conf
+from services.notices import latest_at
 
 router = APIRouter(tags=["settings"])
 
 
 @router.get("/api/status")
-def get_status(runtime=Depends(get_runtime)):
+def get_status(runtime=Depends(get_runtime), conn=Depends(get_connection)):
     cfg, settings = runtime.cfg, runtime.settings
     pay, conf = cfg["payment"], epay_conf(cfg)
     return {
@@ -20,6 +21,7 @@ def get_status(runtime=Depends(get_runtime)):
         "public_api_base": settings.get("public_api_base"),
         "guide_url": cfg["guide_url"],
         "announcement": settings.get("announcement"),
+        "notice_latest_at": latest_at(conn),
         "allow_register": bool(settings.get("allow_register")),
         "signup_bonus": settings.get("signup_bonus"),
         "currency_symbol": cfg["currency_symbol"],

@@ -3,7 +3,9 @@
     <div v-if="open" class="modal-overlay" @mousedown.self="onBackdrop">
       <div class="modal" :class="{ wide }" role="dialog" aria-modal="true" :aria-label="title">
         <div class="modal-header">
-          <div class="modal-title">{{ title }}</div>
+          <slot name="header">
+            <div class="modal-title">{{ title }}</div>
+          </slot>
           <button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="关闭" @click="emit('close')">
             <Icon name="x" :size="18" />
           </button>

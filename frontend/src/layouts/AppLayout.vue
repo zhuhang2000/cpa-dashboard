@@ -33,6 +33,7 @@
             <Icon name="wallet" :size="16" />
             {{ money(store.user?.balance || 0) }}
           </RouterLink>
+          <NoticeBell />
           <button class="btn btn-ghost btn-icon" :title="themeLabel" :aria-label="themeLabel" @click="toggleTheme">
             <Icon :name="isDark ? 'sun' : 'moon'" />
           </button>
@@ -75,6 +76,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ContactAdmin from '@/components/ContactAdmin.vue'
 import Icon from '@/components/Icon.vue'
+import NoticeBell from '@/components/notices/NoticeBell.vue'
 import WelcomeMarquee from '@/components/WelcomeMarquee.vue'
 import { ROLES, Role } from '@/constants'
 import { effectiveTheme, logout, refreshUser, store, toggleTheme } from '@/store'

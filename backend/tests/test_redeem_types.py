@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from core.config import load_config
 from core.constants import RedeemStatus, RedeemType, TxType
-from core.db import SCHEMA_V1, connect, init_db, now_ms
+from core.db import MIGRATIONS, SCHEMA_V1, connect, init_db, now_ms
 from core.errors import ApiError
 from core.security import RateLimiter
 from runtime.app import Runtime, create_app
@@ -118,7 +118,7 @@ def test_v1_migration_preserves_existing_codes_balances_and_recharge_history(tmp
     init_db(path)
     conn = connect(path)
     try:
-        assert conn.execute("PRAGMA user_version").fetchone()[0] == 2
+        assert conn.execute("PRAGMA user_version").fetchone()[0] == len(MIGRATIONS)
         assert dict(accounts.get(conn, user_id)) == original_user
         assert dict(conn.execute("SELECT * FROM transactions").fetchone()) == original_ledger
         migrated = [dict(row) for row in conn.execute("SELECT * FROM redeem_codes ORDER BY code")]

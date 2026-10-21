@@ -117,7 +117,9 @@ function close() {
   font-size: 13px;
   transform: translateY(-50%);
 }
+/* Hidden but still laid out so its text can be measured; anchored right so it cannot widen the page. */
 .welcome-bar.unplaced {
+  right: 0;
   visibility: hidden;
 }
 .welcome-icon {

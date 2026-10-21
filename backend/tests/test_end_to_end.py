@@ -51,6 +51,10 @@ EXPECTED_ROUTES = {
     ("POST", "/api/admin/prices/visibility"),
     ("GET", "/api/admin/settings"),
     ("PUT", "/api/admin/settings"),
+    ("GET", "/api/notices"),
+    ("POST", "/api/admin/notices"),
+    ("PUT", "/api/admin/notices/{notice_id}"),
+    ("DELETE", "/api/admin/notices/{notice_id}"),
     ("POST", "/api/admin/sync"),
 }
 
@@ -249,6 +253,30 @@ def run_portal_scenario(admin, user, bootstrap_admin, append_usage, payment_key=
     assert settings["settings"]["site_name"] == "Scenario portal"
     status, _ = call(user, "GET", "/api/status")
     assert status["site_name"] == "Scenario portal" and status["announcement"] == "maintenance test"
+    assert status["notice_latest_at"] is None
+
+    call(admin, "POST", "/api/admin/notices", expected=400, json={"content": "  "})
+    call(user, "POST", "/api/admin/notices", expected=403, json={"content": "not an admin"})
+    published, _ = call(admin, "POST", "/api/admin/notices", json={"content": "系统维护通知"})
+    notice = published["notice"]
+    notice_route = "/api/admin/notices/{notice_id}"
+    edited, _ = call(
+        admin,
+        "PUT",
+        f"/api/admin/notices/{notice['id']}",
+        route=notice_route,
+        json={"content": "系统维护通知（时间已调整）"},
+    )
+    assert edited["notice"]["created_at"] == notice["created_at"]
+    listed_notices, _ = call(user, "GET", "/api/notices")
+    assert [item["content"] for item in listed_notices["items"]] == ["系统维护通知（时间已调整）"]
+    # Users are alerted to newly published notices, not to edits of existing ones.
+    status, _ = call(user, "GET", "/api/status")
+    assert status["notice_latest_at"] == notice["created_at"]
+    call(admin, "DELETE", f"/api/admin/notices/{notice['id']}", route=notice_route)
+    call(admin, "DELETE", f"/api/admin/notices/{notice['id']}", expected=404, route=notice_route)
+    listed_notices, _ = call(user, "GET", "/api/notices")
+    assert listed_notices["items"] == []
     call(
         admin,
         "PUT",
@@ -431,7 +459,7 @@ def test_all_business_endpoints_through_fastapi(tmp_path):
             for method in operations
             if method in {"get", "post", "put", "patch", "delete"}
         }
-    assert len(EXPECTED_ROUTES) == 40
+    assert len(EXPECTED_ROUTES) == 44
     assert covered == EXPECTED_ROUTES
     assert actual_routes == EXPECTED_ROUTES
     assert len(records) > 39

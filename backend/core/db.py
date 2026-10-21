@@ -141,7 +141,18 @@ ALTER TABLE redeem_codes ADD COLUMN type TEXT NOT NULL DEFAULT 'recharge'
     CHECK (type IN ('recharge', 'gift'));
 """
 
-MIGRATIONS = [SCHEMA_V1, SCHEMA_V2]
+SCHEMA_V3 = """
+CREATE TABLE notices (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    content TEXT NOT NULL,
+    created_by INTEGER,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+);
+CREATE INDEX idx_notices_created ON notices(created_at);
+"""
+
+MIGRATIONS = [SCHEMA_V1, SCHEMA_V2, SCHEMA_V3]
 
 
 def now_ms():
