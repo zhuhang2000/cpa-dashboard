@@ -3,7 +3,9 @@
     <div class="page-header">
       <div>
         <h1 class="page-title">用户管理</h1>
-        <p class="page-desc">查看用户余额与消费，点击用户名查看 API 密钥，可调整余额、重置密码、禁用账号或设置管理员。</p>
+        <p class="page-desc">
+          查看用户余额与消费，点击用户名查看 API 密钥，可调整余额、重置密码、禁用账号或设置管理员。
+        </p>
       </div>
     </div>
 
@@ -93,9 +95,7 @@
           <Icon :name="menu.user.status === UserStatus.ACTIVE ? 'lock' : 'check-circle'" :size="15" />
           {{ menu.user.status === UserStatus.ACTIVE ? '禁用账号' : '启用账号' }}
         </button>
-        <button class="dropdown-item" @click="openReset(menu.user)">
-          <Icon name="key" :size="15" />重置密码
-        </button>
+        <button class="dropdown-item" @click="openReset(menu.user)"><Icon name="key" :size="15" />重置密码</button>
         <button class="dropdown-item" @click="toggleRole(menu.user)">
           <Icon name="shield" :size="15" />{{ menu.user.role === Role.ADMIN ? '取消管理员' : '设为管理员' }}
         </button>
