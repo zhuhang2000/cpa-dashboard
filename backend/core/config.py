@@ -39,7 +39,6 @@ def load_config(config_path: Path | None = None) -> dict:
         "site_name": env["SITE_NAME"],
         "currency_symbol": env["CURRENCY_SYMBOL"],
         "public_api_base": env["PUBLIC_API_BASE"],
-        "guide_url": env["GUIDE_URL"],
         "tz_offset_minutes": int(env["TZ_OFFSET_MINUTES"]),
         "data_dir": resolve(env["DATA_DIR"]),
         "frontend_dir": resolve(env["FRONTEND_DIR"]),

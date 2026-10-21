@@ -19,7 +19,6 @@ def get_status(runtime=Depends(get_runtime), conn=Depends(get_connection)):
     return {
         "site_name": settings.get("site_name"),
         "public_api_base": settings.get("public_api_base"),
-        "guide_url": cfg["guide_url"],
         "announcement": settings.get("announcement"),
         "notice_latest_at": latest_at(conn),
         "allow_register": bool(settings.get("allow_register")),

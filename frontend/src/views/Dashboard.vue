@@ -95,40 +95,60 @@
     </div>
 
     <div class="grid grid-main-side">
-      <div class="card">
+      <section class="card connection-card" aria-labelledby="connection-title">
         <div class="card-header">
           <div>
-            <div class="card-title">快速开始</div>
-            <div class="card-sub">推荐使用 Cockpit Tools 管理 Base URL 与 API 密钥</div>
+            <h2 id="connection-title" class="card-title">API 接入</h2>
           </div>
-          <a v-if="guideUrl" :href="guideUrl" target="_blank" rel="noopener" class="btn btn-sm"
-            >图文教程<Icon name="external" :size="14"
-          /></a>
+          <a
+            href="https://help.tromino.wiki/guidance/codex"
+            target="_blank"
+            rel="noopener"
+            class="btn btn-sm btn-ghost ext-link"
+          >
+            Codex 介绍<Icon name="external" :size="14" />
+          </a>
         </div>
-        <div class="card-body stack" style="gap: 18px">
-          <div>
-            <div class="field-label" style="margin-bottom: 6px">API Base URL</div>
-            <div class="key-box">
-              <span>{{ baseUrl || '管理员尚未配置，请联系管理员' }}</span>
-              <CopyButton v-if="baseUrl" :text="baseUrl" />
+        <ol class="steps">
+          <li class="step">
+            <span class="step-num">1</span>
+            <div class="step-label">接入地址<span>Base URL</span></div>
+            <div class="step-value">
+              <code v-if="baseUrl">{{ baseUrl }}</code>
+              <span v-else class="muted">管理员尚未配置，请联系管理员</span>
             </div>
-          </div>
-          <ol class="steps">
-            <li>
-              <b>创建密钥</b>
-              <span>在 <RouterLink to="/keys">API 密钥</RouterLink> 页新建并复制密钥</span>
-            </li>
-            <li>
-              <b>添加账号</b>
-              <span>打开 Cockpit Tools，点击 + 选择 API Key，填入上方 Base URL 和密钥</span>
-            </li>
-            <li>
-              <b>激活使用</b>
-              <span>从上游获取模型并保存，点击 ▶ 激活</span>
-            </li>
-          </ol>
-        </div>
-      </div>
+            <CopyButton v-if="baseUrl" class="step-action" :text="baseUrl" label="复制" />
+          </li>
+          <li class="step">
+            <span class="step-num">2</span>
+            <div class="step-label">API 密钥<span>API Key</span></div>
+            <div class="step-value muted">
+              {{ store.keyCount === 0 ? '还没有密钥，先创建一个' : `已有 ${store.keyCount} 个，在密钥页查看并复制` }}
+            </div>
+            <RouterLink
+              :to="store.keyCount === 0 ? '/keys?create=1' : '/keys'"
+              class="btn btn-sm step-action"
+              :class="store.keyCount === 0 ? 'btn-primary' : 'btn-ghost'"
+            >
+              {{ store.keyCount === 0 ? '创建密钥' : '管理密钥' }}<Icon name="chevron-right" :size="14" />
+            </RouterLink>
+          </li>
+          <li class="step">
+            <span class="step-num">3</span>
+            <div class="step-label">配置 Codex<span>Setup</span></div>
+            <div class="step-value muted">推荐用 Cockpit Tools 填入以上两项</div>
+            <a
+              href="https://help.tromino.wiki/guidance/api-guide#tool-intro"
+              target="_blank"
+              rel="noopener"
+              class="btn btn-sm btn-ghost step-action ext-link"
+              title="集中管理接入地址与密钥"
+            >
+              Cockpit Tools<Icon name="external" :size="14" />
+            </a>
+          </li>
+        </ol>
+      </section>
 
       <div class="card">
         <div class="card-header">
@@ -224,7 +244,6 @@ function hideAnnouncement() {
 }
 
 const baseUrl = computed(() => (store.status?.public_api_base || '').replace(/\/+$/, ''))
-const guideUrl = computed(() => store.status?.guide_url || '')
 
 async function load() {
   try {
@@ -252,6 +271,89 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.connection-card {
+  align-self: start;
+}
+.steps {
+  margin: 0;
+  padding: 4px 20px;
+  list-style: none;
+}
+/* Number · label · value · action on one line, so returning users can scan it at a glance. */
+.step {
+  display: grid;
+  grid-template-columns: 22px 92px minmax(0, 1fr) auto;
+  grid-template-areas: 'num label value action';
+  align-items: center;
+  column-gap: 12px;
+  min-height: 60px;
+  padding: 10px 0;
+}
+.step + .step {
+  border-top: 1px solid var(--border);
+}
+.step-num {
+  grid-area: num;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: 12px;
+  font-weight: 600;
+}
+.step-label {
+  grid-area: label;
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
+}
+.step-label > span {
+  display: block;
+  margin-top: 1px;
+  color: var(--faint);
+  font-size: 11px;
+  font-weight: 400;
+}
+.step-value {
+  grid-area: value;
+  min-width: 0;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.step-value code {
+  color: var(--text);
+}
+.step-action {
+  grid-area: action;
+}
+/* External resources get a tinted fill to set them apart from the in-page actions. */
+.ext-link {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+}
+.ext-link:hover {
+  background: color-mix(in srgb, var(--accent) 18%, var(--surface));
+}
+@media (max-width: 540px) {
+  .steps {
+    padding: 4px 16px;
+  }
+  .step {
+    grid-template-columns: 22px minmax(0, 1fr) auto;
+    grid-template-areas:
+      'num label action'
+      '. value value';
+    row-gap: 4px;
+  }
+  .step-label > span {
+    display: inline;
+    margin-left: 6px;
+  }
+}
+
 /* As wide as its text rather than the full row. */
 .announcement {
   align-self: flex-start;
@@ -264,41 +366,6 @@ onMounted(() => {
   padding: 18px 20px;
   flex-wrap: wrap;
   background: linear-gradient(120deg, var(--accent-soft), var(--surface) 70%);
-}
-.steps {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  counter-reset: step;
-}
-.steps li {
-  display: grid;
-  grid-template-columns: 24px minmax(0, 1fr);
-  column-gap: 12px;
-  counter-increment: step;
-}
-.steps li::before {
-  content: counter(step);
-  grid-row: span 2;
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--accent-soft);
-  color: var(--accent-text);
-  font-size: 12px;
-  font-weight: 600;
-}
-.steps b {
-  font-weight: 600;
-}
-.steps span {
-  color: var(--muted);
-  font-size: 13px;
 }
 .rank {
   display: flex;
