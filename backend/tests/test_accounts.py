@@ -84,6 +84,34 @@ def test_banning_user_revokes_sessions_and_blocks_authentication(account_db):
     assert accounts.authenticate_session(conn, stale, 7) == (None, None)
 
 
+def test_archived_users_are_listed_separately_and_keep_access(account_db):
+    conn = account_db
+    admin = add_user(conn, "operator", role=Role.ADMIN)
+    alice = add_user(conn, "alice")
+    add_user(conn, "alina")
+    token, _ = accounts.start_session(conn, alice["id"], "127.0.0.1", 7)
+
+    def listed(q="", archived=False):
+        return [row["username"] for row in accounts.search(conn, q, 20, 0, archived)[1]]
+
+    with pytest.raises(ApiError, match="不活跃标记"):
+        accounts.update_user(conn, alice["id"], {"archived": "yes"}, admin["id"])
+    changed = accounts.update_user(conn, alice["id"], {"archived": True}, admin["id"])
+    assert changed["archived_at"] == NOW
+    conn.execute("UPDATE users SET archived_at = 1 WHERE id = ?", (alice["id"],))
+    accounts.update_user(conn, alice["id"], {"archived": True}, admin["id"])
+    assert accounts.get(conn, alice["id"])["archived_at"] == 1
+    assert listed() == ["alina", "operator"]
+    assert listed("ali") == ["alina"]
+    assert listed(archived=True) == listed("ali", archived=True) == ["alice"]
+    assert accounts.authenticate_session(conn, token, 7)[0]["id"] == alice["id"]
+
+    accounts.update_user(conn, alice["id"], {"archived": False}, admin["id"])
+    assert accounts.get(conn, alice["id"])["archived_at"] is None
+    assert listed() == ["alina", "alice", "operator"]
+    assert listed(archived=True) == []
+
+
 def test_logout_revokes_only_the_selected_session(account_db):
     conn = account_db
     user = add_user(conn, "alice")

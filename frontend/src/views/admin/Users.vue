@@ -4,28 +4,39 @@
       <div>
         <h1 class="page-title">用户管理</h1>
         <p class="page-desc">
-          查看用户余额与消费，点击用户名查看 API 密钥，可调整余额、重置密码、禁用账号或设置管理员。
+          查看用户余额与消费，点击用户名查看 API 密钥，可调整余额、重置密码、禁用账号、设置管理员或移到不活跃。
         </p>
       </div>
     </div>
 
     <div class="card">
       <div class="card-header">
-        <form class="input-group has-prefix search" @submit.prevent="users.load(1)">
-          <span class="input-prefix"><Icon name="search" :size="15" /></span>
-          <input
-            v-model.trim="q"
-            class="input input-sm"
-            placeholder="搜索用户名或邮箱，回车确认"
-            aria-label="搜索用户"
-          />
-        </form>
-        <span class="muted">{{ num(users.total) }} 位用户</span>
+        <div class="row wrap">
+          <div class="tabs">
+            <button class="tab" :class="{ active: !archived }" @click="setArchived(false)">用户列表</button>
+            <button class="tab" :class="{ active: archived }" @click="setArchived(true)">不活跃用户</button>
+          </div>
+          <form class="input-group has-prefix search" @submit.prevent="users.load(1)">
+            <span class="input-prefix"><Icon name="search" :size="15" /></span>
+            <input
+              v-model.trim="q"
+              class="input input-sm"
+              placeholder="搜索用户名或邮箱，回车确认"
+              aria-label="搜索用户"
+            />
+          </form>
+        </div>
+        <span class="muted">{{ num(users.total) }} 位{{ archived ? '不活跃' : '' }}用户</span>
       </div>
       <div v-if="users.loading && !users.items.length" class="card-body stack" style="gap: 10px">
         <div v-for="i in 6" :key="i" class="skeleton" style="height: 34px" />
       </div>
-      <EmptyState v-else-if="!users.items.length" icon="users" title="没有找到用户" />
+      <EmptyState
+        v-else-if="!users.items.length"
+        icon="users"
+        :title="archived ? '没有不活跃用户' : '没有找到用户'"
+        :desc="archived ? '在用户列表中点击“更多 → 移到不活跃”即可移入' : ''"
+      />
       <div v-else class="table-wrap">
         <table class="table">
           <thead>
@@ -98,6 +109,9 @@
         <button class="dropdown-item" @click="openReset(menu.user)"><Icon name="key" :size="15" />重置密码</button>
         <button class="dropdown-item" @click="toggleRole(menu.user)">
           <Icon name="shield" :size="15" />{{ menu.user.role === Role.ADMIN ? '取消管理员' : '设为管理员' }}
+        </button>
+        <button class="dropdown-item" @click="toggleArchived(menu.user)">
+          <Icon name="archive" :size="15" />{{ menu.user.archived_at ? '移回用户列表' : '移到不活跃' }}
         </button>
       </div>
     </Teleport>
@@ -215,7 +229,8 @@ import { currency, date, money, num, relative } from '@/utils/format'
 import { toast } from '@/toast'
 
 const q = ref('')
-const users = usePagedList(accountsApi.listUsers, () => ({ q: q.value }))
+const archived = ref(false)
+const users = usePagedList(accountsApi.listUsers, () => ({ q: q.value, archived: archived.value ? 1 : '' }))
 const saving = ref(false)
 const adjusting = ref(null)
 const keyUser = ref(null)
@@ -297,15 +312,29 @@ async function resetPassword() {
   }
 }
 
-async function update(u, payload, message) {
+function setArchived(value) {
+  if (archived.value === value) return
+  closeMenu()
+  archived.value = value
+  users.items = []
+  users.load(1)
+}
+
+async function update(u, payload, message, page) {
   closeMenu()
   try {
     await accountsApi.updateUser(u.id, payload)
     toast.success(message)
-    await users.load()
+    await users.load(page)
   } catch (e) {
     toast.error(e.message)
   }
+}
+function toggleArchived(u) {
+  const value = !u.archived_at
+  // The row leaves this tab, so step back when it was the only one on the last page.
+  const page = users.items.length === 1 && users.page > 1 ? users.page - 1 : users.page
+  update(u, { archived: value }, value ? `已将 ${u.username} 移到不活跃用户` : `已将 ${u.username} 移回用户列表`, page)
 }
 function toggleStatus(u) {
   const status = u.status === UserStatus.ACTIVE ? UserStatus.BANNED : UserStatus.ACTIVE

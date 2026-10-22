@@ -186,6 +186,23 @@ def run_portal_scenario(admin, user, bootstrap_admin, append_usage, payment_key=
 
     users, _ = call(admin, "GET", "/api/admin/users", params={"q": "scenario-user"})
     assert users["total"] == 1 and users["items"][0]["key_count"] == 1
+    assert users["items"][0]["archived_at"] is None
+    for archived in (True, False):
+        call(
+            admin,
+            "PATCH",
+            f"/api/admin/users/{user_id}",
+            route="/api/admin/users/{user_id}",
+            json={"archived": archived},
+        )
+        hidden, _ = call(
+            admin, "GET", "/api/admin/users", params={"q": "scenario-user", "archived": 1}
+        )
+        assert hidden["total"] == int(archived)
+        users, _ = call(admin, "GET", "/api/admin/users", params={"q": "scenario-user"})
+        assert users["total"] == int(not archived)
+    me, _ = call(user, "GET", "/api/user/me")
+    assert "archived_at" not in me["user"]
     extra, _ = call(user, "POST", "/api/keys", json={"name": "unused-admin-cleanup"})
     managed, _ = call(
         admin, "GET", f"/api/admin/users/{user_id}/keys", route="/api/admin/users/{user_id}/keys"

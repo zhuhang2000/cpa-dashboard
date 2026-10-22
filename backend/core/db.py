@@ -152,7 +152,11 @@ CREATE TABLE notices (
 CREATE INDEX idx_notices_created ON notices(created_at);
 """
 
-MIGRATIONS = [SCHEMA_V1, SCHEMA_V2, SCHEMA_V3]
+SCHEMA_V4 = """
+ALTER TABLE users ADD COLUMN archived_at INTEGER;
+"""
+
+MIGRATIONS = [SCHEMA_V1, SCHEMA_V2, SCHEMA_V3, SCHEMA_V4]
 
 
 def now_ms():

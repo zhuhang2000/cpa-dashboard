@@ -174,10 +174,12 @@ def change_password(conn, user, data, keep_session):
         )
 
 
-def search(conn, q, limit, offset):
-    where, args = "1 = 1", []
+def search(conn, q, limit, offset, archived=False):
+    """Archived (inactive) accounts are listed apart from the main user list."""
+    where = "u.archived_at IS NOT NULL" if archived else "u.archived_at IS NULL"
+    args = []
     if q:
-        where = "(u.username LIKE ? ESCAPE '\\' OR u.email LIKE ? ESCAPE '\\')"
+        where += " AND (u.username LIKE ? ESCAPE '\\' OR u.email LIKE ? ESCAPE '\\')"
         pattern = "%" + q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
         args = [pattern, pattern]
     total = conn.execute("SELECT COUNT(*) FROM users u WHERE " + where, args).fetchone()[0]
@@ -206,6 +208,15 @@ def update_user(conn, user_id, data, operator_id):
         if is_self and data["role"] != Role.ADMIN:
             raise ApiError(400, "不能取消自己的管理员身份")
         conn.execute("UPDATE users SET role = ? WHERE id = ?", (data["role"], row["id"]))
+    if "archived" in data:
+        # Only hides the account from the main list; sign-in and keys are unaffected.
+        if not isinstance(data["archived"], bool):
+            raise ApiError(400, "不活跃标记不正确")
+        conn.execute(
+            "UPDATE users SET archived_at = CASE WHEN ? THEN COALESCE(archived_at, ?) END "
+            "WHERE id = ?",
+            (data["archived"], now_ms(), row["id"]),
+        )
     return get(conn, user_id)
 
 
