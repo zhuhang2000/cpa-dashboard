@@ -15,10 +15,7 @@
 
     <div class="card">
       <div class="card-header">
-        <div class="input-group has-prefix search">
-          <span class="input-prefix"><Icon name="search" :size="15" /></span>
-          <input v-model.trim="q" class="input input-sm" placeholder="搜索模型" aria-label="搜索模型" />
-        </div>
+        <SearchInput v-model="q" placeholder="搜索模型" />
         <span class="muted">{{ filtered.length }} 个模型</span>
       </div>
       <div v-if="loading" class="card-body stack" style="gap: 10px">
@@ -77,7 +74,7 @@
 import { computed, onMounted, ref } from 'vue'
 import CopyButton from '@/components/base/CopyButton.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
-import Icon from '@/components/base/Icon.vue'
+import SearchInput from '@/components/base/SearchInput.vue'
 import ModelLogo from '@/components/shared/ModelLogo.vue'
 import { pricingApi } from '@/api/pricing'
 import { price } from '@/utils/format'
@@ -108,13 +105,3 @@ onMounted(async () => {
   }
 })
 </script>
-
-<style scoped>
-.search {
-  width: 260px;
-  max-width: 100%;
-}
-.search .input {
-  padding-left: 32px;
-}
-</style>

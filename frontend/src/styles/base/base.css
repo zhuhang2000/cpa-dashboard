@@ -29,7 +29,7 @@
  *     - src/views/recharge/OnlinePayCard.vue (.num)
  *     - src/views/recharge/RedeemCard.vue (.muted, .mono)
  *     - src/views/recharge/OrderTable.vue (.num, .nowrap, .mono)
- *     - src/views/recharge/TransactionTable.vue (.text-success, .num, .text-danger, .nowrap, .mono)
+ *     - src/components/shared/TransactionTable.vue (.text-success, .num, .text-danger, .nowrap, .mono)
  * ==============================================================================
  */
 

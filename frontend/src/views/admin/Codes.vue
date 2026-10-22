@@ -34,10 +34,7 @@
             <option value="">全部批次</option>
             <option v-for="b in codes.batches" :key="b" :value="b">{{ b }}</option>
           </select>
-          <form class="input-group has-prefix search" @submit.prevent="codes.load(1)">
-            <span class="input-prefix"><Icon name="search" :size="15" /></span>
-            <input v-model.trim="q" class="input input-sm" placeholder="搜索兑换码" aria-label="搜索兑换码" />
-          </form>
+          <SearchInput v-model="q" placeholder="搜索兑换码" style="width: 220px" @search="codes.load(1)" />
         </div>
       </div>
       <div v-if="codes.loading && !codes.items.length" class="card-body stack" style="gap: 10px">
@@ -179,6 +176,7 @@ import EmptyState from '@/components/base/EmptyState.vue'
 import Icon from '@/components/base/Icon.vue'
 import Modal from '@/components/base/Modal.vue'
 import Pagination from '@/components/base/Pagination.vue'
+import SearchInput from '@/components/base/SearchInput.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import { billingApi } from '@/api/billing'
 import { usePagedList } from '@/composables/usePagedList'
@@ -258,13 +256,3 @@ function download() {
 
 onMounted(() => codes.load(1))
 </script>
-
-<style scoped>
-.search {
-  width: 220px;
-  max-width: 100%;
-}
-.search .input {
-  padding-left: 32px;
-}
-</style>

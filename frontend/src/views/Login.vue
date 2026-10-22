@@ -16,23 +16,7 @@
       </div>
       <div class="field">
         <label for="login-pass">密码</label>
-        <div class="input-group">
-          <input
-            id="login-pass"
-            v-model="form.password"
-            class="input"
-            :type="showPassword ? 'text' : 'password'"
-            autocomplete="current-password"
-          />
-          <button
-            type="button"
-            class="input-addon"
-            :aria-label="showPassword ? '隐藏密码' : '显示密码'"
-            @click="showPassword = !showPassword"
-          >
-            <Icon :name="showPassword ? 'eye-off' : 'eye'" :size="16" />
-          </button>
-        </div>
+        <PasswordInput id="login-pass" v-model="form.password" autocomplete="current-password" />
       </div>
       <div v-if="error" class="alert alert-danger" style="margin-bottom: 16px">
         <Icon name="alert" :size="16" />
@@ -57,6 +41,7 @@ import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AuthShell from '@/layouts/AuthShell.vue'
 import Icon from '@/components/base/Icon.vue'
+import PasswordInput from '@/components/base/PasswordInput.vue'
 import { accountsApi } from '@/api/accounts'
 import { setUser, store } from '@/store'
 
@@ -65,7 +50,6 @@ const route = useRoute()
 const form = reactive({ username: '', password: '' })
 const loading = ref(false)
 const error = ref('')
-const showPassword = ref(false)
 
 async function submit() {
   error.value = ''

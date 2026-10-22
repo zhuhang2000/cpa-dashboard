@@ -23,7 +23,7 @@
  *   - src/views/recharge/OnlinePayCard.vue (.card, .card-header, .card-title, .card-sub, .card-body)
  *   - src/views/recharge/RedeemCard.vue (.card, .card-header, .card-title, .card-sub, .card-body)
  *   - src/views/recharge/OrderTable.vue (.card-body, .card-footer)
- *   - src/views/recharge/TransactionTable.vue (.card-body, .card-footer)
+ *   - src/components/shared/TransactionTable.vue (.card-body, .card-footer)
  * ==============================================================================
  */
 

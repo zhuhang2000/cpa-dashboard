@@ -38,24 +38,13 @@
       </div>
       <div class="field">
         <label for="reg-pass">密码</label>
-        <div class="input-group">
-          <input
-            id="reg-pass"
-            v-model="form.password"
-            class="input"
-            :type="showPassword ? 'text' : 'password'"
-            autocomplete="new-password"
-            placeholder="至少 8 位"
-          />
-          <button
-            type="button"
-            class="input-addon"
-            :aria-label="showPassword ? '隐藏密码' : '显示密码'"
-            @click="showPassword = !showPassword"
-          >
-            <Icon :name="showPassword ? 'eye-off' : 'eye'" :size="16" />
-          </button>
-        </div>
+        <PasswordInput
+          id="reg-pass"
+          v-model="form.password"
+          v-model:visible="showPassword"
+          autocomplete="new-password"
+          placeholder="至少 8 位"
+        />
         <div class="strength">
           <span v-for="i in 4" :key="i" :class="{ on: strength >= i }" :data-level="strength" />
         </div>
@@ -89,6 +78,7 @@ import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AuthShell from '@/layouts/AuthShell.vue'
 import Icon from '@/components/base/Icon.vue'
+import PasswordInput from '@/components/base/PasswordInput.vue'
 import { accountsApi } from '@/api/accounts'
 import { setUser, store } from '@/store'
 import { money } from '@/utils/format'
@@ -98,6 +88,7 @@ const router = useRouter()
 const form = reactive({ username: '', email: '', password: '', confirm: '' })
 const loading = ref(false)
 const error = ref('')
+// The confirmation field shows and hides together with the password.
 const showPassword = ref(false)
 const bonus = computed(() => Number(store.status?.signup_bonus) || 0)
 

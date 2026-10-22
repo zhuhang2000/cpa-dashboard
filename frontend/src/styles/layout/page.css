@@ -25,7 +25,7 @@
  *   - src/views/recharge/OnlinePayCard.vue (.stat-icon, .row)
  *   - src/views/recharge/RedeemCard.vue (.stat-icon)
  *   - src/views/recharge/OrderTable.vue (.stack)
- *   - src/views/recharge/TransactionTable.vue (.stack)
+ *   - src/components/shared/TransactionTable.vue (.stack)
  * ==============================================================================
  */
 

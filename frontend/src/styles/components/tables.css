@@ -19,7 +19,7 @@
  *   - src/views/admin/Prices.vue (.table-wrap, .table, .cell-main, .cell-sub, .actions, .right)
  *   - src/views/recharge/OnlinePayCard.vue (.cell-sub)
  *   - src/views/recharge/OrderTable.vue (.table-wrap, .table, .right)
- *   - src/views/recharge/TransactionTable.vue (.table-wrap, .table, .cell-sub, .right)
+ *   - src/components/shared/TransactionTable.vue (.table-wrap, .table, .cell-sub, .right)
  * ==============================================================================
  */
 

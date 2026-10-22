@@ -16,15 +16,13 @@
             <button class="tab" :class="{ active: !archived }" @click="setArchived(false)">用户列表</button>
             <button class="tab" :class="{ active: archived }" @click="setArchived(true)">不活跃用户</button>
           </div>
-          <form class="input-group has-prefix search" @submit.prevent="users.load(1)">
-            <span class="input-prefix"><Icon name="search" :size="15" /></span>
-            <input
-              v-model.trim="q"
-              class="input input-sm"
-              placeholder="搜索用户名或邮箱，回车确认"
-              aria-label="搜索用户"
-            />
-          </form>
+          <SearchInput
+            v-model="q"
+            placeholder="搜索用户名或邮箱，回车确认"
+            label="搜索用户"
+            style="width: 300px"
+            @search="users.load(1)"
+          />
         </div>
         <div v-if="selected.length" class="row batch-bar">
           <span class="muted">已选 {{ selected.length }} 位</span>
@@ -213,27 +211,15 @@
         </p>
         <div class="field">
           <label for="reset-pass">新密码</label>
-          <div class="input-group">
-            <input
-              id="reset-pass"
-              v-model="newPassword"
-              class="input"
-              :type="showPassword ? 'text' : 'password'"
-              autocomplete="new-password"
-              minlength="8"
-              maxlength="128"
-              placeholder="至少 8 位"
-              required
-            />
-            <button
-              type="button"
-              class="input-addon"
-              :aria-label="showPassword ? '隐藏密码' : '显示密码'"
-              @click="showPassword = !showPassword"
-            >
-              <Icon :name="showPassword ? 'eye-off' : 'eye'" :size="16" />
-            </button>
-          </div>
+          <PasswordInput
+            id="reset-pass"
+            v-model="newPassword"
+            autocomplete="new-password"
+            minlength="8"
+            maxlength="128"
+            placeholder="至少 8 位"
+            required
+          />
           <div class="field-hint">请通过安全渠道将新密码告知用户，并提醒其登录后在个人设置中修改。</div>
         </div>
       </form>
@@ -251,6 +237,8 @@ import EmptyState from '@/components/base/EmptyState.vue'
 import Icon from '@/components/base/Icon.vue'
 import Modal from '@/components/base/Modal.vue'
 import Pagination from '@/components/base/Pagination.vue'
+import PasswordInput from '@/components/base/PasswordInput.vue'
+import SearchInput from '@/components/base/SearchInput.vue'
 import SortButton from '@/components/base/SortButton.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import UserDetailModal from '@/components/admin/UserDetailModal.vue'
@@ -279,7 +267,6 @@ const adjusting = ref(null)
 const detailUser = ref(null)
 const resetting = ref(null)
 const newPassword = ref('')
-const showPassword = ref(false)
 const form = reactive({ mode: 'add', type: '', amount: '', note: '' })
 
 // The table scrolls horizontally, so the row menu is teleported and placed by its button.
@@ -375,7 +362,6 @@ function openReset(u) {
   menu.close()
   resetting.value = u
   newPassword.value = ''
-  showPassword.value = false
 }
 
 async function resetPassword() {
@@ -430,13 +416,6 @@ onMounted(() => users.load(1))
 </script>
 
 <style scoped>
-.search {
-  width: 300px;
-  max-width: 100%;
-}
-.search .input {
-  padding-left: 32px;
-}
 .user-link {
   color: var(--text);
 }

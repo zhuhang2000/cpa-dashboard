@@ -17,10 +17,7 @@
 
     <div class="card">
       <div class="card-header">
-        <div class="input-group has-prefix search">
-          <span class="input-prefix"><Icon name="search" :size="15" /></span>
-          <input v-model.trim="q" class="input input-sm" placeholder="搜索模型" aria-label="搜索模型" />
-        </div>
+        <SearchInput v-model="q" placeholder="搜索模型" />
         <span class="muted">{{ filtered.length }} 个模型 · CPAMP 价格库 {{ cpampCount }} 条</span>
       </div>
       <EmptyState
@@ -167,6 +164,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import Icon from '@/components/base/Icon.vue'
 import Modal from '@/components/base/Modal.vue'
+import SearchInput from '@/components/base/SearchInput.vue'
 import ModelLogo from '@/components/shared/ModelLogo.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import { pricingApi } from '@/api/pricing'
@@ -284,13 +282,3 @@ async function setHidden(m, hidden) {
 
 onMounted(load)
 </script>
-
-<style scoped>
-.search {
-  width: 260px;
-  max-width: 100%;
-}
-.search .input {
-  padding-left: 32px;
-}
-</style>
