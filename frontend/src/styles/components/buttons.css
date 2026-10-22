@@ -10,6 +10,7 @@
  *   - src/components/base/CopyButton.vue (.btn, .btn-ghost, .btn-sm, .btn-icon)
  *   - src/components/base/Modal.vue (.btn, .btn-ghost, .btn-sm, .btn-icon)
  *   - src/layouts/AppLayout.vue (.btn, .btn-ghost, .btn-icon)
+ *   - src/layouts/GuideTour.vue (.btn, .btn-primary, .btn-ghost, .btn-sm, .btn-icon)
  *   - src/views/Login.vue (.btn, .btn-primary, .btn-lg, .btn-block)
  *   - src/views/Register.vue (.btn, .btn-primary, .btn-lg, .btn-block)
  *   - src/views/Dashboard.vue (.btn, .btn-primary, .btn-ghost, .btn-sm)

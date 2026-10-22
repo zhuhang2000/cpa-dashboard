@@ -15,7 +15,7 @@
         <figcaption>打开微信「扫一扫」添加管理员</figcaption>
       </figure>
     </div>
-    <button class="contact-tab" :aria-expanded="contact.open" @click="contact.toggle">
+    <button class="contact-tab" data-tour="contact" :aria-expanded="contact.open" @click="contact.toggle">
       <Icon name="message" :size="18" />
       <span>联系管理员</span>
     </button>

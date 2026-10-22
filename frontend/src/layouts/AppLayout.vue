@@ -33,6 +33,7 @@
             <Icon name="wallet" :size="16" />
             {{ money(store.user?.balance || 0) }}
           </RouterLink>
+          <GuideTour />
           <NoticeBell />
           <button class="btn btn-ghost btn-icon" :title="themeLabel" :aria-label="themeLabel" @click="toggleTheme">
             <Icon :name="isDark ? 'sun' : 'moon'" />
@@ -75,6 +76,7 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ContactAdmin from './ContactAdmin.vue'
+import GuideTour from './GuideTour.vue'
 import Icon from '@/components/base/Icon.vue'
 import NoticeBell from '@/components/notices/NoticeBell.vue'
 import { usePopover } from '@/composables/usePopover'

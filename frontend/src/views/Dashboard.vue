@@ -18,6 +18,7 @@
 
     <div class="grid grid-4">
       <StatCard
+        data-tour="balance"
         label="账户余额"
         icon="wallet"
         :value="money(store.user?.balance || 0)"
@@ -97,7 +98,7 @@
     </div>
 
     <div class="grid grid-main-side">
-      <section class="card connection-card" aria-labelledby="connection-title">
+      <section class="card connection-card" data-tour="connect" aria-labelledby="connection-title">
         <div class="card-header">
           <div>
             <h2 id="connection-title" class="card-title">API 接入</h2>
@@ -121,7 +122,7 @@
             </div>
             <CopyButton v-if="baseUrl" class="step-action" :text="baseUrl" label="复制" />
           </li>
-          <li class="step">
+          <li class="step" data-tour="key">
             <span class="step-num">2</span>
             <div class="step-label">API 密钥<span>API Key</span></div>
             <div class="step-value muted">
@@ -152,7 +153,7 @@
         </ol>
       </section>
 
-      <div class="card">
+      <div class="card" data-tour="usage">
         <div class="card-header">
           <div>
             <div class="card-title">模型消费排行</div>
