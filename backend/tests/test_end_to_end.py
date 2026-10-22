@@ -13,7 +13,7 @@ from runtime.app import Runtime, create_app
 
 EXPECTED_ROUTES = {
     ("GET", "/api/status"),
-    ("GET", "/api/pricing"),
+    ("GET", "/api/prices"),
     ("POST", "/api/auth/register"),
     ("POST", "/api/auth/login"),
     ("POST", "/api/auth/logout"),
@@ -44,7 +44,7 @@ EXPECTED_ROUTES = {
     ("DELETE", "/api/admin/users/{user_id}/keys/{key_id}"),
     ("POST", "/api/admin/users/{user_id}/balance"),
     ("POST", "/api/admin/users/{user_id}/password"),
-    ("GET", "/api/admin/users/{user_id}/transactions"),
+    ("GET", "/api/admin/users/{user_id}/billing/transactions"),
     ("GET", "/api/admin/users/{user_id}/usage/logs"),
     ("GET", "/api/admin/codes"),
     ("POST", "/api/admin/codes"),
@@ -118,7 +118,7 @@ def run_portal_scenario(admin, user, bootstrap_admin, append_usage, payment_key=
 
     status, _ = call(admin, "GET", "/api/status")
     assert status["payment"]["online"] is True
-    call(admin, "GET", "/api/pricing")
+    call(admin, "GET", "/api/prices")
     registered, _ = call(
         admin,
         "POST",
@@ -309,12 +309,12 @@ def run_portal_scenario(admin, user, bootstrap_admin, append_usage, payment_key=
     )
     prices, _ = call(admin, "GET", "/api/admin/prices")
     assert prices["items"][0]["source"] == "override"
-    public, _ = call(user, "GET", "/api/pricing")
+    public, _ = call(user, "GET", "/api/prices")
     assert public["items"][0]["input"] == 2
     call(
         admin, "POST", "/api/admin/prices/visibility", json={"model": "demo-model", "hidden": True}
     )
-    public, _ = call(user, "GET", "/api/pricing")
+    public, _ = call(user, "GET", "/api/prices")
     assert public["items"] == []
     call(
         admin, "POST", "/api/admin/prices/visibility", json={"model": "demo-model", "hidden": False}
@@ -383,8 +383,8 @@ def run_portal_scenario(admin, user, bootstrap_admin, append_usage, payment_key=
     admin_ledger, _ = call(
         admin,
         "GET",
-        f"/api/admin/users/{user_id}/transactions",
-        route="/api/admin/users/{user_id}/transactions",
+        f"/api/admin/users/{user_id}/billing/transactions",
+        route="/api/admin/users/{user_id}/billing/transactions",
     )
     by_type = {entry["type"]: entry for entry in admin_ledger["items"]}
     assert admin_ledger["total"] == 3 and by_type["redeem"]["ref"] == codes[0]
@@ -398,7 +398,7 @@ def run_portal_scenario(admin, user, bootstrap_admin, append_usage, payment_key=
     assert overview["usage"]["today"] == {"requests": 2, "cost": 3}
     assert overview["recharge"]["today"] == 27.34
     call(admin, "POST", "/api/admin/prices/delete", json={"model": "demo-model"})
-    public, _ = call(user, "GET", "/api/pricing")
+    public, _ = call(user, "GET", "/api/prices")
     assert public["items"][0]["source"] == "cpamp" and public["items"][0]["input"] == 1.5
 
     call(user, "POST", "/api/auth/logout", json={})

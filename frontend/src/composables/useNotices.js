@@ -25,7 +25,7 @@ export function useNotices() {
     markRead(store.status?.notice_latest_at)
     notices.loading = true
     try {
-      notices.items = (await noticesApi.list()).items
+      notices.items = (await noticesApi.listNotices()).items
       // The list may be newer than the status loaded with the page.
       markRead(notices.items[0]?.created_at)
     } catch (e) {
@@ -39,7 +39,7 @@ export function useNotices() {
     if (notices.saving) return null
     notices.saving = true
     try {
-      const { notice } = await noticesApi.create({ content })
+      const { notice } = await noticesApi.adminCreateNotice({ content })
       notices.items = [notice, ...notices.items]
       markRead(notice.created_at)
       toast.success('通知已发布')
@@ -56,7 +56,7 @@ export function useNotices() {
     if (notices.saving) return null
     notices.saving = true
     try {
-      const { notice } = await noticesApi.update(id, { content })
+      const { notice } = await noticesApi.adminUpdateNotice(id, { content })
       notices.items = notices.items.map((item) => (item.id === notice.id ? notice : item))
       toast.success('通知已更新')
       return notice
@@ -72,7 +72,7 @@ export function useNotices() {
     if (notices.saving) return false
     notices.saving = true
     try {
-      await noticesApi.remove(id)
+      await noticesApi.adminDeleteNotice(id)
       notices.items = notices.items.filter((item) => item.id !== id)
       toast.success('通知已删除')
       return true

@@ -5,6 +5,7 @@ export const usageApi = {
   usageLogs: (query) => http.get('/api/usage/logs', query),
   // The CSV is downloaded through a plain link, so this returns its URL instead of fetching it.
   usageExportUrl: (query) => exportUrl('/api/usage/export', query),
-  userUsageLogs: (userId, query) => http.get(`/api/admin/users/${userId}/usage/logs`, query),
-  overview: () => http.get('/api/admin/overview'),
+
+  adminUsageLogs: (userId, query) => http.get(`/api/admin/users/${userId}/usage/logs`, query),
+  adminOverview: () => http.get('/api/admin/overview'),
 }

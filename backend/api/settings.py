@@ -12,6 +12,9 @@ from services.notices import latest_at
 router = APIRouter(tags=["settings"])
 
 
+# ---- User endpoints ----
+
+
 @router.get("/api/status")
 def get_status(runtime=Depends(get_runtime), conn=Depends(get_connection)):
     cfg, settings = runtime.cfg, runtime.settings
@@ -37,13 +40,16 @@ def get_status(runtime=Depends(get_runtime), conn=Depends(get_connection)):
     }
 
 
+# ---- Administrator endpoints ----
+
+
 @router.get("/api/admin/settings", dependencies=[Depends(require_admin)])
-def get_settings(runtime=Depends(get_runtime)):
+def admin_get_settings(runtime=Depends(get_runtime)):
     return {"settings": runtime.settings.all()}
 
 
 @router.put("/api/admin/settings", dependencies=[Depends(require_admin)])
-def put_settings(data: dict = Depends(json_body), runtime=Depends(get_runtime)):
+def admin_put_settings(data: dict = Depends(json_body), runtime=Depends(get_runtime)):
     try:
         result = runtime.settings.update(data)
     except (TypeError, ValueError) as exc:
@@ -53,7 +59,7 @@ def put_settings(data: dict = Depends(json_body), runtime=Depends(get_runtime)):
 
 
 @router.post("/api/admin/sync", dependencies=[Depends(require_admin)])
-def run_sync(runtime=Depends(get_runtime)):
+def admin_run_sync(runtime=Depends(get_runtime)):
     runtime.worker.reset_backoff()
     runtime.worker.invalidate_prices()
     runtime.worker.run_once()

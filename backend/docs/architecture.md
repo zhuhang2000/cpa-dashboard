@@ -17,6 +17,20 @@ POST /api/keys
 
 `api/router.py` 汇总各业务路由。URL、HTTP 方法和权限声明就在对应处理函数旁边，不再另维护一份 URL 对照表。管理员登录后可访问 `/api/docs` 查看这些接口。
 
+## 接口命名与排列
+
+同一功能的用户版和管理员版，从路径和函数名就能看出对应关系：
+
+| 资源 | 用户接口 | 管理员接口 |
+| --- | --- | --- |
+| 全站共用 | `GET /api/prices` → `list_prices` | `GET /api/admin/prices` → `admin_list_prices` |
+| 属于某个用户 | `GET /api/keys` → `list_keys` | `GET /api/admin/users/{user_id}/keys` → `admin_list_keys` |
+
+- 管理员处理函数一律以 `admin_` 开头；有对应的用户接口时，前缀后面的部分与用户接口完全相同。
+- 管理员路径：全站共用的资源在 `/api/` 后加 `admin/`；属于某个用户的资源把 `/api/`（或 `/api/user/`）换成 `/api/admin/users/{user_id}/`。
+- 前端 `frontend/src/api/` 的方法名跟处理函数一致：`list_keys` → `listKeys`，`admin_list_keys` → `adminListKeys`。
+- 每个 `api/*.py` 先放共用辅助函数，再放用户接口，最后放管理员接口，两组分别以 `# ---- User endpoints ----`、`# ---- Administrator endpoints ----` 开头。前端各模块同样先列用户方法，空一行后列管理员方法。
+
 ## 各目录负责什么
 
 `backend/` 根目录保留 `server.py` 启动入口和 `pyproject.toml` 工具配置，其他源码与配套文件按用途归入目录：

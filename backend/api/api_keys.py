@@ -30,6 +30,9 @@ def to_public(cfg, row, user):
     }
 
 
+# ---- User endpoints ----
+
+
 @router.get("/api/keys")
 def list_keys(
     user=Depends(require_user), conn=Depends(get_connection), runtime=Depends(get_runtime)
@@ -84,8 +87,11 @@ def reveal_key(key_id: int, user=Depends(require_user), conn=Depends(get_connect
     return {"key": api_keys.get_owned(conn, user["id"], key_id)["key"]}
 
 
+# ---- Administrator endpoints ----
+
+
 @router.get("/api/admin/users/{user_id:int}/keys", dependencies=[Depends(require_admin)])
-def list_user_keys(user_id: int, conn=Depends(get_connection), runtime=Depends(get_runtime)):
+def admin_list_keys(user_id: int, conn=Depends(get_connection), runtime=Depends(get_runtime)):
     user = accounts.get(conn, user_id)
     return {
         "items": [
@@ -98,7 +104,7 @@ def list_user_keys(user_id: int, conn=Depends(get_connection), runtime=Depends(g
 @router.delete(
     "/api/admin/users/{user_id:int}/keys/{key_id:int}", dependencies=[Depends(require_admin)]
 )
-def delete_user_key(
+def admin_delete_key(
     user_id: int, key_id: int, conn=Depends(get_connection), runtime=Depends(get_runtime)
 ):
     api_keys.soft_delete(conn, api_keys.get_owned(conn, user_id, key_id))

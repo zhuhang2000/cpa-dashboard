@@ -136,9 +136,9 @@ const error = ref('')
 let mounted = true
 
 // The ledger and usage tabs load the first time they are opened.
-const ledger = usePagedList((query) => billingApi.listUserTransactions(props.user.id, query))
+const ledger = usePagedList((query) => billingApi.adminListTransactions(props.user.id, query))
 const calls = usePagedList(
-  (query) => usageApi.userUsageLogs(props.user.id, query),
+  (query) => usageApi.adminUsageLogs(props.user.id, query),
   () => ({}),
   { sum_cost: 0 },
 )
@@ -165,7 +165,7 @@ async function loadKeys() {
   loading.value = true
   error.value = ''
   try {
-    const data = await keysApi.listUserKeys(props.user.id)
+    const data = await keysApi.adminListKeys(props.user.id)
     if (mounted) items.value = data.items
   } catch (e) {
     if (mounted) error.value = e.message
@@ -192,7 +192,7 @@ async function remove() {
   error.value = ''
   const keyId = removing.value.id
   try {
-    await keysApi.deleteUserKey(props.user.id, keyId)
+    await keysApi.adminDeleteKey(props.user.id, keyId)
     if (!mounted) return
     items.value = items.value.filter((item) => item.id !== keyId)
     removing.value = null

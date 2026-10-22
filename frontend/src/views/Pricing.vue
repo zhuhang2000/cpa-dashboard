@@ -100,7 +100,7 @@ function show(v) {
 
 onMounted(async () => {
   try {
-    items.value = (await pricingApi.getPricing()).items
+    items.value = (await pricingApi.listPrices()).items
   } catch (e) {
     toast.error(e.message)
   } finally {

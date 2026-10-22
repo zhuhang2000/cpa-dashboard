@@ -200,5 +200,8 @@ def test_pricing_precedence_aliases_and_public_visibility(billing_conn):
     assert source == "default"
     assert fallback.output == 14
     pricing.set_visibility(billing_conn, {"model": "Demo", "hidden": True})
-    assert pricing.public_pricing(billing_conn, external, settings.get, "$")["items"] == []
-    assert pricing.list_prices(billing_conn, external, settings.get)["items"][0]["hidden"] is True
+    assert pricing.list_prices(billing_conn, external, settings.get, "$")["items"] == []
+    assert (
+        pricing.admin_list_prices(billing_conn, external, settings.get)["items"][0]["hidden"]
+        is True
+    )

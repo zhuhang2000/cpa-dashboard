@@ -200,7 +200,7 @@ function label(ok) {
 
 async function load() {
   try {
-    data.value = await usageApi.overview()
+    data.value = await usageApi.adminOverview()
   } catch (e) {
     toast.error(e.message)
   }
@@ -209,7 +209,7 @@ async function load() {
 async function sync() {
   syncing.value = true
   try {
-    await settingsApi.runSync()
+    await settingsApi.adminRunSync()
     await load()
     toast.success('同步完成')
   } catch (e) {

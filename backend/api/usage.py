@@ -22,165 +22,6 @@ from services.billing import MICRO, epay_conf, money
 router = APIRouter(tags=["usage"])
 
 
-@router.get("/api/usage/summary")
-def usage_summary(
-    request: Request,
-    user=Depends(require_user),
-    conn=Depends(get_connection),
-    runtime=Depends(get_runtime),
-):
-    days = int_arg(request, "days", 30, 1, 90)
-    tz_offset = runtime.cfg.get("tz_offset_minutes")
-    report = usage.summary(conn, user["id"], days, tz_offset)
-    for field in ("today", "month", "range"):
-        report[field]["cost"] = money(report[field]["cost"])
-    return {
-        "balance": money(user["balance_micro"]),
-        "today": report["today"],
-        "month": report["month"],
-        "range": report["range"],
-        "total": {"requests": report["total_requests"], "cost": money(user["total_spent_micro"])},
-        "days": days,
-        "daily": _daily_series(
-            tz_offset,
-            report["start"],
-            days,
-            report["daily"],
-            {
-                "requests": int,
-                "cost": money,
-                "tokens": int,
-                "input_tokens": int,
-                "output_tokens": int,
-                "failed": int,
-            },
-        ),
-        "by_model": [
-            {
-                "model": row["model"],
-                "requests": row["requests"],
-                "cost": money(row["cost"]),
-                "tokens": row["tokens"] or 0,
-            }
-            for row in report["by_model"]
-        ],
-        "by_key": [
-            {
-                "key_id": row["key_id"],
-                "name": row["name"] or "已删除密钥",
-                "requests": row["requests"],
-                "cost": money(row["cost"]),
-            }
-            for row in report["by_key"]
-        ],
-    }
-
-
-@router.get("/api/usage/logs")
-def usage_logs(request: Request, user=Depends(require_user), conn=Depends(get_connection)):
-    return _logs_page(request, conn, user["id"])
-
-
-@router.get("/api/admin/users/{user_id:int}/usage/logs", dependencies=[Depends(require_admin)])
-def user_usage_logs(user_id: int, request: Request, conn=Depends(get_connection)):
-    user = accounts.get(conn, user_id)
-    return _logs_page(request, conn, user["id"])
-
-
-@router.get("/api/usage/export", response_class=Response)
-def usage_export(
-    request: Request,
-    user=Depends(require_user),
-    conn=Depends(get_connection),
-    runtime=Depends(get_runtime),
-):
-    rows = usage.export_logs(conn, user["id"], _filters(request))
-    out = io.StringIO()
-    writer = csv.writer(out)
-    writer.writerow(
-        [
-            "时间",
-            "密钥",
-            "模型",
-            "输入 tokens",
-            "缓存读取 tokens",
-            "缓存写入 tokens",
-            "输出 tokens",
-            "总 tokens",
-            "费用",
-            "状态",
-            "耗时(ms)",
-        ]
-    )
-    tz_offset = runtime.cfg.get("tz_offset_minutes")
-    for row in rows:
-        writer.writerow(
-            [
-                _time_label(row["ts"], tz_offset),
-                row["key_name"] or "已删除密钥",
-                row["model"],
-                row["input_tokens"],
-                row["cache_read_tokens"],
-                row["cache_write_tokens"],
-                row["output_tokens"],
-                row["total_tokens"],
-                "%.6f" % (row["cost_micro"] / MICRO),
-                "失败" if row["failed"] else "成功",
-                row["latency_ms"] if row["latency_ms"] is not None else "",
-            ]
-        )
-    filename = "usage-%s.csv" % time.strftime("%Y%m%d-%H%M%S")
-    return Response(
-        ("\ufeff" + out.getvalue()).encode("utf-8"),
-        media_type="text/csv; charset=utf-8",
-        headers={
-            "Content-Disposition": 'attachment; filename="%s"' % filename,
-            "Cache-Control": "no-store",
-        },
-    )
-
-
-@router.get("/api/admin/overview", dependencies=[Depends(require_admin)])
-def overview(conn=Depends(get_connection), runtime=Depends(get_runtime)):
-    tz_offset = runtime.cfg.get("tz_offset_minutes")
-    report = usage.overview(conn, tz_offset)
-    daily = _daily_series(
-        tz_offset, report["start"], 14, report["daily"], {"requests": int, "cost": money}
-    )
-    recharges = _daily_series(
-        tz_offset, report["start"], 14, report["recharge_daily"], {"recharge": money}
-    )
-    for item, extra in zip(daily, recharges):
-        item["recharge"] = extra["recharge"]
-    for item in report["usage"].values():
-        item["cost"] = money(item["cost"])
-    return {
-        "users": {"total": report["users"]["total"], "today": report["users"]["today"]},
-        "keys_active": report["keys_active"],
-        "balance_total": money(report["users"]["balance_total_micro"]),
-        "recharge": {name: money(value) for name, value in report["recharge"].items()},
-        "usage": report["usage"],
-        "daily": daily,
-        "top_users": [
-            {
-                "id": row["id"],
-                "username": row["username"],
-                "requests": row["requests"],
-                "cost": money(row["cost"]),
-            }
-            for row in report["top_users"]
-        ],
-        "unpriced_models": report["unpriced_models"],
-        "sync": runtime.worker.state,
-        "config": {
-            "cpa_base_url": runtime.cpa.base,
-            "cpa_configured": runtime.cpa.configured,
-            "cpamp_usage_db": runtime.cfg["cpamp"].get("usage_db"),
-            "online_payment": epay_conf(runtime.cfg) is not None,
-        },
-    }
-
-
 def _filters(request):
     filters = {}
     for name in ("key_id", "start", "end"):
@@ -245,3 +86,168 @@ def _daily_series(tz_offset_minutes, start, days, rows, fields):
             item[name] = convert(value)
         series.append(item)
     return series
+
+
+# ---- User endpoints ----
+
+
+@router.get("/api/usage/summary")
+def usage_summary(
+    request: Request,
+    user=Depends(require_user),
+    conn=Depends(get_connection),
+    runtime=Depends(get_runtime),
+):
+    days = int_arg(request, "days", 30, 1, 90)
+    tz_offset = runtime.cfg.get("tz_offset_minutes")
+    report = usage.summary(conn, user["id"], days, tz_offset)
+    for field in ("today", "month", "range"):
+        report[field]["cost"] = money(report[field]["cost"])
+    return {
+        "balance": money(user["balance_micro"]),
+        "today": report["today"],
+        "month": report["month"],
+        "range": report["range"],
+        "total": {"requests": report["total_requests"], "cost": money(user["total_spent_micro"])},
+        "days": days,
+        "daily": _daily_series(
+            tz_offset,
+            report["start"],
+            days,
+            report["daily"],
+            {
+                "requests": int,
+                "cost": money,
+                "tokens": int,
+                "input_tokens": int,
+                "output_tokens": int,
+                "failed": int,
+            },
+        ),
+        "by_model": [
+            {
+                "model": row["model"],
+                "requests": row["requests"],
+                "cost": money(row["cost"]),
+                "tokens": row["tokens"] or 0,
+            }
+            for row in report["by_model"]
+        ],
+        "by_key": [
+            {
+                "key_id": row["key_id"],
+                "name": row["name"] or "已删除密钥",
+                "requests": row["requests"],
+                "cost": money(row["cost"]),
+            }
+            for row in report["by_key"]
+        ],
+    }
+
+
+@router.get("/api/usage/logs")
+def usage_logs(request: Request, user=Depends(require_user), conn=Depends(get_connection)):
+    return _logs_page(request, conn, user["id"])
+
+
+@router.get("/api/usage/export", response_class=Response)
+def usage_export(
+    request: Request,
+    user=Depends(require_user),
+    conn=Depends(get_connection),
+    runtime=Depends(get_runtime),
+):
+    rows = usage.export_logs(conn, user["id"], _filters(request))
+    out = io.StringIO()
+    writer = csv.writer(out)
+    writer.writerow(
+        [
+            "时间",
+            "密钥",
+            "模型",
+            "输入 tokens",
+            "缓存读取 tokens",
+            "缓存写入 tokens",
+            "输出 tokens",
+            "总 tokens",
+            "费用",
+            "状态",
+            "耗时(ms)",
+        ]
+    )
+    tz_offset = runtime.cfg.get("tz_offset_minutes")
+    for row in rows:
+        writer.writerow(
+            [
+                _time_label(row["ts"], tz_offset),
+                row["key_name"] or "已删除密钥",
+                row["model"],
+                row["input_tokens"],
+                row["cache_read_tokens"],
+                row["cache_write_tokens"],
+                row["output_tokens"],
+                row["total_tokens"],
+                "%.6f" % (row["cost_micro"] / MICRO),
+                "失败" if row["failed"] else "成功",
+                row["latency_ms"] if row["latency_ms"] is not None else "",
+            ]
+        )
+    filename = "usage-%s.csv" % time.strftime("%Y%m%d-%H%M%S")
+    return Response(
+        ("\ufeff" + out.getvalue()).encode("utf-8"),
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": 'attachment; filename="%s"' % filename,
+            "Cache-Control": "no-store",
+        },
+    )
+
+
+# ---- Administrator endpoints ----
+
+
+@router.get("/api/admin/users/{user_id:int}/usage/logs", dependencies=[Depends(require_admin)])
+def admin_usage_logs(user_id: int, request: Request, conn=Depends(get_connection)):
+    user = accounts.get(conn, user_id)
+    return _logs_page(request, conn, user["id"])
+
+
+@router.get("/api/admin/overview", dependencies=[Depends(require_admin)])
+def admin_overview(conn=Depends(get_connection), runtime=Depends(get_runtime)):
+    tz_offset = runtime.cfg.get("tz_offset_minutes")
+    report = usage.overview(conn, tz_offset)
+    daily = _daily_series(
+        tz_offset, report["start"], 14, report["daily"], {"requests": int, "cost": money}
+    )
+    recharges = _daily_series(
+        tz_offset, report["start"], 14, report["recharge_daily"], {"recharge": money}
+    )
+    for item, extra in zip(daily, recharges):
+        item["recharge"] = extra["recharge"]
+    for item in report["usage"].values():
+        item["cost"] = money(item["cost"])
+    return {
+        "users": {"total": report["users"]["total"], "today": report["users"]["today"]},
+        "keys_active": report["keys_active"],
+        "balance_total": money(report["users"]["balance_total_micro"]),
+        "recharge": {name: money(value) for name, value in report["recharge"].items()},
+        "usage": report["usage"],
+        "daily": daily,
+        "top_users": [
+            {
+                "id": row["id"],
+                "username": row["username"],
+                "requests": row["requests"],
+                "cost": money(row["cost"]),
+            }
+            for row in report["top_users"]
+        ],
+        "unpriced_models": report["unpriced_models"],
+        "sync": runtime.worker.state,
+        "config": {
+            "cpa_base_url": runtime.cpa.base,
+            "cpa_configured": runtime.cpa.configured,
+            "cpamp_usage_db": runtime.cfg["cpamp"].get("usage_db"),
+            "online_payment": epay_conf(runtime.cfg) is not None,
+        },
+    }

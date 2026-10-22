@@ -136,7 +136,7 @@ const saving = ref(false)
 async function save() {
   saving.value = true
   try {
-    const data = await settingsApi.putSettings(form.value)
+    const data = await settingsApi.adminPutSettings(form.value)
     form.value = data.settings
     await refreshStatus()
     toast.success('设置已保存')
@@ -149,7 +149,7 @@ async function save() {
 
 onMounted(async () => {
   try {
-    form.value = (await settingsApi.getSettings()).settings
+    form.value = (await settingsApi.adminGetSettings()).settings
   } catch (e) {
     toast.error(e.message)
   }

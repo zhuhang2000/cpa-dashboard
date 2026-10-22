@@ -36,6 +36,9 @@ def user_public(row):
     }
 
 
+# ---- User endpoints ----
+
+
 def _registration_allowed(runtime=Depends(get_runtime)):
     if not runtime.settings.get("allow_register"):
         raise ApiError(403, "当前未开放注册")
@@ -115,8 +118,11 @@ def change_password(
     return {"ok": True}
 
 
+# ---- Administrator endpoints ----
+
+
 @router.get("/api/admin/users")
-def list_users(request: Request, admin=Depends(require_admin), conn=Depends(get_connection)):
+def admin_list_users(request: Request, admin=Depends(require_admin), conn=Depends(get_connection)):
     page, size, offset = pagination(request)
     q = (request.query_params.get("q") or "").strip()
     archived = request.query_params.get("archived") == "1"
@@ -137,14 +143,14 @@ def list_users(request: Request, admin=Depends(require_admin), conn=Depends(get_
 
 
 @router.post("/api/admin/users/archive")
-def archive_users(
+def admin_archive_users(
     admin=Depends(require_admin), data: dict = Depends(json_body), conn=Depends(get_connection)
 ):
     return {"updated": accounts.set_archived(conn, data.get("ids"), data.get("archived"))}
 
 
 @router.put("/api/admin/users/{user_id:int}/status")
-def set_user_status(
+def admin_set_user_status(
     user_id: int,
     admin=Depends(require_admin),
     data: dict = Depends(json_body),
@@ -158,7 +164,7 @@ def set_user_status(
 
 
 @router.put("/api/admin/users/{user_id:int}/role")
-def set_user_role(
+def admin_set_user_role(
     user_id: int,
     admin=Depends(require_admin),
     data: dict = Depends(json_body),
@@ -169,7 +175,7 @@ def set_user_role(
 
 
 @router.post("/api/admin/users/{user_id:int}/password")
-def reset_user_password(
+def admin_reset_password(
     user_id: int,
     admin=Depends(require_admin),
     data: dict = Depends(json_body),

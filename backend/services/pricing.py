@@ -141,7 +141,7 @@ def touch_model(conn, model, last_ms, calls):
     )
 
 
-def public_pricing(conn, cpamp_prices, setting, currency_symbol):
+def list_prices(conn, cpamp_prices, setting, currency_symbol):
     book = build_price_book(conn, cpamp_prices, setting)
     notes = {
         row["model"]: row["note"] for row in conn.execute("SELECT model, note FROM model_prices")
@@ -168,7 +168,7 @@ def public_pricing(conn, cpamp_prices, setting, currency_symbol):
     return {"items": items, "currency_symbol": currency_symbol}
 
 
-def list_prices(conn, cpamp_prices, setting):
+def admin_list_prices(conn, cpamp_prices, setting):
     book = build_price_book(conn, cpamp_prices, setting)
     reference = PriceBook({}, cpamp_prices, 1.0, None)
     overrides = {r["model"]: r for r in conn.execute("SELECT * FROM model_prices")}

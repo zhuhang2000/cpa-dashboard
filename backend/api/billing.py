@@ -22,15 +22,12 @@ from services import accounts, billing
 router = APIRouter(tags=["billing"])
 
 
+# ---- User endpoints ----
+
+
 @router.get("/api/billing/transactions")
 def list_transactions(request: Request, user=Depends(require_user), conn=Depends(get_connection)):
     return billing.list_transactions(conn, user["id"], *pagination(request))
-
-
-@router.get("/api/admin/users/{user_id:int}/transactions", dependencies=[Depends(require_admin)])
-def list_user_transactions(user_id: int, request: Request, conn=Depends(get_connection)):
-    user = accounts.get(conn, user_id)
-    return billing.list_transactions(conn, user["id"], *pagination(request), admin=True)
 
 
 @router.post("/api/billing/redeem")
@@ -70,42 +67,7 @@ def create_order(
     )
 
 
-@router.post("/api/admin/users/{user_id:int}/balance")
-def adjust_balance(
-    user_id: int,
-    admin=Depends(require_admin),
-    body=Depends(json_body),
-    conn=Depends(get_connection),
-    runtime=Depends(get_runtime),
-):
-    result = billing.adjust_balance(conn, user_id, admin["id"], body)
-    runtime.worker.trigger()
-    return result
-
-
-@router.get("/api/admin/codes")
-def list_codes(request: Request, admin=Depends(require_admin), conn=Depends(get_connection)):
-    return billing.list_codes(
-        conn,
-        *pagination(request),
-        status=query_arg(request, "status"),
-        batch=query_arg(request, "batch") or "",
-        query=query_arg(request, "q") or "",
-    )
-
-
-@router.post("/api/admin/codes")
-def create_codes(
-    admin=Depends(require_admin), body=Depends(json_body), conn=Depends(get_connection)
-):
-    return billing.create_codes(conn, admin["id"], body)
-
-
-@router.delete("/api/admin/codes/{code}")
-def delete_code(code: str, admin=Depends(require_admin), conn=Depends(get_connection)):
-    return billing.delete_code(conn, code)
-
-
+# Online payment callbacks come from the payment platform and the payer's browser, not a session.
 async def _callback_params(request):
     params = dict(request.query_params)
     content_type = (request.headers.get("Content-Type") or "").lower()
@@ -136,3 +98,50 @@ async def epay_return(request: Request, conn=Depends(get_connection), runtime=De
     ok, order_no = await _settle_callback(request, conn, runtime)
     query = urllib.parse.urlencode({"order": order_no, "result": "success" if ok else "pending"})
     return RedirectResponse("/recharge?" + query, status_code=302)
+
+
+# ---- Administrator endpoints ----
+
+
+@router.get(
+    "/api/admin/users/{user_id:int}/billing/transactions", dependencies=[Depends(require_admin)]
+)
+def admin_list_transactions(user_id: int, request: Request, conn=Depends(get_connection)):
+    user = accounts.get(conn, user_id)
+    return billing.list_transactions(conn, user["id"], *pagination(request), admin=True)
+
+
+@router.post("/api/admin/users/{user_id:int}/balance")
+def admin_adjust_balance(
+    user_id: int,
+    admin=Depends(require_admin),
+    body=Depends(json_body),
+    conn=Depends(get_connection),
+    runtime=Depends(get_runtime),
+):
+    result = billing.adjust_balance(conn, user_id, admin["id"], body)
+    runtime.worker.trigger()
+    return result
+
+
+@router.get("/api/admin/codes")
+def admin_list_codes(request: Request, admin=Depends(require_admin), conn=Depends(get_connection)):
+    return billing.list_codes(
+        conn,
+        *pagination(request),
+        status=query_arg(request, "status"),
+        batch=query_arg(request, "batch") or "",
+        query=query_arg(request, "q") or "",
+    )
+
+
+@router.post("/api/admin/codes")
+def admin_create_codes(
+    admin=Depends(require_admin), body=Depends(json_body), conn=Depends(get_connection)
+):
+    return billing.create_codes(conn, admin["id"], body)
+
+
+@router.delete("/api/admin/codes/{code}")
+def admin_delete_code(code: str, admin=Depends(require_admin), conn=Depends(get_connection)):
+    return billing.delete_code(conn, code)

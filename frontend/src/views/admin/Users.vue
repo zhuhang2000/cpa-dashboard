@@ -265,7 +265,7 @@ import { toast } from '@/toast'
 const q = ref('')
 const archived = ref(false)
 const sort = reactive({ key: 'created', desc: true })
-const users = usePagedList(accountsApi.listUsers, () => ({
+const users = usePagedList(accountsApi.adminListUsers, () => ({
   q: q.value,
   archived: archived.value ? 1 : '',
   sort: sort.key,
@@ -330,7 +330,7 @@ async function archiveSelected() {
   const page = pageAfterRemoving(selected.value.length)
   saving.value = true
   try {
-    const { updated } = await accountsApi.archiveUsers({ ids: selected.value, archived: value })
+    const { updated } = await accountsApi.adminArchiveUsers({ ids: selected.value, archived: value })
     toast.success(value ? `已将 ${updated} 位用户移到不活跃` : `已将 ${updated} 位用户移回用户列表`)
     selected.value = []
     await users.load(page)
@@ -361,7 +361,7 @@ async function adjust() {
     const amount = form.mode === 'add' ? value : -value
     const payload = { amount, note: form.note }
     if (form.mode === 'add') payload.type = form.type
-    const data = await billingApi.adjustBalance(adjusting.value.id, payload)
+    const data = await billingApi.adminAdjustBalance(adjusting.value.id, payload)
     toast.success(`已调整，当前余额 ${money(data.balance)}`)
     adjusting.value = null
     await users.load()
@@ -384,7 +384,7 @@ async function resetPassword() {
   if (newPassword.value.length < 8) return toast.error('密码至少 8 位')
   saving.value = true
   try {
-    await accountsApi.resetPassword(resetting.value.id, { password: newPassword.value })
+    await accountsApi.adminResetPassword(resetting.value.id, { password: newPassword.value })
     toast.success(`已重置 ${resetting.value.username} 的密码`)
     resetting.value = null
   } catch (e) {
@@ -415,13 +415,16 @@ async function runMenuAction(request, message) {
 function toggleStatus(u) {
   const status = u.status === UserStatus.ACTIVE ? UserStatus.BANNED : UserStatus.ACTIVE
   runMenuAction(
-    () => accountsApi.setUserStatus(u.id, { status }),
+    () => accountsApi.adminSetUserStatus(u.id, { status }),
     status === UserStatus.ACTIVE ? '已启用' : '已禁用，该用户的密钥将停止工作',
   )
 }
 function toggleRole(u) {
   const role = u.role === Role.ADMIN ? Role.USER : Role.ADMIN
-  runMenuAction(() => accountsApi.setUserRole(u.id, { role }), role === Role.ADMIN ? '已设为管理员' : '已取消管理员')
+  runMenuAction(
+    () => accountsApi.adminSetUserRole(u.id, { role }),
+    role === Role.ADMIN ? '已设为管理员' : '已取消管理员',
+  )
 }
 
 onMounted(() => {

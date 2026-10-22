@@ -57,7 +57,7 @@ def test_admin_endpoints_require_admin_and_do_not_expand_user_access(key_portal)
             login(client, username)
         assert client.get(path).status_code == expected
         assert client.delete(f"{path}/{keys['alice']['id']}").status_code == expected
-        for detail in ("transactions", "usage/logs"):
+        for detail in ("billing/transactions", "usage/logs"):
             assert client.get(f"/api/admin/users/{users['alice']}/{detail}").status_code == expected
         archive = {"ids": [users["alice"]], "archived": True}
         assert client.post("/api/admin/users/archive", json=archive).status_code == expected
@@ -199,7 +199,7 @@ def test_admin_user_ledger_and_usage_stay_scoped_to_the_account(key_portal):
 
     login(client, "admin")
     path = f"/api/admin/users/{users['alice']}"
-    ledger = client.get(f"{path}/transactions").json()
+    ledger = client.get(f"{path}/billing/transactions").json()
     assert ledger["total"] == 2
     assert [(t["type"], t["ref"], t["operator"]) for t in ledger["items"]] == [
         (TxType.REDEEM, code, ""),
@@ -208,7 +208,7 @@ def test_admin_user_ledger_and_usage_stay_scoped_to_the_account(key_portal):
     logs = client.get(f"{path}/usage/logs").json()
     assert logs["total"] == 1 and logs["sum_cost"] == 0.0025
     assert (logs["items"][0]["model"], logs["items"][0]["key_name"]) == ("alice-model", "alice key")
-    for detail in ("transactions", "usage/logs"):
+    for detail in ("billing/transactions", "usage/logs"):
         assert client.get(f"/api/admin/users/99999/{detail}").status_code == 404
 
     # The account owner's own ledger keeps redeem codes masked and hides the operator.

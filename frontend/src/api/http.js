@@ -1,7 +1,8 @@
 // Thin fetch wrapper for the portal backend. Mutating requests carry
 // X-Requested-With, which the backend requires as CSRF protection.
 // Endpoints live in the sibling modules, one per backend router (backend/api/<name>.py), and each
-// method is named after its handler (list_keys -> listKeys). Pages call those, never http directly.
+// method is named after its handler (list_keys -> listKeys, admin_list_keys -> adminListKeys).
+// Pages call those, never http directly.
 export class ApiError extends Error {
   constructor(message, status, data) {
     super(message)

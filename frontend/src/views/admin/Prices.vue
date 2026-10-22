@@ -194,7 +194,7 @@ const editingRow = computed(() => items.value.find((m) => m.model === editingMod
 async function load() {
   loading.value = true
   try {
-    const [prices, conf] = await Promise.all([pricingApi.listPrices(), settingsApi.getSettings()])
+    const [prices, conf] = await Promise.all([pricingApi.adminListPrices(), settingsApi.adminGetSettings()])
     items.value = prices.items
     cpampCount.value = prices.cpamp_models
     settings.value = conf.settings
@@ -244,7 +244,7 @@ function fillReference() {
 async function save() {
   saving.value = true
   try {
-    await pricingApi.upsertPrice({
+    await pricingApi.adminUpsertPrice({
       model: editingModel.value || form.model,
       input: form.input,
       output: form.output,
@@ -264,7 +264,7 @@ async function save() {
 
 async function removeOverride(m) {
   try {
-    await pricingApi.deletePrice({ model: m.model })
+    await pricingApi.adminDeletePrice({ model: m.model })
     toast.success('已恢复默认定价')
     await load()
   } catch (e) {
@@ -274,7 +274,7 @@ async function removeOverride(m) {
 
 async function setHidden(m, hidden) {
   try {
-    await pricingApi.setVisibility({ model: m.model, hidden })
+    await pricingApi.adminSetVisibility({ model: m.model, hidden })
     m.hidden = hidden
     toast.success(hidden ? '已在前台价格页隐藏' : '已在前台价格页显示')
   } catch (e) {

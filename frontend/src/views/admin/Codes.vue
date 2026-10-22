@@ -193,9 +193,11 @@ const statuses = [
 const status = ref('')
 const batch = ref('')
 const q = ref('')
-const codes = usePagedList(billingApi.listCodes, () => ({ status: status.value, batch: batch.value, q: q.value }), {
-  batches: [],
-})
+const codes = usePagedList(
+  billingApi.adminListCodes,
+  () => ({ status: status.value, batch: batch.value, q: q.value }),
+  { batches: [] },
+)
 const saving = ref(false)
 const deletingCode = ref(null)
 const genOpen = ref(false)
@@ -214,7 +216,7 @@ function setStatus(s) {
 async function generate() {
   saving.value = true
   try {
-    generated.value = await billingApi.createCodes({
+    generated.value = await billingApi.adminCreateCodes({
       amount: gen.amount,
       count: Number(gen.count),
       type: gen.type,
@@ -234,7 +236,7 @@ async function remove(c) {
   if (deletingCode.value) return
   deletingCode.value = c.code
   try {
-    await billingApi.deleteCode(c.code)
+    await billingApi.adminDeleteCode(c.code)
     toast.success('已删除兑换码')
     const lastPage = Math.max(1, Math.ceil((codes.total - 1) / codes.page_size))
     await codes.load(Math.min(codes.page, lastPage))

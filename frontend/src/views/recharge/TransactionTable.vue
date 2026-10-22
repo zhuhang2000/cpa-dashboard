@@ -44,7 +44,7 @@ import { TX_TYPES } from '@/constants'
 import { dateTime, money } from '@/utils/format'
 
 // The balance ledger: a usePagedList() of billingApi.listTransactions, or of
-// billingApi.listUserTransactions for administrators (whose rows also name the operator).
+// billingApi.adminListTransactions for administrators (whose rows also name the operator).
 defineProps({
   list: { type: Object, required: true },
 })

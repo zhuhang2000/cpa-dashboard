@@ -8,23 +8,29 @@ from services import notices
 router = APIRouter(tags=["notices"])
 
 
+# ---- User endpoints ----
+
+
 @router.get("/api/notices", dependencies=[Depends(require_user)])
 def list_notices(conn=Depends(get_connection)):
     return notices.list_notices(conn)
 
 
+# ---- Administrator endpoints ----
+
+
 @router.post("/api/admin/notices")
-def create_notice(
+def admin_create_notice(
     admin=Depends(require_admin), body=Depends(json_body), conn=Depends(get_connection)
 ):
     return notices.create_notice(conn, admin["id"], body)
 
 
 @router.put("/api/admin/notices/{notice_id}", dependencies=[Depends(require_admin)])
-def update_notice(notice_id: int, body=Depends(json_body), conn=Depends(get_connection)):
+def admin_update_notice(notice_id: int, body=Depends(json_body), conn=Depends(get_connection)):
     return notices.update_notice(conn, notice_id, body)
 
 
 @router.delete("/api/admin/notices/{notice_id}", dependencies=[Depends(require_admin)])
-def delete_notice(notice_id: int, conn=Depends(get_connection)):
+def admin_delete_notice(notice_id: int, conn=Depends(get_connection)):
     return notices.delete_notice(conn, notice_id)
