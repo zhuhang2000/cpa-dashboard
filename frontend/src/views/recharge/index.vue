@@ -56,7 +56,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import Icon from '@/components/Icon.vue'
+import Icon from '@/components/base/Icon.vue'
 import OnlinePayCard from './OnlinePayCard.vue'
 import OrderTable from './OrderTable.vue'
 import RedeemCard from './RedeemCard.vue'

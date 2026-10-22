@@ -9,8 +9,8 @@
  *   进度条 (.progress, .warn, .full)、键值对排版 (.kv)、旋转动画 (.spin)。
  *
  * 使用该样式的组件 / 页面:
- *   - src/components/EmptyState.vue (.empty, .empty-icon, .empty-title)
- *   - src/components/StatCard.vue (.skeleton)
+ *   - src/components/base/EmptyState.vue (.empty, .empty-icon, .empty-title)
+ *   - src/components/base/StatCard.vue (.skeleton)
  *   - src/views/Dashboard.vue (.key-box, .progress, .skeleton)
  *   - src/views/Keys.vue (.key-box, .progress, .skeleton)
  *   - src/views/Settings.vue (.kv)

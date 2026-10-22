@@ -4,5 +4,5 @@
 </template>
 
 <script setup>
-import ToastHost from '@/components/ToastHost.vue'
+import ToastHost from '@/components/base/ToastHost.vue'
 </script>

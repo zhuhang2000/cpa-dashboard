@@ -73,10 +73,10 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import EmptyState from '@/components/EmptyState.vue'
-import Icon from '@/components/Icon.vue'
-import Pagination from '@/components/Pagination.vue'
-import UsageLogTable from '@/components/UsageLogTable.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
+import Icon from '@/components/base/Icon.vue'
+import Pagination from '@/components/base/Pagination.vue'
+import UsageLogTable from '@/components/shared/UsageLogTable.vue'
 import { keysApi } from '@/api/api_keys'
 import { usageApi } from '@/api/usage'
 import { fromInputDate, money, num, toInputDate, tokens } from '@/utils/format'

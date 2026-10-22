@@ -40,7 +40,7 @@
 <script setup>
 import { ref } from 'vue'
 import wechatQr from '@/assets/wechat-qr.jpg'
-import Icon from '@/components/Icon.vue'
+import Icon from '@/components/base/Icon.vue'
 import { billingApi } from '@/api/billing'
 import { money } from '@/utils/format'
 import { toast } from '@/toast'

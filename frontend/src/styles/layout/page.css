@@ -8,9 +8,9 @@
  *   垂直与水平间距堆叠 (.stack, .row, .row-between) 以及指标统计卡片 (.stat, .stat-value 等)。
  *
  * 使用该样式的组件 / 页面:
- *   - src/components/StatCard.vue (.stat, .stat-label, .stat-icon, .stat-value, .stat-sub, .stat-action)
- *   - src/components/Pagination.vue (.row-between)
- *   - src/components/BarChart.vue (.row)
+ *   - src/components/base/StatCard.vue (.stat, .stat-label, .stat-icon, .stat-value, .stat-sub, .stat-action)
+ *   - src/components/base/Pagination.vue (.row-between)
+ *   - src/components/base/BarChart.vue (.row)
  *   - src/views/Dashboard.vue (.grid, .grid-4, .grid-main-side, .stack, .row, .row-between)
  *   - src/views/Keys.vue (.page-header, .page-title, .page-desc, .page-actions, .stack, .row)
  *   - src/views/Pricing.vue (.page-header, .page-title, .page-desc, .page-actions, .stack, .row)

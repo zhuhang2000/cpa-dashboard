@@ -7,8 +7,8 @@
  *   .btn-sm, .btn-lg, .btn-block, .btn-icon, .link-btn)，支持禁用与悬浮过渡动效。
  *
  * 使用该样式的组件 / 页面:
- *   - src/components/CopyButton.vue (.btn, .btn-ghost, .btn-sm, .btn-icon)
- *   - src/components/Modal.vue (.btn, .btn-ghost, .btn-sm, .btn-icon)
+ *   - src/components/base/CopyButton.vue (.btn, .btn-ghost, .btn-sm, .btn-icon)
+ *   - src/components/base/Modal.vue (.btn, .btn-ghost, .btn-sm, .btn-icon)
  *   - src/layouts/AppLayout.vue (.btn, .btn-ghost, .btn-icon)
  *   - src/views/Login.vue (.btn, .btn-primary, .btn-lg, .btn-block)
  *   - src/views/Register.vue (.btn, .btn-primary, .btn-lg, .btn-block)

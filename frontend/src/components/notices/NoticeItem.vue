@@ -61,7 +61,7 @@
 
 <script setup>
 import { computed, nextTick, ref, useId, watch } from 'vue'
-import Icon from '@/components/Icon.vue'
+import Icon from '@/components/base/Icon.vue'
 import { dateTime } from '@/utils/format'
 import NoticeEditor from './NoticeEditor.vue'
 

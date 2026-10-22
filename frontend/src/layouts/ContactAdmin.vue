@@ -25,7 +25,7 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import wechatQr from '@/assets/wechat-qr.jpg'
-import Icon from '@/components/Icon.vue'
+import Icon from '@/components/base/Icon.vue'
 
 const open = ref(false)
 const root = ref(null)

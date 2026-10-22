@@ -9,7 +9,7 @@
  * 使用该样式的组件 / 页面:
  *   - 全局生效: 注入 :root 与 [data-theme='dark']，所有样式文件与组件均基于此变量体系
  *   - 直接使用 CSS 变量的典型组件:
- *     - src/components/BarChart.vue (--chart-1, --chart-2, --chart-track)
+ *     - src/components/base/BarChart.vue (--chart-1, --chart-2, --chart-track)
  *     - src/layouts/AuthArt.vue (--accent, --bg 等渐变与强调色)
  * ==============================================================================
  */

@@ -42,7 +42,7 @@
 
 <script setup>
 import { computed, ref, useId, watch } from 'vue'
-import Icon from '@/components/Icon.vue'
+import Icon from '@/components/base/Icon.vue'
 
 const props = defineProps({ days: { type: Array, required: true } })
 const selectedKey = defineModel({ type: String, default: '' })

@@ -247,12 +247,12 @@
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import EmptyState from '@/components/EmptyState.vue'
-import Icon from '@/components/Icon.vue'
-import Modal from '@/components/Modal.vue'
-import Pagination from '@/components/Pagination.vue'
-import SortButton from '@/components/SortButton.vue'
-import StatusBadge from '@/components/StatusBadge.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
+import Icon from '@/components/base/Icon.vue'
+import Modal from '@/components/base/Modal.vue'
+import Pagination from '@/components/base/Pagination.vue'
+import SortButton from '@/components/base/SortButton.vue'
+import StatusBadge from '@/components/base/StatusBadge.vue'
 import UserDetailModal from '@/components/admin/UserDetailModal.vue'
 import { accountsApi } from '@/api/accounts'
 import { billingApi } from '@/api/billing'

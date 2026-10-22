@@ -188,11 +188,11 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import BarChart from '@/components/BarChart.vue'
-import CopyButton from '@/components/CopyButton.vue'
-import EmptyState from '@/components/EmptyState.vue'
-import Icon from '@/components/Icon.vue'
-import StatCard from '@/components/StatCard.vue'
+import BarChart from '@/components/base/BarChart.vue'
+import CopyButton from '@/components/base/CopyButton.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
+import Icon from '@/components/base/Icon.vue'
+import StatCard from '@/components/base/StatCard.vue'
 import { usageApi } from '@/api/usage'
 import { refreshUser, store } from '@/store'
 import { currency, dayLabel, money, num, tokens } from '@/utils/format'

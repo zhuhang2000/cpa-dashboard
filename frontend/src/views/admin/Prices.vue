@@ -164,11 +164,11 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import EmptyState from '@/components/EmptyState.vue'
-import Icon from '@/components/Icon.vue'
-import Modal from '@/components/Modal.vue'
-import ModelLogo from '@/components/ModelLogo.vue'
-import StatusBadge from '@/components/StatusBadge.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
+import Icon from '@/components/base/Icon.vue'
+import Modal from '@/components/base/Modal.vue'
+import ModelLogo from '@/components/shared/ModelLogo.vue'
+import StatusBadge from '@/components/base/StatusBadge.vue'
 import { pricingApi } from '@/api/pricing'
 import { settingsApi } from '@/api/settings'
 import { PRICE_SOURCES } from '@/constants'

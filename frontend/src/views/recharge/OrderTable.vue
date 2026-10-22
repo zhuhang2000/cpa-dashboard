@@ -33,9 +33,9 @@
 </template>
 
 <script setup>
-import EmptyState from '@/components/EmptyState.vue'
-import Pagination from '@/components/Pagination.vue'
-import StatusBadge from '@/components/StatusBadge.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
+import Pagination from '@/components/base/Pagination.vue'
+import StatusBadge from '@/components/base/StatusBadge.vue'
 import { ORDER_STATUSES, PAY_CHANNELS } from '@/constants'
 import { currency, dateTime, money } from '@/utils/format'
 

@@ -15,7 +15,7 @@
  *   - src/views/Usage.vue (.select, .input-sm)
  *   - src/views/Pricing.vue (.input, .input-sm, .input-group, .input-prefix)
  *   - src/views/Dashboard.vue (.field-label)
- *   - src/components/CopyButton.vue (.check)
+ *   - src/components/base/CopyButton.vue (.check)
  *   - src/views/admin/Users.vue (.field, .field-label, .field-hint, .input, .input-sm, .input-group, .input-prefix)
  *   - src/views/admin/Codes.vue (.field, .input, .input-sm, .select, .textarea, .input-group, .input-prefix)
  *   - src/views/admin/Prices.vue (.field, .input, .input-sm, .input-group, .input-prefix, .toggle, .toggle-track)

@@ -56,7 +56,7 @@
 import { reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AuthShell from '@/layouts/AuthShell.vue'
-import Icon from '@/components/Icon.vue'
+import Icon from '@/components/base/Icon.vue'
 import { accountsApi } from '@/api/accounts'
 import { setUser, store } from '@/store'
 

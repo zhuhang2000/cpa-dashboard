@@ -97,9 +97,9 @@
 
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue'
-import EmptyState from '@/components/EmptyState.vue'
-import Icon from '@/components/Icon.vue'
-import Modal from '@/components/Modal.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
+import Icon from '@/components/base/Icon.vue'
+import Modal from '@/components/base/Modal.vue'
 import { Role } from '@/constants'
 import { store } from '@/store'
 import { date } from '@/utils/format'

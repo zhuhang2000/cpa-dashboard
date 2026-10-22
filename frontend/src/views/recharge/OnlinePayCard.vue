@@ -68,8 +68,8 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import EmptyState from '@/components/EmptyState.vue'
-import Icon from '@/components/Icon.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
+import Icon from '@/components/base/Icon.vue'
 import { billingApi } from '@/api/billing'
 import { PAY_CHANNELS } from '@/constants'
 import { currency, money } from '@/utils/format'

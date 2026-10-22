@@ -7,7 +7,7 @@
  *   以及成功/错误/信息状态图标色彩 (.toast.success, .toast.error, .toast.info)。
  *
  * 使用该样式的组件 / 页面:
- *   - src/components/ToastHost.vue (.toast-host, .toast)
+ *   - src/components/base/ToastHost.vue (.toast-host, .toast)
  * ==============================================================================
  */
 

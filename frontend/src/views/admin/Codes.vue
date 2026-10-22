@@ -174,12 +174,12 @@
 
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
-import CopyButton from '@/components/CopyButton.vue'
-import EmptyState from '@/components/EmptyState.vue'
-import Icon from '@/components/Icon.vue'
-import Modal from '@/components/Modal.vue'
-import Pagination from '@/components/Pagination.vue'
-import StatusBadge from '@/components/StatusBadge.vue'
+import CopyButton from '@/components/base/CopyButton.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
+import Icon from '@/components/base/Icon.vue'
+import Modal from '@/components/base/Modal.vue'
+import Pagination from '@/components/base/Pagination.vue'
+import StatusBadge from '@/components/base/StatusBadge.vue'
 import { billingApi } from '@/api/billing'
 import { usePagedList } from '@/composables/usePagedList'
 import { REDEEM_STATES, REDEEM_TYPES, RedeemState, RedeemStatus, RedeemType } from '@/constants'

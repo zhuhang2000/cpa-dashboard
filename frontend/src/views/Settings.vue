@@ -78,8 +78,8 @@
 <script setup>
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import Icon from '@/components/Icon.vue'
-import StatusBadge from '@/components/StatusBadge.vue'
+import Icon from '@/components/base/Icon.vue'
+import StatusBadge from '@/components/base/StatusBadge.vue'
 import { accountsApi } from '@/api/accounts'
 import { ROLES } from '@/constants'
 import { logout, setUser, store } from '@/store'

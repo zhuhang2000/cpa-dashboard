@@ -175,10 +175,10 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
-import BarChart from '@/components/BarChart.vue'
-import EmptyState from '@/components/EmptyState.vue'
-import Icon from '@/components/Icon.vue'
-import StatCard from '@/components/StatCard.vue'
+import BarChart from '@/components/base/BarChart.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
+import Icon from '@/components/base/Icon.vue'
+import StatCard from '@/components/base/StatCard.vue'
 import { settingsApi } from '@/api/settings'
 import { usageApi } from '@/api/usage'
 import { currency, dateTime, dayLabel, money, num } from '@/utils/format'

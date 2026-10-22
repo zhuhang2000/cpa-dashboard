@@ -75,10 +75,10 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import CopyButton from '@/components/CopyButton.vue'
-import EmptyState from '@/components/EmptyState.vue'
-import Icon from '@/components/Icon.vue'
-import ModelLogo from '@/components/ModelLogo.vue'
+import CopyButton from '@/components/base/CopyButton.vue'
+import EmptyState from '@/components/base/EmptyState.vue'
+import Icon from '@/components/base/Icon.vue'
+import ModelLogo from '@/components/shared/ModelLogo.vue'
 import { pricingApi } from '@/api/pricing'
 import { price } from '@/utils/format'
 import { toast } from '@/toast'

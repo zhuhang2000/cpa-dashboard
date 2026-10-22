@@ -6,7 +6,7 @@
  *   定义表格与列表的分页容器 (.pagination) 与页码/翻页操作按钮 (.page-btn, .page-btn.active)。
  *
  * 使用该样式的组件 / 页面:
- *   - src/components/Pagination.vue (.pagination, .page-btn)
+ *   - src/components/base/Pagination.vue (.pagination, .page-btn)
  * ==============================================================================
  */
 

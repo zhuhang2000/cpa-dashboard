@@ -11,8 +11,8 @@
  *   - 全局生效: *, html, body, a, h1~h4, p, code
  *   - 排版工具类使用方:
  *     - src/layouts/AppLayout.vue (.muted, .truncate, .num)
- *     - src/components/ModelLogo.vue (.muted)
- *     - src/components/Pagination.vue (.muted, .faint)
+ *     - src/components/shared/ModelLogo.vue (.muted)
+ *     - src/components/base/Pagination.vue (.muted, .faint)
  *     - src/views/Dashboard.vue (.muted, .truncate, .num, .text-danger, .mono)
  *     - src/views/Keys.vue (.muted, .faint, .num, .nowrap)
  *     - src/views/Settings.vue (.muted, .num)

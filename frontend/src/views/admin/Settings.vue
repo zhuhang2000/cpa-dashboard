@@ -124,7 +124,7 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
-import Icon from '@/components/Icon.vue'
+import Icon from '@/components/base/Icon.vue'
 import { settingsApi } from '@/api/settings'
 import { refreshStatus } from '@/store'
 import { currency } from '@/utils/format'

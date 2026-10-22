@@ -8,7 +8,7 @@
  *   主体内容区 (.card-body)、底部操作栏 (.card-footer)。
  *
  * 使用该样式的组件 / 页面:
- *   - src/components/StatCard.vue (.card)
+ *   - src/components/base/StatCard.vue (.card)
  *   - src/views/Dashboard.vue (.card, .card-header, .card-title, .card-sub, .card-body)
  *   - src/views/Keys.vue (.card, .card-header, .card-title, .card-body)
  *   - src/views/Pricing.vue (.card, .card-header, .card-body, .card-footer)

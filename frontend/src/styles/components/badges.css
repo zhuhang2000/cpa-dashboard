@@ -8,7 +8,7 @@
  *   .badge-success, .badge-danger, .badge-warning, .badge-info, .badge-accent。
  *
  * 使用该样式的组件 / 页面:
- *   - src/components/StatusBadge.vue (通用徽章封装组件 .badge)
+ *   - src/components/base/StatusBadge.vue (通用徽章封装组件 .badge)
  *   - src/views/Usage.vue (.badge, .badge-success, .badge-danger)
  *   - src/views/admin/Overview.vue (.badge, .badge-success, .badge-danger)
  * ==============================================================================

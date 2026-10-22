@@ -74,10 +74,10 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import ContactAdmin from '@/components/ContactAdmin.vue'
-import Icon from '@/components/Icon.vue'
+import ContactAdmin from './ContactAdmin.vue'
+import Icon from '@/components/base/Icon.vue'
 import NoticeBell from '@/components/notices/NoticeBell.vue'
-import WelcomeMarquee from '@/components/WelcomeMarquee.vue'
+import WelcomeMarquee from './WelcomeMarquee.vue'
 import { ROLES, Role } from '@/constants'
 import { effectiveTheme, logout, refreshUser, store, toggleTheme } from '@/store'
 import { money } from '@/utils/format'

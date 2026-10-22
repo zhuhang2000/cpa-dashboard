@@ -28,7 +28,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import Icon from '@/components/Icon.vue'
+import Icon from '@/components/base/Icon.vue'
 import { store } from '@/store'
 
 // Scroll speed in px/s.

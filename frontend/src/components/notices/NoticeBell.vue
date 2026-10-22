@@ -15,7 +15,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import Icon from '@/components/Icon.vue'
+import Icon from '@/components/base/Icon.vue'
 import { useNotices } from '@/composables/useNotices'
 import NoticeDialog from './NoticeDialog.vue'
 

@@ -12,7 +12,7 @@
  *     - src/layouts/AppLayout.vue (.sidebar, .layout.nav-open, .backdrop, .main, .menu-btn, .topbar, .content, .hide-sm)
  *     - src/layouts/AuthShell.vue (.auth, .auth-brand, .auth-panel, .auth-mobile-logo)
  *   - 指标与卡片尺寸自适应:
- *     - src/components/StatCard.vue (.stat-value)
+ *     - src/components/base/StatCard.vue (.stat-value)
  *     - 各数据页面卡片与栅格适配 (src/views/*, src/views/admin/*, src/views/recharge/*)
  * ==============================================================================
  */
