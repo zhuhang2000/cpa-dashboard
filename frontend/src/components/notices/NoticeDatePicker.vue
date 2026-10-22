@@ -1,11 +1,10 @@
 <template>
   <button
     v-if="selectedDay"
-    ref="pickerBtn"
     class="notice-picker-btn"
     aria-haspopup="listbox"
-    :aria-expanded="open"
-    :aria-controls="open ? menuId : undefined"
+    :aria-expanded="picker.open"
+    :aria-controls="picker.open ? menuId : undefined"
     @click="toggle"
   >
     {{ selectedDay.displayDate }}
@@ -14,11 +13,11 @@
   </button>
   <Teleport to="body">
     <div
-      v-if="open"
+      v-if="picker.open"
       :id="menuId"
       ref="pickerMenu"
       class="notice-picker-menu"
-      :style="pickerStyle"
+      :style="picker.style"
       role="listbox"
       aria-label="公告日期"
     >
@@ -41,68 +40,39 @@
 </template>
 
 <script setup>
-import { computed, ref, useId, watch } from 'vue'
+import { computed, ref, useId } from 'vue'
 import Icon from '@/components/base/Icon.vue'
+import { usePopover } from '@/composables/usePopover'
 
 const props = defineProps({ days: { type: Array, required: true } })
 const selectedKey = defineModel({ type: String, default: '' })
 const emit = defineEmits(['open'])
-const open = ref(false)
 const menuId = useId()
-const pickerBtn = ref(null)
 const pickerMenu = ref(null)
-const pickerStyle = ref({})
+const picker = usePopover({
+  panel: pickerMenu,
+  place(rect) {
+    const width = Math.min(Math.max(rect.width, 280), innerWidth - 32)
+    return {
+      top: `${rect.bottom + 6}px`,
+      left: `${Math.max(16, Math.min(rect.left, innerWidth - width - 16))}px`,
+      width: `${width}px`,
+      maxHeight: `${Math.max(160, innerHeight - rect.bottom - 24)}px`,
+    }
+  },
+})
 const selectedDay = computed(() => props.days.find((day) => day.key === selectedKey.value) || props.days[0])
 
-function close() {
-  open.value = false
-}
-function toggle() {
-  if (open.value) return close()
-  emit('open')
-  const rect = pickerBtn.value.getBoundingClientRect()
-  const width = Math.min(Math.max(rect.width, 280), innerWidth - 32)
-  pickerStyle.value = {
-    top: `${rect.bottom + 6}px`,
-    left: `${Math.max(16, Math.min(rect.left, innerWidth - width - 16))}px`,
-    width: `${width}px`,
-    maxHeight: `${Math.max(160, innerHeight - rect.bottom - 24)}px`,
-  }
-  open.value = true
+function toggle(event) {
+  if (!picker.open) emit('open')
+  picker.toggle(event)
 }
 function pickDay(key) {
   selectedKey.value = key
-  close()
-  pickerBtn.value?.focus()
+  picker.close({ focus: true })
 }
-function onPointerDown(e) {
-  if (!pickerBtn.value?.contains(e.target) && !pickerMenu.value?.contains(e.target)) close()
-}
-function onKey(e) {
-  if (e.key !== 'Escape') return
-  e.preventDefault()
-  e.stopImmediatePropagation()
-  close()
-  pickerBtn.value?.focus()
-}
-function onScroll(e) {
-  if (!pickerMenu.value?.contains(e.target)) close()
-}
-watch(open, (isOpen, _, onCleanup) => {
-  if (!isOpen) return
-  document.addEventListener('pointerdown', onPointerDown)
-  document.addEventListener('keydown', onKey, true)
-  document.addEventListener('scroll', onScroll, true)
-  window.addEventListener('resize', close)
-  onCleanup(() => {
-    document.removeEventListener('pointerdown', onPointerDown)
-    document.removeEventListener('keydown', onKey, true)
-    document.removeEventListener('scroll', onScroll, true)
-    window.removeEventListener('resize', close)
-  })
-})
 
-defineExpose({ close })
+defineExpose({ close: picker.close })
 </script>
 
 <style scoped>

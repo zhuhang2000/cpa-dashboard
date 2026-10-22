@@ -19,7 +19,7 @@
         </span>
       </div>
     </div>
-    <button class="welcome-close" aria-label="关闭欢迎提示" title="关闭" @click="close">
+    <button class="welcome-close" aria-label="关闭欢迎提示" title="关闭" @click="welcome.dismiss()">
       <Icon name="x" :size="14" />
     </button>
   </div>
@@ -29,6 +29,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import Icon from '@/components/base/Icon.vue'
+import { useDismissUntilNextLogin } from '@/composables/useDismissUntilNextLogin'
 import { store } from '@/store'
 
 // Scroll speed in px/s.
@@ -42,10 +43,9 @@ const route = useRoute()
 const hour = new Date().getHours()
 const greeting = hour < 12 ? '早上好' : hour < 18 ? '下午好' : '晚上好'
 
-// Closing hides the bar for the current sign-in only: every login bumps last_login_at, so the next one shows it again.
-const session = computed(() => `${store.user?.id}:${store.user?.last_login_at}`)
-const closedFor = ref(readClosed())
-const visible = computed(() => !!store.user && closedFor.value !== session.value)
+// Closing hides the bar until the next sign-in.
+const welcome = useDismissUntilNextLogin(STORAGE_KEY)
+const visible = computed(() => !!store.user && !welcome.dismissed)
 
 // One loop scrolls exactly one copy of the text, so the duration follows its width.
 const item = ref(null)
@@ -82,23 +82,6 @@ onMounted(() => {
 })
 onBeforeUnmount(() => observer?.disconnect())
 watch(() => route.meta.title, align, { flush: 'post' })
-
-function readClosed() {
-  try {
-    return localStorage.getItem(STORAGE_KEY)
-  } catch {
-    return null
-  }
-}
-
-function close() {
-  closedFor.value = session.value
-  try {
-    localStorage.setItem(STORAGE_KEY, session.value)
-  } catch {
-    /* ignore */
-  }
-}
 </script>
 
 <style scoped>

@@ -1,12 +1,12 @@
 <template>
-  <div ref="root" class="contact">
-    <div v-if="open" class="contact-panel card" role="dialog" aria-label="联系管理员">
+  <div class="contact">
+    <div v-if="contact.open" ref="panel" class="contact-panel card" role="dialog" aria-label="联系管理员">
       <div class="contact-head">
         <div>
           <div class="card-title">联系管理员</div>
           <div class="contact-sub">充值、兑换码或使用中遇到问题，都可以找我们</div>
         </div>
-        <button class="btn btn-ghost btn-icon btn-sm" aria-label="关闭" @click="open = false">
+        <button class="btn btn-ghost btn-icon btn-sm" aria-label="关闭" @click="contact.close()">
           <Icon name="x" :size="16" />
         </button>
       </div>
@@ -15,7 +15,7 @@
         <figcaption>打开微信「扫一扫」添加管理员</figcaption>
       </figure>
     </div>
-    <button class="contact-tab" :aria-expanded="open" @click="open = !open">
+    <button class="contact-tab" :aria-expanded="contact.open" @click="contact.toggle">
       <Icon name="message" :size="18" />
       <span>联系管理员</span>
     </button>
@@ -23,27 +23,13 @@
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { ref } from 'vue'
 import wechatQr from '@/assets/wechat-qr.jpg'
 import Icon from '@/components/base/Icon.vue'
+import { usePopover } from '@/composables/usePopover'
 
-const open = ref(false)
-const root = ref(null)
-
-function onDocClick(e) {
-  if (open.value && root.value && !root.value.contains(e.target)) open.value = false
-}
-function onKeydown(e) {
-  if (e.key === 'Escape') open.value = false
-}
-onMounted(() => {
-  document.addEventListener('click', onDocClick)
-  document.addEventListener('keydown', onKeydown)
-})
-onBeforeUnmount(() => {
-  document.removeEventListener('click', onDocClick)
-  document.removeEventListener('keydown', onKeydown)
-})
+const panel = ref(null)
+const contact = usePopover({ panel })
 </script>
 
 <style scoped>

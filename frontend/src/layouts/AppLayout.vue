@@ -37,19 +37,19 @@
           <button class="btn btn-ghost btn-icon" :title="themeLabel" :aria-label="themeLabel" @click="toggleTheme">
             <Icon :name="isDark ? 'sun' : 'moon'" />
           </button>
-          <div ref="menuRef" class="dropdown">
+          <div class="dropdown">
             <button
               class="user-btn"
               aria-label="用户菜单"
               aria-haspopup="menu"
-              :aria-expanded="menuOpen"
-              @click="menuOpen = !menuOpen"
+              :aria-expanded="userMenu.open"
+              @click="userMenu.toggle"
             >
               <span class="avatar">{{ initial }}</span>
               <span class="hide-sm">{{ store.user?.username }}</span>
               <Icon name="chevron-down" :size="16" class="hide-sm" />
             </button>
-            <div v-if="menuOpen" class="dropdown-menu" role="menu" @click="menuOpen = false">
+            <div v-if="userMenu.open" ref="userMenuPanel" class="dropdown-menu" role="menu" @click="userMenu.close()">
               <div class="dropdown-head">
                 <div style="font-weight: 600">{{ store.user?.username }}</div>
                 <div class="muted" style="font-size: 12.5px">
@@ -72,11 +72,12 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ContactAdmin from './ContactAdmin.vue'
 import Icon from '@/components/base/Icon.vue'
 import NoticeBell from '@/components/notices/NoticeBell.vue'
+import { usePopover } from '@/composables/usePopover'
 import WelcomeMarquee from './WelcomeMarquee.vue'
 import { ROLES, Role } from '@/constants'
 import { effectiveTheme, logout, refreshUser, store, toggleTheme } from '@/store'
@@ -85,8 +86,8 @@ import { money } from '@/utils/format'
 const route = useRoute()
 const router = useRouter()
 const navOpen = ref(false)
-const menuOpen = ref(false)
-const menuRef = ref(null)
+const userMenuPanel = ref(null)
+const userMenu = usePopover({ panel: userMenuPanel })
 
 const siteName = computed(() => store.status?.site_name || 'API 控制台')
 const isAdmin = computed(() => store.user?.role === Role.ADMIN)
@@ -120,12 +121,6 @@ watch(
     refreshUser({ throttle: 8000 })
   },
 )
-
-function onDocClick(e) {
-  if (menuOpen.value && menuRef.value && !menuRef.value.contains(e.target)) menuOpen.value = false
-}
-onMounted(() => document.addEventListener('click', onDocClick))
-onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
 
 async function doLogout() {
   await logout()

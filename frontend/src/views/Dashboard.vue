@@ -1,9 +1,11 @@
 <template>
   <div class="stack">
-    <div v-if="announcement && !announcementHidden" class="alert alert-info announcement">
+    <div v-if="announcement && !announcementBanner.dismissed" class="alert alert-info announcement">
       <Icon name="megaphone" :size="16" />
       <div class="alert-body" style="white-space: pre-line">{{ announcement }}</div>
-      <button class="alert-close" aria-label="关闭公告" @click="hideAnnouncement"><Icon name="x" :size="16" /></button>
+      <button class="alert-close" aria-label="关闭公告" @click="announcementBanner.dismiss()">
+        <Icon name="x" :size="16" />
+      </button>
     </div>
 
     <div v-if="store.keyCount === 0" class="card onboarding">
@@ -193,6 +195,7 @@ import CopyButton from '@/components/base/CopyButton.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import Icon from '@/components/base/Icon.vue'
 import StatCard from '@/components/base/StatCard.vue'
+import { useDismissUntilNextLogin } from '@/composables/useDismissUntilNextLogin'
 import { usageApi } from '@/api/usage'
 import { refreshUser, store } from '@/store'
 import { currency, dayLabel, money, num, tokens } from '@/utils/format'
@@ -224,23 +227,12 @@ function share(cost) {
 }
 
 const announcement = computed(() => (store.status?.announcement || '').trim())
-const announcementKey = computed(() => `portal-ann-${hash(announcement.value)}`)
-// Closing hides the announcement for the current sign-in only: every login bumps last_login_at, so the
-// next one shows it again (as does a new announcement, which gets a new key).
-const loginSession = computed(() => `${store.user?.id}:${store.user?.last_login_at}`)
-const announcementHidden = ref(false)
+// Closing hides the announcement until the next sign-in; a new announcement gets a new key and shows.
+const announcementBanner = useDismissUntilNextLogin(() => `portal-ann-${hash(announcement.value)}`)
 function hash(s) {
   let h = 0
   for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0
   return h
-}
-function hideAnnouncement() {
-  announcementHidden.value = true
-  try {
-    localStorage.setItem(announcementKey.value, loginSession.value)
-  } catch {
-    /* ignore */
-  }
 }
 
 const baseUrl = computed(() => (store.status?.public_api_base || '').replace(/\/+$/, ''))
@@ -260,11 +252,6 @@ function setDays(d) {
 }
 
 onMounted(() => {
-  try {
-    announcementHidden.value = localStorage.getItem(announcementKey.value) === loginSession.value
-  } catch {
-    /* ignore */
-  }
   refreshUser()
   load()
 })

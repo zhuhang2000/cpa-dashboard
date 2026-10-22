@@ -14,11 +14,10 @@
         <span v-if="unread" class="notice-new-tag">未读</span>
         <button
           v-if="isAdmin"
-          ref="actionTrigger"
           class="btn btn-ghost btn-icon btn-sm notice-more"
           :aria-label="`更多操作：${content.title}`"
-          :aria-expanded="menuOpen"
-          :aria-controls="menuOpen ? menuId : undefined"
+          :aria-expanded="actions.open"
+          :aria-controls="actions.open ? menuId : undefined"
           title="更多操作"
           @click="toggleActions"
         >
@@ -44,11 +43,11 @@
     </template>
     <Teleport to="body">
       <div
-        v-if="menuOpen"
+        v-if="actions.open"
         :id="menuId"
         ref="actionMenu"
         class="notice-action-menu"
-        :style="actionStyle"
+        :style="actions.style"
         role="group"
         aria-label="公告操作"
       >
@@ -62,6 +61,7 @@
 <script setup>
 import { computed, nextTick, ref, useId, watch } from 'vue'
 import Icon from '@/components/base/Icon.vue'
+import { usePopover } from '@/composables/usePopover'
 import { dateTime } from '@/utils/format'
 import NoticeEditor from './NoticeEditor.vue'
 
@@ -76,11 +76,15 @@ const props = defineProps({
 const emit = defineEmits(['activate', 'edit', 'save', 'cancel-edit', 'remove'])
 const draft = ref('')
 const confirming = ref(false)
-const menuOpen = ref(false)
 const menuId = useId()
-const actionTrigger = ref(null)
 const actionMenu = ref(null)
-const actionStyle = ref({})
+const actions = usePopover({
+  panel: actionMenu,
+  place: (rect) => ({
+    left: `${Math.max(16, Math.min(rect.right - 148, innerWidth - 164))}px`,
+    top: `${rect.bottom + 100 > innerHeight ? rect.top - 94 : rect.bottom + 6}px`,
+  }),
+})
 const content = computed(() => {
   const [title, ...body] = props.notice.content.trim().split(/\r?\n/)
   return { title, body: body.join('\n').trim() }
@@ -97,67 +101,30 @@ watch(
   () => props.active,
   (active) => {
     if (!active) {
-      closeActions()
+      actions.close()
       confirming.value = false
     }
   },
 )
 
-function closeActions(restoreFocus = false) {
-  menuOpen.value = false
-  if (restoreFocus) actionTrigger.value?.focus()
-}
-async function toggleActions() {
-  if (menuOpen.value) return closeActions()
-  emit('activate')
-  confirming.value = false
-  const rect = actionTrigger.value.getBoundingClientRect()
-  actionStyle.value = {
-    left: `${Math.max(16, Math.min(rect.right - 148, innerWidth - 164))}px`,
-    top: `${rect.bottom + 100 > innerHeight ? rect.top - 94 : rect.bottom + 6}px`,
+async function toggleActions(event) {
+  if (!actions.open) {
+    emit('activate')
+    confirming.value = false
   }
-  menuOpen.value = true
+  actions.toggle(event)
+  if (!actions.open) return
   await nextTick()
   actionMenu.value?.querySelector('button')?.focus()
 }
 function startEdit() {
-  closeActions()
+  actions.close()
   emit('edit')
 }
 function confirmRemove() {
   confirming.value = true
-  closeActions(true)
+  actions.close({ focus: true })
 }
-function onPointerDown(e) {
-  if (!actionTrigger.value?.contains(e.target) && !actionMenu.value?.contains(e.target)) closeActions()
-}
-function onKey(e) {
-  if (e.key !== 'Escape') return
-  e.preventDefault()
-  e.stopImmediatePropagation()
-  closeActions(true)
-}
-function onScroll(e) {
-  if (!actionMenu.value?.contains(e.target)) closeActions()
-}
-function onResize() {
-  closeActions()
-}
-
-// Only the open menu owns global listeners; closing or unmounting removes them.
-watch(menuOpen, (open, _, onCleanup) => {
-  if (!open) return
-  document.addEventListener('pointerdown', onPointerDown)
-  document.addEventListener('keydown', onKey, true)
-  document.addEventListener('scroll', onScroll, true)
-  window.addEventListener('resize', onResize)
-  onCleanup(() => {
-    document.removeEventListener('pointerdown', onPointerDown)
-    document.removeEventListener('keydown', onKey, true)
-    document.removeEventListener('scroll', onScroll, true)
-    window.removeEventListener('resize', onResize)
-  })
-})
 </script>
 
 <style scoped>

@@ -113,7 +113,7 @@
               </td>
               <td class="actions">
                 <button class="link-btn" @click="openAdjust(u)">调整余额</button>
-                <button v-if="u.id !== store.user?.id" class="link-btn more" @click.stop="openMenu($event, u)">
+                <button v-if="u.id !== store.user?.id" class="link-btn more" @click="openMenu($event, u)">
                   更多<Icon name="chevron-down" :size="13" />
                 </button>
               </td>
@@ -127,18 +127,18 @@
     </div>
 
     <Teleport to="body">
-      <div v-if="menu" class="dropdown-menu" :style="menu.style" role="menu" @click.stop>
+      <div v-if="menu.open" ref="menuPanel" class="dropdown-menu" :style="menu.style" role="menu">
         <button
           class="dropdown-item"
-          :class="{ danger: menu.user.status === UserStatus.ACTIVE }"
-          @click="toggleStatus(menu.user)"
+          :class="{ danger: menuUser.status === UserStatus.ACTIVE }"
+          @click="toggleStatus(menuUser)"
         >
-          <Icon :name="menu.user.status === UserStatus.ACTIVE ? 'lock' : 'check-circle'" :size="15" />
-          {{ menu.user.status === UserStatus.ACTIVE ? '禁用账号' : '启用账号' }}
+          <Icon :name="menuUser.status === UserStatus.ACTIVE ? 'lock' : 'check-circle'" :size="15" />
+          {{ menuUser.status === UserStatus.ACTIVE ? '禁用账号' : '启用账号' }}
         </button>
-        <button class="dropdown-item" @click="openReset(menu.user)"><Icon name="key" :size="15" />重置密码</button>
-        <button class="dropdown-item" @click="toggleRole(menu.user)">
-          <Icon name="shield" :size="15" />{{ menu.user.role === Role.ADMIN ? '取消管理员' : '设为管理员' }}
+        <button class="dropdown-item" @click="openReset(menuUser)"><Icon name="key" :size="15" />重置密码</button>
+        <button class="dropdown-item" @click="toggleRole(menuUser)">
+          <Icon name="shield" :size="15" />{{ menuUser.role === Role.ADMIN ? '取消管理员' : '设为管理员' }}
         </button>
       </div>
     </Teleport>
@@ -246,7 +246,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import Icon from '@/components/base/Icon.vue'
 import Modal from '@/components/base/Modal.vue'
@@ -257,6 +257,7 @@ import UserDetailModal from '@/components/admin/UserDetailModal.vue'
 import { accountsApi } from '@/api/accounts'
 import { billingApi } from '@/api/billing'
 import { usePagedList } from '@/composables/usePagedList'
+import { usePopover } from '@/composables/usePopover'
 import { REDEEM_TYPES, RedeemType, ROLES, Role, USER_STATUSES, UserStatus } from '@/constants'
 import { store } from '@/store'
 import { currency, date, dateTime, money, num, relative } from '@/utils/format'
@@ -276,29 +277,27 @@ const allSelected = computed(() => users.items.length > 0 && users.items.every((
 const saving = ref(false)
 const adjusting = ref(null)
 const detailUser = ref(null)
-const menu = ref(null)
 const resetting = ref(null)
 const newPassword = ref('')
 const showPassword = ref(false)
 const form = reactive({ mode: 'add', type: '', amount: '', note: '' })
 
-// The table scrolls horizontally, so the row menu is teleported and fixed-positioned.
+// The table scrolls horizontally, so the row menu is teleported and placed by its button.
+const menuPanel = ref(null)
+const menuUser = ref(null)
+const menu = usePopover({
+  panel: menuPanel,
+  place: (rect) => ({
+    position: 'fixed',
+    top: `${rect.bottom + 6}px`,
+    left: `${Math.max(8, rect.right - 160)}px`,
+    right: 'auto',
+    minWidth: '160px',
+  }),
+})
 function openMenu(event, u) {
-  if (menu.value?.user.id === u.id) return closeMenu()
-  const rect = event.currentTarget.getBoundingClientRect()
-  menu.value = {
-    user: u,
-    style: {
-      position: 'fixed',
-      top: `${rect.bottom + 6}px`,
-      left: `${Math.max(8, rect.right - 160)}px`,
-      right: 'auto',
-      minWidth: '160px',
-    },
-  }
-}
-function closeMenu() {
-  menu.value = null
+  menuUser.value = u
+  menu.toggle(event)
 }
 
 // A reload keeps only the selected rows that are still on screen.
@@ -342,7 +341,7 @@ async function archiveSelected() {
 }
 
 function openDetail(u) {
-  closeMenu()
+  menu.close()
   detailUser.value = u
 }
 
@@ -373,7 +372,7 @@ async function adjust() {
 }
 
 function openReset(u) {
-  closeMenu()
+  menu.close()
   resetting.value = u
   newPassword.value = ''
   showPassword.value = false
@@ -396,14 +395,14 @@ async function resetPassword() {
 
 function setArchived(value) {
   if (archived.value === value) return
-  closeMenu()
+  menu.close()
   archived.value = value
   users.items = []
   users.load(1)
 }
 
 async function runMenuAction(request, message) {
-  closeMenu()
+  menu.close()
   try {
     await request()
     toast.success(message)
@@ -427,17 +426,7 @@ function toggleRole(u) {
   )
 }
 
-onMounted(() => {
-  document.addEventListener('click', closeMenu)
-  window.addEventListener('scroll', closeMenu, true)
-  window.addEventListener('resize', closeMenu)
-  users.load(1)
-})
-onBeforeUnmount(() => {
-  document.removeEventListener('click', closeMenu)
-  window.removeEventListener('scroll', closeMenu, true)
-  window.removeEventListener('resize', closeMenu)
-})
+onMounted(() => users.load(1))
 </script>
 
 <style scoped>
