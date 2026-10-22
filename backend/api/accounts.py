@@ -143,16 +143,28 @@ def archive_users(
     return {"updated": accounts.set_archived(conn, data.get("ids"), data.get("archived"))}
 
 
-@router.patch("/api/admin/users/{user_id:int}")
-def update_user(
+@router.put("/api/admin/users/{user_id:int}/status")
+def set_user_status(
     user_id: int,
     admin=Depends(require_admin),
     data: dict = Depends(json_body),
     conn=Depends(get_connection),
     runtime=Depends(get_runtime),
 ):
-    row = accounts.update_user(conn, user_id, data, admin["id"])
+    row = accounts.set_status(conn, user_id, data.get("status"), admin["id"])
+    # Key availability follows the account status, so sync CPA now.
     runtime.worker.trigger()
+    return {"user": user_public(row)}
+
+
+@router.put("/api/admin/users/{user_id:int}/role")
+def set_user_role(
+    user_id: int,
+    admin=Depends(require_admin),
+    data: dict = Depends(json_body),
+    conn=Depends(get_connection),
+):
+    row = accounts.set_role(conn, user_id, data.get("role"), admin["id"])
     return {"user": user_public(row)}
 
 

@@ -402,10 +402,10 @@ function setArchived(value) {
   users.load(1)
 }
 
-async function update(u, payload, message) {
+async function runMenuAction(request, message) {
   closeMenu()
   try {
-    await accountsApi.updateUser(u.id, payload)
+    await request()
     toast.success(message)
     await users.load()
   } catch (e) {
@@ -414,11 +414,14 @@ async function update(u, payload, message) {
 }
 function toggleStatus(u) {
   const status = u.status === UserStatus.ACTIVE ? UserStatus.BANNED : UserStatus.ACTIVE
-  update(u, { status }, status === UserStatus.ACTIVE ? '已启用' : '已禁用，该用户的密钥将停止工作')
+  runMenuAction(
+    () => accountsApi.setUserStatus(u.id, { status }),
+    status === UserStatus.ACTIVE ? '已启用' : '已禁用，该用户的密钥将停止工作',
+  )
 }
 function toggleRole(u) {
   const role = u.role === Role.ADMIN ? Role.USER : Role.ADMIN
-  update(u, { role }, role === Role.ADMIN ? '已设为管理员' : '已取消管理员')
+  runMenuAction(() => accountsApi.setUserRole(u.id, { role }), role === Role.ADMIN ? '已设为管理员' : '已取消管理员')
 }
 
 onMounted(() => {

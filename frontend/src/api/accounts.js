@@ -10,6 +10,7 @@ export const accountsApi = {
   changePassword: (body) => http.post('/api/user/password', body),
   listUsers: (query) => http.get('/api/admin/users', query),
   archiveUsers: (body) => http.post('/api/admin/users/archive', body),
-  updateUser: (id, body) => http.patch(`/api/admin/users/${id}`, body),
+  setUserStatus: (id, body) => http.put(`/api/admin/users/${id}/status`, body),
+  setUserRole: (id, body) => http.put(`/api/admin/users/${id}/role`, body),
   resetPassword: (id, body) => http.post(`/api/admin/users/${id}/password`, body),
 }

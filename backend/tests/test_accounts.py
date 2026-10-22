@@ -71,7 +71,7 @@ def test_banning_user_revokes_sessions_and_blocks_authentication(account_db):
     first, _ = accounts.start_session(conn, user["id"], "127.0.0.1", 7)
     accounts.start_session(conn, user["id"], "127.0.0.2", 7)
 
-    changed = accounts.update_user(conn, user["id"], {"status": UserStatus.BANNED}, admin["id"])
+    changed = accounts.set_status(conn, user["id"], UserStatus.BANNED, admin["id"])
     assert changed["status"] == UserStatus.BANNED
     assert (
         conn.execute("SELECT COUNT(*) FROM sessions WHERE user_id = ?", (user["id"],)).fetchone()[0]
@@ -150,6 +150,29 @@ def test_user_list_sorts_by_latest_key_use_and_account_totals(account_db):
     assert [name for name, _ in listed("balance", desc=False)] == ["old", "idle", "recent"]
     assert [name for name, _ in listed("created")] == ["idle", "old", "recent"]
     assert listed("unknown") == listed("created")
+
+
+def test_status_and_role_changes_are_validated_and_independent(account_db):
+    conn = account_db
+    admin = add_user(conn, "root", role=Role.ADMIN)
+    user = add_user(conn, "alice")
+
+    with pytest.raises(ApiError, match="状态不正确"):
+        accounts.set_status(conn, user["id"], "deleted", admin["id"])
+    with pytest.raises(ApiError, match="角色不正确"):
+        accounts.set_role(conn, user["id"], None, admin["id"])
+    with pytest.raises(ApiError, match="不能禁用自己"):
+        accounts.set_status(conn, admin["id"], UserStatus.BANNED, admin["id"])
+    with pytest.raises(ApiError, match="不能取消自己"):
+        accounts.set_role(conn, admin["id"], Role.USER, admin["id"])
+    with pytest.raises(ApiError, match="用户不存在"):
+        accounts.set_role(conn, 9999, Role.ADMIN, admin["id"])
+
+    assert (
+        accounts.set_role(conn, user["id"], Role.ADMIN, admin["id"])["status"] == UserStatus.ACTIVE
+    )
+    changed = accounts.set_status(conn, user["id"], UserStatus.BANNED, admin["id"])
+    assert (changed["role"], changed["status"]) == (Role.ADMIN, UserStatus.BANNED)
 
 
 def test_logout_revokes_only_the_selected_session(account_db):

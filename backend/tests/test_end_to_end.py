@@ -38,7 +38,8 @@ EXPECTED_ROUTES = {
     ("GET", "/api/admin/overview"),
     ("GET", "/api/admin/users"),
     ("POST", "/api/admin/users/archive"),
-    ("PATCH", "/api/admin/users/{user_id}"),
+    ("PUT", "/api/admin/users/{user_id}/status"),
+    ("PUT", "/api/admin/users/{user_id}/role"),
     ("GET", "/api/admin/users/{user_id}/keys"),
     ("DELETE", "/api/admin/users/{user_id}/keys/{key_id}"),
     ("POST", "/api/admin/users/{user_id}/balance"),
@@ -215,10 +216,17 @@ def run_portal_scenario(admin, user, bootstrap_admin, append_usage, payment_key=
     )
     call(
         admin,
-        "PATCH",
-        f"/api/admin/users/{user_id}",
-        route="/api/admin/users/{user_id}",
-        json={"role": "user", "status": "active"},
+        "PUT",
+        f"/api/admin/users/{user_id}/role",
+        route="/api/admin/users/{user_id}/role",
+        json={"role": "user"},
+    )
+    call(
+        admin,
+        "PUT",
+        f"/api/admin/users/{user_id}/status",
+        route="/api/admin/users/{user_id}/status",
+        json={"status": "active"},
     )
     # A rejected reset keeps the user's session alive for the rest of the scenario.
     call(
@@ -402,9 +410,9 @@ def run_portal_scenario(admin, user, bootstrap_admin, append_usage, payment_key=
     )
     call(
         admin,
-        "PATCH",
-        f"/api/admin/users/{user_id}",
-        route="/api/admin/users/{user_id}",
+        "PUT",
+        f"/api/admin/users/{user_id}/status",
+        route="/api/admin/users/{user_id}/status",
         json={"status": "banned"},
     )
     logged_out, _ = call(user, "GET", "/api/user/me")
@@ -495,7 +503,7 @@ def test_all_business_endpoints_through_fastapi(tmp_path):
             for method in operations
             if method in {"get", "post", "put", "patch", "delete"}
         }
-    assert len(EXPECTED_ROUTES) == 47
+    assert len(EXPECTED_ROUTES) == 48
     assert covered == EXPECTED_ROUTES
     assert actual_routes == EXPECTED_ROUTES
     assert len(records) > 39

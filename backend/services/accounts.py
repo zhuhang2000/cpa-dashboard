@@ -222,25 +222,29 @@ def set_archived(conn, user_ids, archived):
     ).rowcount
 
 
-def update_user(conn, user_id, data, operator_id):
-    """Apply administrator changes, retaining the existing update order."""
+def set_status(conn, user_id, status, operator_id):
+    """Ban or re-enable an account; a ban also signs it out everywhere."""
     row = get(conn, user_id)
-    is_self = row["id"] == operator_id
-    if "status" in data:
-        if data["status"] not in UserStatus.ALL:
-            raise ApiError(400, "状态不正确")
-        if is_self and data["status"] != UserStatus.ACTIVE:
-            raise ApiError(400, "不能禁用自己的账号")
-        conn.execute("UPDATE users SET status = ? WHERE id = ?", (data["status"], row["id"]))
-        if data["status"] == UserStatus.BANNED:
+    if status not in UserStatus.ALL:
+        raise ApiError(400, "状态不正确")
+    if row["id"] == operator_id and status != UserStatus.ACTIVE:
+        raise ApiError(400, "不能禁用自己的账号")
+    with transaction(conn):
+        conn.execute("UPDATE users SET status = ? WHERE id = ?", (status, row["id"]))
+        if status == UserStatus.BANNED:
             conn.execute("DELETE FROM sessions WHERE user_id = ?", (row["id"],))
-    if "role" in data:
-        if data["role"] not in Role.ALL:
-            raise ApiError(400, "角色不正确")
-        if is_self and data["role"] != Role.ADMIN:
-            raise ApiError(400, "不能取消自己的管理员身份")
-        conn.execute("UPDATE users SET role = ? WHERE id = ?", (data["role"], row["id"]))
-    return get(conn, user_id)
+    return get(conn, row["id"])
+
+
+def set_role(conn, user_id, role, operator_id):
+    """Grant or revoke administrator rights."""
+    row = get(conn, user_id)
+    if role not in Role.ALL:
+        raise ApiError(400, "角色不正确")
+    if row["id"] == operator_id and role != Role.ADMIN:
+        raise ApiError(400, "不能取消自己的管理员身份")
+    conn.execute("UPDATE users SET role = ? WHERE id = ?", (role, row["id"]))
+    return get(conn, row["id"])
 
 
 def create_admin(conn, username, password=None):
