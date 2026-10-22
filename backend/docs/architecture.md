@@ -30,6 +30,7 @@ POST /api/keys
 - 管理员路径：全站共用的资源在 `/api/` 后加 `admin/`；属于某个用户的资源把 `/api/`（或 `/api/user/`）换成 `/api/admin/users/{user_id}/`。
 - 前端 `frontend/src/api/` 的方法名跟处理函数一致：`list_keys` → `listKeys`，`admin_list_keys` → `adminListKeys`。
 - 每个 `api/*.py` 先放共用辅助函数，再放用户接口，最后放管理员接口，两组分别以 `# ---- User endpoints ----`、`# ---- Administrator endpoints ----` 开头。前端各模块同样先列用户方法，空一行后列管理员方法。
+- 每个 `services/*.py` 按调用方分组，依次为 `# ---- Shared ----`（用户和管理员都用，或后台也用）、`# ---- User operations ----`、`# ---- Administrator operations ----`、`# ---- Sync worker and CLI ----`（只给同步任务或命令行用）。新增函数放进它的调用方所在的组；调用方变了就挪到对应的组。只有一种调用方的文件（如 `settings.py`）不分组。
 
 ## 各目录负责什么
 

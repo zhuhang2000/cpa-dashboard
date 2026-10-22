@@ -14,6 +14,9 @@ DAY_MS = 86400000
 KEY_CLOCK_SKEW_MS = 5 * 60 * 1000
 
 
+# ---- Shared ----
+
+
 def day_start(ts, tz_offset_minutes):
     offset = int(tz_offset_minutes or 0) * 60000
     return ((ts + offset) // DAY_MS) * DAY_MS - offset
@@ -24,6 +27,49 @@ def month_start(ts, tz_offset_minutes):
     local = datetime.datetime.fromtimestamp((ts + offset) / 1000, tz=datetime.timezone.utc)
     first = datetime.datetime(local.year, local.month, 1, tzinfo=datetime.timezone.utc)
     return int(first.timestamp() * 1000) - offset
+
+
+def list_logs(conn, user_id, filters, size, offset):
+    """Return a filtered page, aggregate totals and recent model names."""
+    where, args = _where(user_id, filters)
+    totals = conn.execute(
+        "SELECT COUNT(*) AS n, COALESCE(SUM(cost_micro), 0) AS cost, "
+        "COALESCE(SUM(total_tokens), 0) AS tokens FROM usage_logs l WHERE " + where,
+        args,
+    ).fetchone()
+    rows = conn.execute(
+        "SELECT l.*, k.name AS key_name FROM usage_logs l LEFT JOIN api_keys k ON k.id = l.key_id "
+        "WHERE " + where + " ORDER BY l.ts DESC, l.id DESC LIMIT ? OFFSET ?",
+        args + [size, offset],
+    ).fetchall()
+    models = [
+        row[0]
+        for row in conn.execute(
+            "SELECT model FROM usage_logs WHERE user_id = ? AND ts >= ? GROUP BY model ORDER BY model",
+            (user_id, now_ms() - 90 * DAY_MS),
+        )
+    ]
+    return {"items": [dict(row) for row in rows], "summary": dict(totals), "models": models}
+
+
+def _where(user_id, filters):
+    where, args = ["l.user_id = ?"], [user_id]
+    for field, expression in (
+        ("key_id", "l.key_id = ?"),
+        ("model", "l.model = ?"),
+        ("start", "l.ts >= ?"),
+        ("end", "l.ts < ?"),
+    ):
+        if field in filters:
+            where.append(expression)
+            args.append(filters[field])
+    if filters.get("status") in ("success", "failed"):
+        where.append("l.failed = ?")
+        args.append(1 if filters["status"] == "failed" else 0)
+    return " AND ".join(where), args
+
+
+# ---- User operations ----
 
 
 def summary(conn, user_id, days, tz_offset_minutes, now=None):
@@ -76,29 +122,6 @@ def summary(conn, user_id, days, tz_offset_minutes, now=None):
     }
 
 
-def list_logs(conn, user_id, filters, size, offset):
-    """Return a filtered page, aggregate totals and recent model names."""
-    where, args = _where(user_id, filters)
-    totals = conn.execute(
-        "SELECT COUNT(*) AS n, COALESCE(SUM(cost_micro), 0) AS cost, "
-        "COALESCE(SUM(total_tokens), 0) AS tokens FROM usage_logs l WHERE " + where,
-        args,
-    ).fetchone()
-    rows = conn.execute(
-        "SELECT l.*, k.name AS key_name FROM usage_logs l LEFT JOIN api_keys k ON k.id = l.key_id "
-        "WHERE " + where + " ORDER BY l.ts DESC, l.id DESC LIMIT ? OFFSET ?",
-        args + [size, offset],
-    ).fetchall()
-    models = [
-        row[0]
-        for row in conn.execute(
-            "SELECT model FROM usage_logs WHERE user_id = ? AND ts >= ? GROUP BY model ORDER BY model",
-            (user_id, now_ms() - 90 * DAY_MS),
-        )
-    ]
-    return {"items": [dict(row) for row in rows], "summary": dict(totals), "models": models}
-
-
 def export_logs(conn, user_id, filters):
     where, args = _where(user_id, filters)
     return [
@@ -109,6 +132,9 @@ def export_logs(conn, user_id, filters):
             args,
         )
     ]
+
+
+# ---- Administrator operations ----
 
 
 def overview(conn, tz_offset_minutes, now=None):
@@ -157,6 +183,9 @@ def overview(conn, tz_offset_minutes, now=None):
         "top_users": [dict(row) for row in top_users],
         "unpriced_models": [dict(row) for row in unpriced],
     }
+
+
+# ---- Sync worker and CLI ----
 
 
 def get_cursor(conn):
@@ -252,23 +281,6 @@ def apply_batch(conn, rows, keys, book, bill_failed, last_event_at=None):
             pricing.touch_model(conn, model, last_ms, calls)
         set_setting(conn, "cpamp_cursor", rows[-1]["id"])
     return billed, last_event_at or None
-
-
-def _where(user_id, filters):
-    where, args = ["l.user_id = ?"], [user_id]
-    for field, expression in (
-        ("key_id", "l.key_id = ?"),
-        ("model", "l.model = ?"),
-        ("start", "l.ts >= ?"),
-        ("end", "l.ts < ?"),
-    ):
-        if field in filters:
-            where.append(expression)
-            args.append(filters[field])
-    if filters.get("status") in ("success", "failed"):
-        where.append("l.failed = ?")
-        args.append(1 if filters["status"] == "failed" else 0)
-    return " AND ".join(where), args
 
 
 def _int(value):

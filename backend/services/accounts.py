@@ -24,6 +24,9 @@ EMAIL_RE = re.compile(r"^[^@\s]{1,64}@[^@\s]{1,253}\.[^@\s.]{2,}$")
 _DUMMY_HASH = []
 
 
+# ---- Shared ----
+
+
 def validate_username(username):
     if not USERNAME_RE.match(username):
         raise ApiError(400, "用户名需为 3-32 位字母、数字、下划线或短横线")
@@ -36,12 +39,6 @@ def validate_password(password):
         raise ApiError(400, "密码过长")
 
 
-def _dummy_hash():
-    if not _DUMMY_HASH:
-        _DUMMY_HASH.append(hash_password(secrets.token_hex(8)))
-    return _DUMMY_HASH[0]
-
-
 def get(conn, user_id):
     row = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
     if row is None:
@@ -51,20 +48,6 @@ def get(conn, user_id):
 
 def find_by_username(conn, username):
     return conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
-
-
-def start_session(conn, user_id, ip, session_days, user_agent=""):
-    """Create a session in the caller's transaction and return (token, max_age)."""
-    token = new_session_token()
-    lifetime = int(session_days or 7) * DAY_MS
-    now = now_ms()
-    conn.execute("DELETE FROM sessions WHERE expires_at < ?", (now,))
-    conn.execute(
-        "INSERT INTO sessions (token_hash, user_id, created_at, expires_at, ip, user_agent) "
-        "VALUES (?, ?, ?, ?, ?, ?)",
-        (sha256_hex(token), user_id, now, now + lifetime, ip, (user_agent or "")[:200]),
-    )
-    return token, lifetime // 1000
 
 
 def authenticate_session(conn, token, session_days):
@@ -87,6 +70,38 @@ def authenticate_session(conn, token, session_days):
         )
         return row, lifetime // 1000
     return row, None
+
+
+def reset_password(conn, user_id, password):
+    """CLI reset: retain its existing password policy and revoke every session."""
+    with transaction(conn):
+        conn.execute(
+            "UPDATE users SET password_hash = ? WHERE id = ?", (hash_password(password), user_id)
+        )
+        conn.execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))
+
+
+# ---- User operations ----
+
+
+def _dummy_hash():
+    if not _DUMMY_HASH:
+        _DUMMY_HASH.append(hash_password(secrets.token_hex(8)))
+    return _DUMMY_HASH[0]
+
+
+def start_session(conn, user_id, ip, session_days, user_agent=""):
+    """Create a session in the caller's transaction and return (token, max_age)."""
+    token = new_session_token()
+    lifetime = int(session_days or 7) * DAY_MS
+    now = now_ms()
+    conn.execute("DELETE FROM sessions WHERE expires_at < ?", (now,))
+    conn.execute(
+        "INSERT INTO sessions (token_hash, user_id, created_at, expires_at, ip, user_agent) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        (sha256_hex(token), user_id, now, now + lifetime, ip, (user_agent or "")[:200]),
+    )
+    return token, lifetime // 1000
 
 
 def logout(conn, token_hash):
@@ -183,6 +198,9 @@ def change_password(conn, user, data, keep_session):
         )
 
 
+# ---- Administrator operations ----
+
+
 def search(conn, q, limit, offset, archived=False, sort="created", desc=True):
     """Archived (inactive) accounts are listed apart from the main user list.
 
@@ -247,34 +265,6 @@ def set_role(conn, user_id, role, operator_id):
     return get(conn, row["id"])
 
 
-def create_admin(conn, username, password=None):
-    """Return (user, created); an existing account is promoted without a password change."""
-    validate_username(username)
-    row = find_by_username(conn, username)
-    if row:
-        conn.execute(
-            "UPDATE users SET role = ?, status = ? WHERE id = ?",
-            (Role.ADMIN, UserStatus.ACTIVE, row["id"]),
-        )
-        return get(conn, row["id"]), False
-    if password is None:
-        raise ValueError("password is required for a new administrator")
-    user_id = conn.execute(
-        "INSERT INTO users (username, password_hash, role, created_at) VALUES (?, ?, ?, ?)",
-        (username, hash_password(password), Role.ADMIN, now_ms()),
-    ).lastrowid
-    return get(conn, user_id), True
-
-
-def reset_password(conn, user_id, password):
-    """CLI reset: retain its existing password policy and revoke every session."""
-    with transaction(conn):
-        conn.execute(
-            "UPDATE users SET password_hash = ? WHERE id = ?", (hash_password(password), user_id)
-        )
-        conn.execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))
-
-
 def admin_reset_password(conn, user_id, data, operator_id):
     """Administrator reset for a forgotten password; the user must sign in again."""
     row = get(conn, user_id)
@@ -294,3 +284,25 @@ def overview_counts(conn, today):
         "balance_total_micro": conn.execute("SELECT SUM(balance_micro) FROM users").fetchone()[0]
         or 0,
     }
+
+
+# ---- Sync worker and CLI ----
+
+
+def create_admin(conn, username, password=None):
+    """Return (user, created); an existing account is promoted without a password change."""
+    validate_username(username)
+    row = find_by_username(conn, username)
+    if row:
+        conn.execute(
+            "UPDATE users SET role = ?, status = ? WHERE id = ?",
+            (Role.ADMIN, UserStatus.ACTIVE, row["id"]),
+        )
+        return get(conn, row["id"]), False
+    if password is None:
+        raise ValueError("password is required for a new administrator")
+    user_id = conn.execute(
+        "INSERT INTO users (username, password_hash, role, created_at) VALUES (?, ?, ?, ?)",
+        (username, hash_password(password), Role.ADMIN, now_ms()),
+    ).lastrowid
+    return get(conn, user_id), True

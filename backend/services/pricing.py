@@ -12,6 +12,9 @@ CACHE_WRITE_RATIO = 1.25
 DAY_MS = 86400000
 
 
+# ---- Shared ----
+
+
 class Price:
     __slots__ = ("input", "output", "cache_read", "cache_write")
 
@@ -61,14 +64,6 @@ def _model_candidates(model):
         if name and name not in seen:
             seen.append(name)
     return seen
-
-
-def prices_from_external(raw):
-    """Convert adapter records into prices without opening the external database."""
-    return {
-        model: Price(value["input"], value["output"], value["cache_read"], value["cache_write"])
-        for model, value in raw.items()
-    }
 
 
 class PriceBook:
@@ -126,19 +121,7 @@ def build_price_book(conn, cpamp_prices, setting):
     )
 
 
-def touch_model(conn, model, last_ms, calls):
-    """Record model sightings inside the caller's usage-sync transaction."""
-    if not model:
-        return
-    conn.execute(
-        "INSERT OR IGNORE INTO seen_models (model, last_seen_ms, calls) VALUES (?, ?, 0)",
-        (model, last_ms or 0),
-    )
-    conn.execute(
-        "UPDATE seen_models SET last_seen_ms = MAX(last_seen_ms, ?), calls = calls + ? "
-        "WHERE model = ?",
-        (last_ms or 0, calls, model),
-    )
+# ---- User operations ----
 
 
 def list_prices(conn, cpamp_prices, setting, currency_symbol):
@@ -166,6 +149,9 @@ def list_prices(conn, cpamp_prices, setting, currency_symbol):
         item.update(model=model, note=notes.get(model) or "", source=source)
         items.append(item)
     return {"items": items, "currency_symbol": currency_symbol}
+
+
+# ---- Administrator operations ----
 
 
 def admin_list_prices(conn, cpamp_prices, setting):
@@ -259,3 +245,29 @@ def set_visibility(conn, data):
             hidden.discard(model)
         set_setting(conn, "hidden_models", sorted(hidden))
     return {"ok": True}
+
+
+# ---- Sync worker and CLI ----
+
+
+def prices_from_external(raw):
+    """Convert adapter records into prices without opening the external database."""
+    return {
+        model: Price(value["input"], value["output"], value["cache_read"], value["cache_write"])
+        for model, value in raw.items()
+    }
+
+
+def touch_model(conn, model, last_ms, calls):
+    """Record model sightings inside the caller's usage-sync transaction."""
+    if not model:
+        return
+    conn.execute(
+        "INSERT OR IGNORE INTO seen_models (model, last_seen_ms, calls) VALUES (?, ?, 0)",
+        (model, last_ms or 0),
+    )
+    conn.execute(
+        "UPDATE seen_models SET last_seen_ms = MAX(last_seen_ms, ?), calls = calls + ? "
+        "WHERE model = ?",
+        (last_ms or 0, calls, model),
+    )

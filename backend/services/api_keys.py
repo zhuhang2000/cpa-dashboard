@@ -10,21 +10,15 @@ NAME_MAX = 32
 DEFAULT_NAME = "默认密钥"
 
 
+# ---- Shared ----
+
+
 def min_balance_micro(cfg):
     return to_micro(cfg.get("min_balance_to_call") or 0)
 
 
-def max_keys(cfg):
-    return int(cfg.get("max_keys_per_user") or 10)
-
-
 def key_prefix(cfg):
     return cfg.get("key_prefix") or "sk-"
-
-
-def hash_key(key):
-    """Match CPA Manager Plus' usage_events.api_key_hash."""
-    return sha256_hex(key)
 
 
 def state(key_row, user_row, min_balance, now):
@@ -38,43 +32,6 @@ def state(key_row, user_row, min_balance, now):
     if user_row["balance_micro"] <= min_balance or user_row["status"] != UserStatus.ACTIVE:
         return KeyState.SUSPENDED
     return KeyStatus.ACTIVE
-
-
-def desired_and_managed(conn, cfg):
-    min_balance = min_balance_micro(cfg)
-    now = now_ms()
-    users = {row["id"]: row for row in conn.execute("SELECT id, balance_micro, status FROM users")}
-    desired, managed = set(), set()
-    for row in conn.execute("SELECT * FROM api_keys"):
-        managed.add(row["key"])
-        user = users.get(row["user_id"])
-        if user is not None and state(row, user, min_balance, now) == KeyStatus.ACTIVE:
-            desired.add(row["key"])
-    return desired, managed
-
-
-def count_live(conn, user_id):
-    return conn.execute(
-        "SELECT COUNT(*) FROM api_keys WHERE user_id = ? AND status != ?",
-        (user_id, KeyStatus.DELETED),
-    ).fetchone()[0]
-
-
-def live_counts(conn, user_ids):
-    if not user_ids:
-        return {}
-    rows = conn.execute(
-        "SELECT user_id, COUNT(*) FROM api_keys WHERE status != ? AND user_id IN (%s) "
-        "GROUP BY user_id" % ", ".join("?" * len(user_ids)),
-        [KeyStatus.DELETED] + list(user_ids),
-    )
-    return {row[0]: row[1] for row in rows}
-
-
-def active_count(conn):
-    return conn.execute(
-        "SELECT COUNT(*) FROM api_keys WHERE status = ?", (KeyStatus.ACTIVE,)
-    ).fetchone()[0]
 
 
 def list_for_user(conn, user_id):
@@ -92,6 +49,32 @@ def get_owned(conn, user_id, key_id):
     if row is None:
         raise ApiError(404, "密钥不存在")
     return row
+
+
+def soft_delete(conn, key_row):
+    conn.execute(
+        "UPDATE api_keys SET status = ?, deleted_at = ? WHERE id = ?",
+        (KeyStatus.DELETED, now_ms(), key_row["id"]),
+    )
+
+
+# ---- User operations ----
+
+
+def max_keys(cfg):
+    return int(cfg.get("max_keys_per_user") or 10)
+
+
+def hash_key(key):
+    """Match CPA Manager Plus' usage_events.api_key_hash."""
+    return sha256_hex(key)
+
+
+def count_live(conn, user_id):
+    return conn.execute(
+        "SELECT COUNT(*) FROM api_keys WHERE user_id = ? AND status != ?",
+        (user_id, KeyStatus.DELETED),
+    ).fetchone()[0]
 
 
 def _get(conn, key_id):
@@ -167,11 +150,40 @@ def update(conn, key_row, data):
     return get_owned(conn, key_row["user_id"], key_row["id"])
 
 
-def soft_delete(conn, key_row):
-    conn.execute(
-        "UPDATE api_keys SET status = ?, deleted_at = ? WHERE id = ?",
-        (KeyStatus.DELETED, now_ms(), key_row["id"]),
+# ---- Administrator operations ----
+
+
+def live_counts(conn, user_ids):
+    if not user_ids:
+        return {}
+    rows = conn.execute(
+        "SELECT user_id, COUNT(*) FROM api_keys WHERE status != ? AND user_id IN (%s) "
+        "GROUP BY user_id" % ", ".join("?" * len(user_ids)),
+        [KeyStatus.DELETED] + list(user_ids),
     )
+    return {row[0]: row[1] for row in rows}
+
+
+def active_count(conn):
+    return conn.execute(
+        "SELECT COUNT(*) FROM api_keys WHERE status = ?", (KeyStatus.ACTIVE,)
+    ).fetchone()[0]
+
+
+# ---- Sync worker and CLI ----
+
+
+def desired_and_managed(conn, cfg):
+    min_balance = min_balance_micro(cfg)
+    now = now_ms()
+    users = {row["id"]: row for row in conn.execute("SELECT id, balance_micro, status FROM users")}
+    desired, managed = set(), set()
+    for row in conn.execute("SELECT * FROM api_keys"):
+        managed.add(row["key"])
+        user = users.get(row["user_id"])
+        if user is not None and state(row, user, min_balance, now) == KeyStatus.ACTIVE:
+            desired.add(row["key"])
+    return desired, managed
 
 
 def billing_owners(conn):
