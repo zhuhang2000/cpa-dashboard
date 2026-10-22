@@ -27,7 +27,6 @@
           <Icon name="menu" />
         </button>
         <div class="topbar-title truncate">{{ route.meta.title }}</div>
-        <WelcomeMarquee />
         <div class="topbar-right">
           <RouterLink to="/recharge" class="balance-pill num" :class="{ low: lowBalance }" title="账户余额，点击充值">
             <Icon name="wallet" :size="16" />
@@ -80,7 +79,6 @@ import GuideTour from './GuideTour.vue'
 import Icon from '@/components/base/Icon.vue'
 import NoticeBell from '@/components/notices/NoticeBell.vue'
 import { usePopover } from '@/composables/usePopover'
-import WelcomeMarquee from './WelcomeMarquee.vue'
 import { ROLES, Role } from '@/constants'
 import { effectiveTheme, logout, refreshUser, store, toggleTheme } from '@/store'
 import { money } from '@/utils/format'
