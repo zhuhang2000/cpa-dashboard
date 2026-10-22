@@ -1,4 +1,4 @@
-"""Admin key lookup and cleanup must remain scoped to the selected account."""
+"""Admin lookups of a user's keys, ledger and usage must stay scoped to that account."""
 
 from pathlib import Path
 
@@ -6,12 +6,12 @@ import pytest
 from fastapi.testclient import TestClient
 
 from core.config import load_config
-from core.constants import KeyStatus
+from core.constants import KeyStatus, TxType
 from core.db import now_ms
 from core.errors import ApiError
 from core.security import hash_password
 from runtime.app import Runtime, create_app
-from services import accounts, api_keys
+from services import accounts, api_keys, billing
 
 
 @pytest.fixture
@@ -57,6 +57,10 @@ def test_admin_endpoints_require_admin_and_do_not_expand_user_access(key_portal)
             login(client, username)
         assert client.get(path).status_code == expected
         assert client.delete(f"{path}/{keys['alice']['id']}").status_code == expected
+        for detail in ("transactions", "usage/logs"):
+            assert client.get(f"/api/admin/users/{users['alice']}/{detail}").status_code == expected
+        archive = {"ids": [users["alice"]], "archived": True}
+        assert client.post("/api/admin/users/archive", json=archive).status_code == expected
     own = client.get("/api/keys").json()["items"]
     assert len(own) == 1 and "key" not in own[0]
     assert client.delete(f"/api/keys/{keys['bob']['id']}").status_code == 404
@@ -163,3 +167,51 @@ def test_update_started_before_admin_deletion_cannot_restore_the_key(key_portal)
         assert row["status"] == KeyStatus.DELETED and row["name"] == stale["name"]
     finally:
         conn.close()
+
+
+def test_admin_user_ledger_and_usage_stay_scoped_to_the_account(key_portal):
+    client, runtime, users, keys = key_portal
+    conn = runtime.db()
+    try:
+        admin_id = accounts.find_by_username(conn, "admin")["id"]
+        for username in ("alice", "bob"):
+            billing.apply_credit(
+                conn, users[username], 1000000, TxType.ADMIN, note=username, operator_id=admin_id
+            )
+            conn.execute(
+                "INSERT INTO usage_logs (event_hash, user_id, key_id, ts, model, cost_micro) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (
+                    username,
+                    users[username],
+                    keys[username]["id"],
+                    now_ms(),
+                    username + "-model",
+                    2500,
+                ),
+            )
+        code = "AAAA-BBBB-CCCC-DDDD"
+        billing.apply_credit(
+            conn, users["alice"], 500000, TxType.REDEEM, ref=code, note="兑换码充值"
+        )
+    finally:
+        conn.close()
+
+    login(client, "admin")
+    path = f"/api/admin/users/{users['alice']}"
+    ledger = client.get(f"{path}/transactions").json()
+    assert ledger["total"] == 2
+    assert [(t["type"], t["ref"], t["operator"]) for t in ledger["items"]] == [
+        (TxType.REDEEM, code, ""),
+        (TxType.ADMIN, "", "admin"),
+    ]
+    logs = client.get(f"{path}/usage/logs").json()
+    assert logs["total"] == 1 and logs["sum_cost"] == 0.0025
+    assert (logs["items"][0]["model"], logs["items"][0]["key_name"]) == ("alice-model", "alice key")
+    for detail in ("transactions", "usage/logs"):
+        assert client.get(f"/api/admin/users/99999/{detail}").status_code == 404
+
+    # The account owner's own ledger keeps redeem codes masked and hides the operator.
+    login(client, "alice")
+    own = client.get("/api/billing/transactions").json()["items"][0]
+    assert own["ref"] == "AAAA-****-****-DDDD" and "operator" not in own

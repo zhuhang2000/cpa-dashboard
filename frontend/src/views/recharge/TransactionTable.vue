@@ -25,6 +25,7 @@
           <td>
             {{ t.note }}
             <div v-if="t.ref" class="cell-sub mono">{{ t.ref }}</div>
+            <div v-if="t.operator" class="cell-sub">操作人：{{ t.operator }}</div>
           </td>
         </tr>
       </tbody>
@@ -42,7 +43,8 @@ import StatusBadge from '@/components/StatusBadge.vue'
 import { TX_TYPES } from '@/constants'
 import { dateTime, money } from '@/utils/format'
 
-// The balance ledger: a usePagedList() of billingApi.listTransactions.
+// The balance ledger: a usePagedList() of billingApi.listTransactions, or of
+// billingApi.listUserTransactions for administrators (whose rows also name the operator).
 defineProps({
   list: { type: Object, required: true },
 })

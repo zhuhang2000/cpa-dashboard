@@ -16,7 +16,7 @@ from api.dependencies import (
     require_admin,
     require_user,
 )
-from services import usage
+from services import accounts, usage
 from services.billing import MICRO, epay_conf, money
 
 router = APIRouter(tags=["usage"])
@@ -78,17 +78,13 @@ def usage_summary(
 
 @router.get("/api/usage/logs")
 def usage_logs(request: Request, user=Depends(require_user), conn=Depends(get_connection)):
-    page, size, offset = pagination(request)
-    result = usage.list_logs(conn, user["id"], _filters(request), size, offset)
-    return {
-        "items": [_usage_item(row) for row in result["items"]],
-        "total": result["summary"]["n"],
-        "sum_cost": money(result["summary"]["cost"]),
-        "sum_tokens": result["summary"]["tokens"],
-        "page": page,
-        "page_size": size,
-        "models": result["models"],
-    }
+    return _logs_page(request, conn, user["id"])
+
+
+@router.get("/api/admin/users/{user_id:int}/usage/logs", dependencies=[Depends(require_admin)])
+def user_usage_logs(user_id: int, request: Request, conn=Depends(get_connection)):
+    user = accounts.get(conn, user_id)
+    return _logs_page(request, conn, user["id"])
 
 
 @router.get("/api/usage/export", response_class=Response)
@@ -194,6 +190,20 @@ def _filters(request):
         if query_arg(request, name):
             filters[name] = query_arg(request, name)
     return filters
+
+
+def _logs_page(request, conn, user_id):
+    page, size, offset = pagination(request)
+    result = usage.list_logs(conn, user_id, _filters(request), size, offset)
+    return {
+        "items": [_usage_item(row) for row in result["items"]],
+        "total": result["summary"]["n"],
+        "sum_cost": money(result["summary"]["cost"]),
+        "sum_tokens": result["summary"]["tokens"],
+        "page": page,
+        "page_size": size,
+        "models": result["models"],
+    }
 
 
 def _usage_item(row):

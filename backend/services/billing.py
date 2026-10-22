@@ -118,30 +118,34 @@ def adjust_balance(conn, user_id, operator_id, data):
     return {"balance": money(balance)}
 
 
-def list_transactions(conn, user_id, page, size, offset):
+def list_transactions(conn, user_id, page, size, offset, admin=False):
+    """A user's ledger; administrators also see full redeem codes and who adjusted it."""
     total = conn.execute(
         "SELECT COUNT(*) FROM transactions WHERE user_id = ?", (user_id,)
     ).fetchone()[0]
     rows = conn.execute(
-        "SELECT * FROM transactions WHERE user_id = ? ORDER BY id DESC LIMIT ? OFFSET ?",
+        "SELECT t.*, o.username AS operator FROM transactions t "
+        "LEFT JOIN users o ON o.id = t.operator_id "
+        "WHERE t.user_id = ? ORDER BY t.id DESC LIMIT ? OFFSET ?",
         (user_id, size, offset),
     ).fetchall()
     items = []
     for row in rows:
         ref = row["ref"] or ""
-        if row["type"] in (TxType.REDEEM, TxType.REDEEM_GIFT) and len(ref) > 9:
+        if not admin and row["type"] in (TxType.REDEEM, TxType.REDEEM_GIFT) and len(ref) > 9:
             ref = ref[:4] + "-****-****-" + ref[-4:]
-        items.append(
-            {
-                "id": row["id"],
-                "type": row["type"],
-                "amount": money(row["amount_micro"]),
-                "balance_after": money(row["balance_after_micro"]),
-                "ref": ref,
-                "note": row["note"] or "",
-                "created_at": row["created_at"],
-            }
-        )
+        item = {
+            "id": row["id"],
+            "type": row["type"],
+            "amount": money(row["amount_micro"]),
+            "balance_after": money(row["balance_after_micro"]),
+            "ref": ref,
+            "note": row["note"] or "",
+            "created_at": row["created_at"],
+        }
+        if admin:
+            item["operator"] = row["operator"] or ""
+        items.append(item)
     return {"items": items, "total": total, "page": page, "page_size": size}
 
 

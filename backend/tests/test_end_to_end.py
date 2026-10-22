@@ -37,11 +37,14 @@ EXPECTED_ROUTES = {
     ("GET", "/api/pay/epay/return"),
     ("GET", "/api/admin/overview"),
     ("GET", "/api/admin/users"),
+    ("POST", "/api/admin/users/archive"),
     ("PATCH", "/api/admin/users/{user_id}"),
     ("GET", "/api/admin/users/{user_id}/keys"),
     ("DELETE", "/api/admin/users/{user_id}/keys/{key_id}"),
     ("POST", "/api/admin/users/{user_id}/balance"),
     ("POST", "/api/admin/users/{user_id}/password"),
+    ("GET", "/api/admin/users/{user_id}/transactions"),
+    ("GET", "/api/admin/users/{user_id}/usage/logs"),
     ("GET", "/api/admin/codes"),
     ("POST", "/api/admin/codes"),
     ("DELETE", "/api/admin/codes/{code}"),
@@ -186,15 +189,11 @@ def run_portal_scenario(admin, user, bootstrap_admin, append_usage, payment_key=
 
     users, _ = call(admin, "GET", "/api/admin/users", params={"q": "scenario-user"})
     assert users["total"] == 1 and users["items"][0]["key_count"] == 1
-    assert users["items"][0]["archived_at"] is None
     for archived in (True, False):
-        call(
-            admin,
-            "PATCH",
-            f"/api/admin/users/{user_id}",
-            route="/api/admin/users/{user_id}",
-            json={"archived": archived},
+        moved, _ = call(
+            admin, "POST", "/api/admin/users/archive", json={"ids": [user_id], "archived": archived}
         )
+        assert moved == {"updated": 1}
         hidden, _ = call(
             admin, "GET", "/api/admin/users", params={"q": "scenario-user", "archived": 1}
         )
@@ -334,6 +333,17 @@ def run_portal_scenario(admin, user, bootstrap_admin, append_usage, payment_key=
     keys, _ = call(user, "GET", "/api/keys")
     assert len(keys["items"]) == 1 and keys["items"][0]["used"] == 3
     assert keys["items"][0]["request_count"] == 2
+    ranked, _ = call(admin, "GET", "/api/admin/users", params={"sort": "last_used", "order": "asc"})
+    assert ranked["items"][0]["last_used_at"] is None
+    assert ranked["items"][-1]["id"] == user_id and ranked["items"][-1]["last_used_at"]
+    admin_logs, _ = call(
+        admin,
+        "GET",
+        f"/api/admin/users/{user_id}/usage/logs",
+        route="/api/admin/users/{user_id}/usage/logs",
+        params={"key_id": key_id},
+    )
+    assert admin_logs["total"] == 2 and admin_logs["sum_cost"] == 3
 
     order, _ = call(
         user, "POST", "/api/billing/orders", json={"channel": "alipay", "amount": "12.34"}
@@ -362,6 +372,15 @@ def run_portal_scenario(admin, user, bootstrap_admin, append_usage, payment_key=
     assert ledger["total"] == 3
     assert {entry["type"] for entry in ledger["items"]} == {"admin", "redeem", "online"}
     assert all("****" in entry["ref"] for entry in ledger["items"] if entry["type"] == "redeem")
+    admin_ledger, _ = call(
+        admin,
+        "GET",
+        f"/api/admin/users/{user_id}/transactions",
+        route="/api/admin/users/{user_id}/transactions",
+    )
+    by_type = {entry["type"]: entry for entry in admin_ledger["items"]}
+    assert admin_ledger["total"] == 3 and by_type["redeem"]["ref"] == codes[0]
+    assert by_type["admin"]["operator"] == "scenario-admin" and by_type["online"]["operator"] == ""
     me, _ = call(user, "GET", "/api/user/me")
     assert me["user"]["balance"] == 24.34 and me["user"]["total_spent"] == 3
     assert me["user"]["total_recharge"] == 27.34
@@ -476,7 +495,7 @@ def test_all_business_endpoints_through_fastapi(tmp_path):
             for method in operations
             if method in {"get", "post", "put", "patch", "delete"}
         }
-    assert len(EXPECTED_ROUTES) == 44
+    assert len(EXPECTED_ROUTES) == 47
     assert covered == EXPECTED_ROUTES
     assert actual_routes == EXPECTED_ROUTES
     assert len(records) > 39

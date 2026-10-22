@@ -4,7 +4,7 @@
  * 文件路径: styles/components/modal.css
  * 职责描述:
  *   定义固定蒙层背景 (.modal-overlay, 淡入动画 fade-in)、
- *   模态对话框容器 (.modal, .modal.wide, 缩放滑入动画 pop-in)、
+ *   模态对话框容器 (.modal, .modal.wide, .modal.xwide, 缩放滑入动画 pop-in)、
  *   对话框头部 (.modal-header)、标题 (.modal-title)、
  *   滚动主体 (.modal-body)、底部按钮操作区 (.modal-footer)。
  *
@@ -37,6 +37,9 @@
 }
 .modal.wide {
   max-width: 620px;
+}
+.modal.xwide {
+  max-width: 960px;
 }
 .modal-header {
   display: flex;

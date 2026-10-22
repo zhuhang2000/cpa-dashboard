@@ -17,7 +17,7 @@ from api.dependencies import (
     require_admin,
     require_user,
 )
-from services import billing
+from services import accounts, billing
 
 router = APIRouter(tags=["billing"])
 
@@ -25,6 +25,12 @@ router = APIRouter(tags=["billing"])
 @router.get("/api/billing/transactions")
 def list_transactions(request: Request, user=Depends(require_user), conn=Depends(get_connection)):
     return billing.list_transactions(conn, user["id"], *pagination(request))
+
+
+@router.get("/api/admin/users/{user_id:int}/transactions", dependencies=[Depends(require_admin)])
+def list_user_transactions(user_id: int, request: Request, conn=Depends(get_connection)):
+    user = accounts.get(conn, user_id)
+    return billing.list_transactions(conn, user["id"], *pagination(request), admin=True)
 
 
 @router.post("/api/billing/redeem")

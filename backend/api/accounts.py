@@ -120,7 +120,9 @@ def list_users(request: Request, admin=Depends(require_admin), conn=Depends(get_
     page, size, offset = pagination(request)
     q = (request.query_params.get("q") or "").strip()
     archived = request.query_params.get("archived") == "1"
-    total, rows = accounts.search(conn, q, size, offset, archived)
+    sort = request.query_params.get("sort") or "created"
+    desc = request.query_params.get("order") != "asc"
+    total, rows = accounts.search(conn, q, size, offset, archived, sort, desc)
     key_counts = api_keys.live_counts(conn, [row["id"] for row in rows])
     items = []
     for row in rows:
@@ -128,10 +130,17 @@ def list_users(request: Request, admin=Depends(require_admin), conn=Depends(get_
         item.update(
             key_count=key_counts.get(row["id"], 0),
             last_login_ip=row["last_login_ip"] or "",
-            archived_at=row["archived_at"],
+            last_used_at=row["last_used_at"],
         )
         items.append(item)
     return {"items": items, "total": total, "page": page, "page_size": size}
+
+
+@router.post("/api/admin/users/archive")
+def archive_users(
+    admin=Depends(require_admin), data: dict = Depends(json_body), conn=Depends(get_connection)
+):
+    return {"updated": accounts.set_archived(conn, data.get("ids"), data.get("archived"))}
 
 
 @router.patch("/api/admin/users/{user_id:int}")

@@ -1,7 +1,7 @@
 <template>
   <Teleport to="body">
     <div v-if="open" class="modal-overlay" @mousedown.self="onBackdrop">
-      <div class="modal" :class="{ wide }" role="dialog" aria-modal="true" :aria-label="title">
+      <div class="modal" :class="{ wide, xwide }" role="dialog" aria-modal="true" :aria-label="title">
         <div class="modal-header">
           <slot name="header">
             <div class="modal-title">{{ title }}</div>
@@ -25,6 +25,7 @@ const props = defineProps({
   open: Boolean,
   title: { type: String, default: '' },
   wide: Boolean,
+  xwide: Boolean,
   persistent: Boolean,
 })
 const emit = defineEmits(['close'])

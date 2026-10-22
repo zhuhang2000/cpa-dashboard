@@ -86,7 +86,7 @@ def test_banning_user_revokes_sessions_and_blocks_authentication(account_db):
 
 def test_archived_users_are_listed_separately_and_keep_access(account_db):
     conn = account_db
-    admin = add_user(conn, "operator", role=Role.ADMIN)
+    add_user(conn, "operator", role=Role.ADMIN)
     alice = add_user(conn, "alice")
     add_user(conn, "alina")
     token, _ = accounts.start_session(conn, alice["id"], "127.0.0.1", 7)
@@ -94,22 +94,62 @@ def test_archived_users_are_listed_separately_and_keep_access(account_db):
     def listed(q="", archived=False):
         return [row["username"] for row in accounts.search(conn, q, 20, 0, archived)[1]]
 
-    with pytest.raises(ApiError, match="不活跃标记"):
-        accounts.update_user(conn, alice["id"], {"archived": "yes"}, admin["id"])
-    changed = accounts.update_user(conn, alice["id"], {"archived": True}, admin["id"])
-    assert changed["archived_at"] == NOW
-    conn.execute("UPDATE users SET archived_at = 1 WHERE id = ?", (alice["id"],))
-    accounts.update_user(conn, alice["id"], {"archived": True}, admin["id"])
-    assert accounts.get(conn, alice["id"])["archived_at"] == 1
+    accounts.set_archived(conn, [alice["id"]], True)
     assert listed() == ["alina", "operator"]
     assert listed("ali") == ["alina"]
     assert listed(archived=True) == listed("ali", archived=True) == ["alice"]
     assert accounts.authenticate_session(conn, token, 7)[0]["id"] == alice["id"]
 
-    accounts.update_user(conn, alice["id"], {"archived": False}, admin["id"])
-    assert accounts.get(conn, alice["id"])["archived_at"] is None
+    accounts.set_archived(conn, [alice["id"]], False)
     assert listed() == ["alina", "alice", "operator"]
     assert listed(archived=True) == []
+
+
+def test_batch_archive_validates_input_and_keeps_the_first_archive_time(account_db):
+    conn = account_db
+    ids = [add_user(conn, name)["id"] for name in ("alice", "bob", "carol")]
+    for bad in ([], "1", [ids[0], "2"], [True], list(range(101))):
+        with pytest.raises(ApiError, match="请选择"):
+            accounts.set_archived(conn, bad, True)
+    with pytest.raises(ApiError, match="不活跃标记"):
+        accounts.set_archived(conn, ids, 1)
+
+    conn.execute("UPDATE users SET archived_at = 1 WHERE id = ?", (ids[0],))
+    assert accounts.set_archived(conn, ids[:2] + [9999], True) == 2
+    assert [accounts.get(conn, user_id)["archived_at"] for user_id in ids] == [1, NOW, None]
+    assert accounts.set_archived(conn, ids, False) == 3
+    assert [accounts.get(conn, user_id)["archived_at"] for user_id in ids] == [None] * 3
+
+
+def test_user_list_sorts_by_latest_key_use_and_account_totals(account_db):
+    conn = account_db
+    recent = add_user(conn, "recent")
+    old = add_user(conn, "old")
+    add_user(conn, "idle")
+    conn.execute("UPDATE users SET balance_micro = 5 WHERE id = ?", (old["id"],))
+    for row, name, used in (
+        (old, "main", NOW - 30 * DAY_MS),
+        (recent, "main", NOW - 60 * DAY_MS),
+        (recent, "retired", NOW - DAY_MS),
+    ):
+        key = api_keys.create(conn, {}, row["id"], {"name": name})
+        conn.execute("UPDATE api_keys SET last_used_at = ? WHERE id = ?", (used, key["id"]))
+    # A deleted key's calls still belong to the account's history.
+    api_keys.soft_delete(conn, api_keys.list_for_user(conn, recent["id"])[0])
+
+    def listed(sort, desc=True):
+        rows = accounts.search(conn, "", 20, 0, False, sort, desc)[1]
+        return [(row["username"], row["last_used_at"]) for row in rows]
+
+    assert listed("last_used") == [
+        ("recent", NOW - DAY_MS),
+        ("old", NOW - 30 * DAY_MS),
+        ("idle", None),
+    ]
+    assert [name for name, _ in listed("last_used", desc=False)] == ["idle", "old", "recent"]
+    assert [name for name, _ in listed("balance", desc=False)] == ["old", "idle", "recent"]
+    assert [name for name, _ in listed("created")] == ["idle", "old", "recent"]
+    assert listed("unknown") == listed("created")
 
 
 def test_logout_revokes_only_the_selected_session(account_db):

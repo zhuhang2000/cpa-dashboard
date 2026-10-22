@@ -4,7 +4,7 @@
       <div>
         <h1 class="page-title">用户管理</h1>
         <p class="page-desc">
-          查看用户余额与消费，点击用户名查看 API 密钥，可调整余额、重置密码、禁用账号、设置管理员或移到不活跃。
+          点击用户名查看密钥、余额流水和调用记录；按最近调用排序可找出长期不用的账号，勾选后批量移到不活跃。
         </p>
       </div>
     </div>
@@ -26,7 +26,14 @@
             />
           </form>
         </div>
-        <span class="muted">{{ num(users.total) }} 位{{ archived ? '不活跃' : '' }}用户</span>
+        <div v-if="selected.length" class="row batch-bar">
+          <span class="muted">已选 {{ selected.length }} 位</span>
+          <button type="button" class="btn btn-sm" :disabled="saving" @click="archiveSelected">
+            <Icon name="archive" :size="15" />{{ archived ? '移回用户列表' : '移到不活跃' }}
+          </button>
+          <button type="button" class="btn btn-sm btn-ghost" @click="selected = []">取消选择</button>
+        </div>
+        <span v-else class="muted">{{ num(users.total) }} 位{{ archived ? '不活跃' : '' }}用户</span>
       </div>
       <div v-if="users.loading && !users.items.length" class="card-body stack" style="gap: 10px">
         <div v-for="i in 6" :key="i" class="skeleton" style="height: 34px" />
@@ -35,28 +42,47 @@
         v-else-if="!users.items.length"
         icon="users"
         :title="archived ? '没有不活跃用户' : '没有找到用户'"
-        :desc="archived ? '在用户列表中点击“更多 → 移到不活跃”即可移入' : ''"
+        :desc="archived ? '在用户列表中勾选用户后点击“移到不活跃”即可移入' : ''"
       />
       <div v-else class="table-wrap">
         <table class="table">
           <thead>
             <tr>
+              <th class="select-col">
+                <input
+                  type="checkbox"
+                  :checked="allSelected"
+                  :indeterminate="selected.length > 0 && !allSelected"
+                  aria-label="选择本页全部用户"
+                  @change="selectAll($event.target.checked)"
+                />
+              </th>
               <th>用户</th>
-              <th class="right">余额</th>
-              <th class="right">充值 / 消费</th>
-              <th>注册 / 最近登录</th>
+              <th class="right"><SortButton field="balance" :sort="sort" @sort="setSort">余额</SortButton></th>
+              <th class="right">
+                <SortButton field="recharge" :sort="sort" @sort="setSort">充值</SortButton> /
+                <SortButton field="spent" :sort="sort" @sort="setSort">消费</SortButton>
+              </th>
+              <th><SortButton field="last_used" :sort="sort" @sort="setSort">最近调用</SortButton></th>
+              <th>
+                <SortButton field="created" :sort="sort" @sort="setSort">注册</SortButton> /
+                <SortButton field="last_login" :sort="sort" @sort="setSort">最近登录</SortButton>
+              </th>
               <th class="actions">操作</th>
             </tr>
           </thead>
           <tbody>
             <tr v-for="u in users.items" :key="u.id">
+              <td class="select-col">
+                <input v-model="selected" type="checkbox" :value="u.id" :aria-label="`选择 ${u.username}`" />
+              </td>
               <td class="nowrap">
                 <div class="row" style="gap: 6px">
                   <button
                     type="button"
-                    class="link-btn cell-main user-keys-link"
-                    :aria-label="`查看 ${u.username} 的 API 密钥`"
-                    @click="openKeys(u)"
+                    class="link-btn cell-main user-link"
+                    :aria-label="`查看 ${u.username} 的详情`"
+                    @click="openDetail(u)"
                   >
                     {{ u.username }}
                   </button>
@@ -65,7 +91,7 @@
                 </div>
                 <div class="cell-sub">
                   #{{ u.id }} · {{ u.email || '未填写邮箱' }} ·
-                  <button type="button" class="link-btn" @click="openKeys(u)">{{ u.key_count }} 个密钥</button>
+                  <button type="button" class="link-btn" @click="openDetail(u)">{{ u.key_count }} 个密钥</button>
                 </div>
               </td>
               <td class="right num nowrap" :class="{ 'text-danger': u.balance <= 0 }">
@@ -74,6 +100,10 @@
               <td class="right num nowrap">
                 <div class="text-success">+{{ money(u.total_recharge) }}</div>
                 <div class="cell-sub">-{{ money(u.total_spent) }}</div>
+              </td>
+              <td class="nowrap">
+                <span v-if="u.last_used_at" :title="dateTime(u.last_used_at)">{{ relative(u.last_used_at) }}</span>
+                <span v-else class="faint">从未调用</span>
               </td>
               <td class="nowrap">
                 <div>{{ date(u.created_at) }}</div>
@@ -110,13 +140,16 @@
         <button class="dropdown-item" @click="toggleRole(menu.user)">
           <Icon name="shield" :size="15" />{{ menu.user.role === Role.ADMIN ? '取消管理员' : '设为管理员' }}
         </button>
-        <button class="dropdown-item" @click="toggleArchived(menu.user)">
-          <Icon name="archive" :size="15" />{{ menu.user.archived_at ? '移回用户列表' : '移到不活跃' }}
-        </button>
       </div>
     </Teleport>
 
-    <UserKeysModal v-if="keyUser" :key="keyUser.id" :user="keyUser" @close="keyUser = null" @deleted="users.load()" />
+    <UserDetailModal
+      v-if="detailUser"
+      :key="detailUser.id"
+      :user="detailUser"
+      @close="detailUser = null"
+      @deleted="users.load()"
+    />
 
     <Modal :open="!!adjusting" title="调整余额" @close="adjusting = null">
       <form id="adjust-form" @submit.prevent="adjust">
@@ -213,27 +246,36 @@
 </template>
 
 <script setup>
-import { onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import EmptyState from '@/components/EmptyState.vue'
 import Icon from '@/components/Icon.vue'
 import Modal from '@/components/Modal.vue'
 import Pagination from '@/components/Pagination.vue'
+import SortButton from '@/components/SortButton.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
-import UserKeysModal from '@/components/admin/UserKeysModal.vue'
+import UserDetailModal from '@/components/admin/UserDetailModal.vue'
 import { accountsApi } from '@/api/accounts'
 import { billingApi } from '@/api/billing'
 import { usePagedList } from '@/composables/usePagedList'
 import { REDEEM_TYPES, RedeemType, ROLES, Role, USER_STATUSES, UserStatus } from '@/constants'
 import { store } from '@/store'
-import { currency, date, money, num, relative } from '@/utils/format'
+import { currency, date, dateTime, money, num, relative } from '@/utils/format'
 import { toast } from '@/toast'
 
 const q = ref('')
 const archived = ref(false)
-const users = usePagedList(accountsApi.listUsers, () => ({ q: q.value, archived: archived.value ? 1 : '' }))
+const sort = reactive({ key: 'created', desc: true })
+const users = usePagedList(accountsApi.listUsers, () => ({
+  q: q.value,
+  archived: archived.value ? 1 : '',
+  sort: sort.key,
+  order: sort.desc ? 'desc' : 'asc',
+}))
+const selected = ref([])
+const allSelected = computed(() => users.items.length > 0 && users.items.every((u) => selected.value.includes(u.id)))
 const saving = ref(false)
 const adjusting = ref(null)
-const keyUser = ref(null)
+const detailUser = ref(null)
 const menu = ref(null)
 const resetting = ref(null)
 const newPassword = ref('')
@@ -259,9 +301,49 @@ function closeMenu() {
   menu.value = null
 }
 
-function openKeys(u) {
+// A reload keeps only the selected rows that are still on screen.
+watch(
+  () => users.items,
+  (items) => {
+    selected.value = selected.value.filter((id) => items.some((u) => u.id === id))
+  },
+)
+
+function selectAll(checked) {
+  selected.value = checked ? users.items.map((u) => u.id) : []
+}
+
+function setSort(key) {
+  if (sort.key === key) sort.desc = !sort.desc
+  else Object.assign(sort, { key, desc: true })
+  users.load(1)
+}
+
+// Rows moved out of this tab shrink the list, so stay within the pages that remain.
+function pageAfterRemoving(count) {
+  return Math.min(users.page, Math.max(1, Math.ceil((users.total - count) / users.page_size)))
+}
+
+async function archiveSelected() {
+  if (saving.value || !selected.value.length) return
+  const value = !archived.value
+  const page = pageAfterRemoving(selected.value.length)
+  saving.value = true
+  try {
+    const { updated } = await accountsApi.archiveUsers({ ids: selected.value, archived: value })
+    toast.success(value ? `已将 ${updated} 位用户移到不活跃` : `已将 ${updated} 位用户移回用户列表`)
+    selected.value = []
+    await users.load(page)
+  } catch (e) {
+    toast.error(e.message)
+  } finally {
+    saving.value = false
+  }
+}
+
+function openDetail(u) {
   closeMenu()
-  keyUser.value = u
+  detailUser.value = u
 }
 
 function openAdjust(u) {
@@ -320,21 +402,15 @@ function setArchived(value) {
   users.load(1)
 }
 
-async function update(u, payload, message, page) {
+async function update(u, payload, message) {
   closeMenu()
   try {
     await accountsApi.updateUser(u.id, payload)
     toast.success(message)
-    await users.load(page)
+    await users.load()
   } catch (e) {
     toast.error(e.message)
   }
-}
-function toggleArchived(u) {
-  const value = !u.archived_at
-  // The row leaves this tab, so step back when it was the only one on the last page.
-  const page = users.items.length === 1 && users.page > 1 ? users.page - 1 : users.page
-  update(u, { archived: value }, value ? `已将 ${u.username} 移到不活跃用户` : `已将 ${u.username} 移回用户列表`, page)
 }
 function toggleStatus(u) {
   const status = u.status === UserStatus.ACTIVE ? UserStatus.BANNED : UserStatus.ACTIVE
@@ -366,11 +442,23 @@ onBeforeUnmount(() => {
 .search .input {
   padding-left: 32px;
 }
-.user-keys-link {
+.user-link {
   color: var(--text);
 }
-.user-keys-link:hover {
+.user-link:hover {
   color: var(--accent);
+}
+.select-col {
+  width: 1%;
+  padding-right: 0;
+}
+.select-col input {
+  display: block;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.batch-bar {
+  gap: 8px;
 }
 .more {
   display: inline-flex;

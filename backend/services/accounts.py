@@ -10,6 +10,15 @@ from core.security import hash_password, new_session_token, sha256_hex, verify_p
 from services.billing import apply_credit, to_micro
 
 DAY_MS = 86400000
+MAX_BATCH_USERS = 100  # the largest user list page
+USER_SORTS = {
+    "created": "u.id",
+    "last_used": "last_used_at",
+    "last_login": "u.last_login_at",
+    "balance": "u.balance_micro",
+    "recharge": "u.total_recharge_micro",
+    "spent": "u.total_spent_micro",
+}
 USERNAME_RE = re.compile(r"^[A-Za-z0-9_\-]{3,32}$")
 EMAIL_RE = re.compile(r"^[^@\s]{1,64}@[^@\s]{1,253}\.[^@\s.]{2,}$")
 _DUMMY_HASH = []
@@ -174,20 +183,43 @@ def change_password(conn, user, data, keep_session):
         )
 
 
-def search(conn, q, limit, offset, archived=False):
-    """Archived (inactive) accounts are listed apart from the main user list."""
+def search(conn, q, limit, offset, archived=False, sort="created", desc=True):
+    """Archived (inactive) accounts are listed apart from the main user list.
+
+    Rows carry last_used_at, the latest call made with any of the user's keys. Missing
+    times sort as the oldest, so never-used accounts lead an ascending order.
+    """
     where = "u.archived_at IS NOT NULL" if archived else "u.archived_at IS NULL"
     args = []
     if q:
         where += " AND (u.username LIKE ? ESCAPE '\\' OR u.email LIKE ? ESCAPE '\\')"
         pattern = "%" + q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
         args = [pattern, pattern]
+    order = "%s %s, u.id DESC" % (USER_SORTS.get(sort, "u.id"), "DESC" if desc else "ASC")
     total = conn.execute("SELECT COUNT(*) FROM users u WHERE " + where, args).fetchone()[0]
     rows = conn.execute(
-        "SELECT u.* FROM users u WHERE " + where + " ORDER BY u.id DESC LIMIT ? OFFSET ?",
+        "SELECT u.*, (SELECT MAX(k.last_used_at) FROM api_keys k WHERE k.user_id = u.id) "
+        "AS last_used_at FROM users u WHERE " + where + " ORDER BY " + order + " LIMIT ? OFFSET ?",
         args + [limit, offset],
     ).fetchall()
     return total, rows
+
+
+def set_archived(conn, user_ids, archived):
+    """Move accounts in or out of the inactive list; sign-in and keys are unaffected."""
+    if not isinstance(archived, bool):
+        raise ApiError(400, "不活跃标记不正确")
+    if (
+        not isinstance(user_ids, list)
+        or not 1 <= len(user_ids) <= MAX_BATCH_USERS
+        or not all(type(user_id) is int for user_id in user_ids)
+    ):
+        raise ApiError(400, "请选择 1-%d 位用户" % MAX_BATCH_USERS)
+    return conn.execute(
+        "UPDATE users SET archived_at = CASE WHEN ? THEN COALESCE(archived_at, ?) END "
+        "WHERE id IN (%s)" % ", ".join("?" * len(user_ids)),
+        [archived, now_ms()] + user_ids,
+    ).rowcount
 
 
 def update_user(conn, user_id, data, operator_id):
@@ -208,15 +240,6 @@ def update_user(conn, user_id, data, operator_id):
         if is_self and data["role"] != Role.ADMIN:
             raise ApiError(400, "不能取消自己的管理员身份")
         conn.execute("UPDATE users SET role = ? WHERE id = ?", (data["role"], row["id"]))
-    if "archived" in data:
-        # Only hides the account from the main list; sign-in and keys are unaffected.
-        if not isinstance(data["archived"], bool):
-            raise ApiError(400, "不活跃标记不正确")
-        conn.execute(
-            "UPDATE users SET archived_at = CASE WHEN ? THEN COALESCE(archived_at, ?) END "
-            "WHERE id = ?",
-            (data["archived"], now_ms(), row["id"]),
-        )
     return get(conn, user_id)
 
 

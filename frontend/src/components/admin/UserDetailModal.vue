@@ -1,11 +1,22 @@
 <template>
-  <Modal
-    open
-    wide
-    :title="removing ? '删除 API 密钥' : `${user.username} 的 API 密钥`"
-    :persistent="deleting"
-    @close="close"
-  >
+  <Modal open xwide :title="title" :persistent="deleting" @close="close">
+    <template #header>
+      <div class="detail-head">
+        <div class="modal-title">{{ title }}</div>
+        <div v-if="!removing" class="tabs">
+          <button
+            v-for="t in TABS"
+            :key="t.key"
+            type="button"
+            class="tab"
+            :class="{ active: tab === t.key }"
+            @click="setTab(t.key)"
+          >
+            {{ t.label }}
+          </button>
+        </div>
+      </div>
+    </template>
     <div v-if="removing" class="stack">
       <p>
         确定删除用户 <b>{{ user.username }}</b> 的密钥 <b>{{ removing.name }}</b> 吗？
@@ -14,10 +25,10 @@
       <p class="muted">删除后无法恢复。同步完成后失效，历史记录保留。</p>
       <div v-if="error" class="alert alert-danger" role="alert">{{ error }}</div>
     </div>
-    <div v-else class="stack">
-      <div class="row key-toolbar">
+    <div v-else-if="tab === 'keys'" class="stack">
+      <div class="row detail-toolbar">
         <span class="muted">{{ items.length }} 个密钥 · 可复制到 CPA 中查找</span>
-        <button type="button" class="btn btn-sm" :disabled="loading" @click="load">
+        <button type="button" class="btn btn-sm" :disabled="loading" @click="loadKeys">
           <Icon name="refresh" :size="15" />刷新
         </button>
       </div>
@@ -49,6 +60,35 @@
         </div>
       </article>
     </div>
+    <div v-else-if="tab === 'ledger'" class="stack">
+      <div class="row detail-toolbar">
+        <span class="muted">{{ num(ledger.total) }} 条记录 · 调用扣费不计入流水，请在「调用记录」中查看</span>
+        <button type="button" class="btn btn-sm" :disabled="ledger.loading" @click="ledger.load()">
+          <Icon name="refresh" :size="15" />刷新
+        </button>
+      </div>
+      <div class="card">
+        <TransactionTable :list="ledger" />
+      </div>
+    </div>
+    <div v-else class="stack">
+      <div class="row detail-toolbar">
+        <span class="muted">{{ num(calls.total) }} 次调用 · 共消费 {{ money(calls.sum_cost) }}</span>
+        <button type="button" class="btn btn-sm" :disabled="calls.loading" @click="calls.load()">
+          <Icon name="refresh" :size="15" />刷新
+        </button>
+      </div>
+      <div class="card">
+        <div v-if="calls.loading && !calls.items.length" class="card-body stack" style="gap: 10px">
+          <div v-for="i in 6" :key="i" class="skeleton" style="height: 34px" />
+        </div>
+        <EmptyState v-else-if="!calls.items.length" icon="activity" title="暂无调用记录" />
+        <UsageLogTable v-else :items="calls.items" />
+        <div v-if="calls.total" class="card-footer">
+          <Pagination :page="calls.page" :total="calls.total" :page-size="calls.page_size" @change="calls.load" />
+        </div>
+      </div>
+    </div>
     <template #footer>
       <template v-if="removing">
         <button type="button" class="btn" :disabled="deleting" @click="cancelDelete">返回列表</button>
@@ -67,14 +107,27 @@ import CopyButton from '@/components/CopyButton.vue'
 import EmptyState from '@/components/EmptyState.vue'
 import Icon from '@/components/Icon.vue'
 import Modal from '@/components/Modal.vue'
+import Pagination from '@/components/Pagination.vue'
 import StatusBadge from '@/components/StatusBadge.vue'
+import UsageLogTable from '@/components/UsageLogTable.vue'
+import TransactionTable from '@/views/recharge/TransactionTable.vue'
 import { keysApi } from '@/api/api_keys'
+import { billingApi } from '@/api/billing'
+import { usageApi } from '@/api/usage'
+import { usePagedList } from '@/composables/usePagedList'
 import { KEY_STATES, KeyState, UserStatus } from '@/constants'
-import { date, dateTime, num, relative } from '@/utils/format'
+import { date, dateTime, money, num, relative } from '@/utils/format'
 import { toast } from '@/toast'
+
+const TABS = [
+  { key: 'keys', label: 'API 密钥' },
+  { key: 'ledger', label: '余额流水' },
+  { key: 'usage', label: '调用记录' },
+]
 
 const props = defineProps({ user: { type: Object, required: true } })
 const emit = defineEmits(['close', 'deleted'])
+const tab = ref('keys')
 const items = ref([])
 const loading = ref(false)
 const deleting = ref(false)
@@ -82,13 +135,32 @@ const removing = ref(null)
 const error = ref('')
 let mounted = true
 
+// The ledger and usage tabs load the first time they are opened.
+const ledger = usePagedList((query) => billingApi.listUserTransactions(props.user.id, query))
+const calls = usePagedList(
+  (query) => usageApi.userUsageLogs(props.user.id, query),
+  () => ({}),
+  { sum_cost: 0 },
+)
+const lists = { ledger, usage: calls }
+const opened = new Set(['keys'])
+
+const title = computed(() => (removing.value ? '删除 API 密钥' : `用户详情 · ${props.user.username}`))
+
 const keyStates = computed(() =>
   props.user.status === UserStatus.BANNED
     ? { ...KEY_STATES, [KeyState.SUSPENDED]: { label: '账号已禁用', tone: 'danger' } }
     : KEY_STATES,
 )
 
-async function load() {
+function setTab(key) {
+  tab.value = key
+  if (opened.has(key)) return
+  opened.add(key)
+  lists[key].load(1)
+}
+
+async function loadKeys() {
   if (loading.value || deleting.value) return
   loading.value = true
   error.value = ''
@@ -137,7 +209,7 @@ function close() {
   if (!deleting.value) emit('close')
 }
 
-onMounted(load)
+onMounted(loadKeys)
 onBeforeUnmount(() => {
   mounted = false
   items.value = []
@@ -146,7 +218,14 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-.key-toolbar {
+.detail-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  min-width: 0;
+}
+.detail-toolbar {
   justify-content: space-between;
   flex-wrap: wrap;
 }
