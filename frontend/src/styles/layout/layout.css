@@ -5,14 +5,16 @@
  * 职责描述:
  *   定义系统主界面的骨架布局结构，包含固定侧边栏 (.sidebar)、品牌区 (.brand, .brand-logo)、
  *   侧边导航 (.nav, .nav-section, .nav-link)、顶部导航栏 (.topbar)、余额胶囊 (.balance-pill)、
- *   用户下拉菜单 (.dropdown, .dropdown-menu, .dropdown-item)、主内容区域 (.content) 等。
+ *   用户下拉菜单 (.dropdown, .dropdown-menu, .dropdown-item)、浮动列表 (.dropdown-menu.floating,
+ *   .dropdown-item.active, .dropdown-check)、主内容区域 (.content) 等。
  *
  * 使用该样式的组件 / 页面:
  *   - src/layouts/AppLayout.vue (主框架整体布局结构及所有布局类名)
  *   - src/layouts/AuthShell.vue (.brand-logo 品牌图标)
  *   - src/layouts/AuthArt.vue (.brand 品牌展示)
  *   - src/views/admin/Users.vue (.dropdown-menu, .dropdown-item 更多操作菜单)
- *   - src/components/base/SuggestInput.vue (.dropdown-menu, .dropdown-item 输入建议列表)
+ *   - src/components/base/SuggestInput.vue (.dropdown-menu.floating, .dropdown-item, .dropdown-check 输入建议列表)
+ *   - src/components/base/SelectMenu.vue (.dropdown-menu.floating, .dropdown-item, .dropdown-check 下拉选择列表)
  * ==============================================================================
  */
 
@@ -250,6 +252,32 @@
 
 .dropdown-item.danger {
   color: var(--danger);
+}
+
+/* A .dropdown-menu that usePopover places from its trigger instead of under a .dropdown parent.
+   It floats above everything, dialogs included, so lists inside a scrolling dialog stay whole. */
+.dropdown-menu.floating {
+  position: fixed;
+  right: auto;
+  z-index: 110;
+  overflow-y: auto;
+}
+
+/* The option highlighted with the arrow keys looks hovered. */
+.dropdown-item.active {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+/* The check mark of the chosen option in a listbox. */
+.dropdown-check {
+  flex: none;
+  margin-left: auto;
+  color: var(--accent);
+  visibility: hidden;
+}
+.dropdown-item[aria-selected='true'] .dropdown-check {
+  visibility: visible;
 }
 
 .content {

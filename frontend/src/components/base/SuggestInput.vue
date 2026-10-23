@@ -32,7 +32,7 @@
       v-if="expanded"
       :id="listId"
       ref="panel"
-      class="dropdown-menu suggest-menu"
+      class="dropdown-menu floating"
       :style="list.style"
       role="listbox"
       @mousedown.prevent
@@ -42,7 +42,7 @@
         :id="`${listId}-${index}`"
         :key="option.value"
         type="button"
-        class="dropdown-item suggest-option"
+        class="dropdown-item"
         :class="{ active: index === active }"
         role="option"
         :aria-selected="option.value === value"
@@ -51,7 +51,7 @@
       >
         <span class="suggest-value">{{ option.value }}</span>
         <span v-if="option.hint" class="suggest-hint">{{ option.hint }}</span>
-        <Icon name="check" :size="15" class="suggest-check" />
+        <Icon name="check" :size="15" class="dropdown-check" />
       </button>
     </div>
   </Teleport>
@@ -142,17 +142,6 @@ function onKeydown(e) {
 .suggest-arrow.open {
   transform: rotate(180deg);
 }
-/* .dropdown-menu, placed by usePopover instead of under a relative parent, above .modal-overlay. */
-.suggest-menu {
-  position: fixed;
-  right: auto;
-  z-index: 110;
-  overflow-y: auto;
-}
-.suggest-option.active {
-  background: var(--surface-3);
-  color: var(--text);
-}
 .suggest-value {
   flex: 1;
   min-width: 0;
@@ -165,13 +154,5 @@ function onKeydown(e) {
 .suggest-hint {
   font-size: 12px;
   color: var(--muted);
-}
-.suggest-check {
-  flex: none;
-  color: var(--accent);
-  visibility: hidden;
-}
-.suggest-option[aria-selected='true'] .suggest-check {
-  visibility: visible;
 }
 </style>

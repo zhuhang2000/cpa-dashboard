@@ -92,6 +92,31 @@ export function fromInputDate(value, endOfDay = false) {
   return dt.getTime()
 }
 
+// { start, end } epoch ms of a preset date range in local time, `end` exclusive; null leaves a side
+// open ('all'). 'custom' covers the two yyyy-mm-dd inputs, both days included.
+export function rangeBounds(range, customStart, customEnd) {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const day = today.getTime()
+  const month = new Date(today.getFullYear(), today.getMonth(), 1).getTime()
+  switch (range) {
+    case 'today':
+      return { start: day, end: null }
+    case '7d':
+      return { start: day - 6 * 86400000, end: null }
+    case '30d':
+      return { start: day - 29 * 86400000, end: null }
+    case 'month':
+      return { start: month, end: null }
+    case 'last_month':
+      return { start: new Date(today.getFullYear(), today.getMonth() - 1, 1).getTime(), end: month }
+    case 'custom':
+      return { start: fromInputDate(customStart), end: fromInputDate(customEnd, true) }
+    default:
+      return { start: null, end: null }
+  }
+}
+
 // Chart label for a yyyy-mm-dd day: m/d on the axis, the full date when `full` (tooltips).
 export function dayLabel(d, full) {
   if (!d) return ''

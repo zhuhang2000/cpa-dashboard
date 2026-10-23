@@ -79,7 +79,7 @@ import Pagination from '@/components/base/Pagination.vue'
 import UsageLogTable from '@/components/shared/UsageLogTable.vue'
 import { keysApi } from '@/api/api_keys'
 import { usageApi } from '@/api/usage'
-import { fromInputDate, money, num, toInputDate, tokens } from '@/utils/format'
+import { money, num, rangeBounds, toInputDate, tokens } from '@/utils/format'
 import { toast } from '@/toast'
 
 const presets = [
@@ -102,24 +102,12 @@ const keys = ref([])
 const models = ref([])
 const data = reactive({ items: [], total: 0, sum_cost: 0, sum_tokens: 0 })
 
-function startOfToday() {
-  const d = new Date()
-  d.setHours(0, 0, 0, 0)
-  return d.getTime()
-}
-
-const filters = computed(() => {
-  let start = null
-  let end = null
-  if (range.value === 'today') start = startOfToday()
-  else if (range.value === '7d') start = startOfToday() - 6 * 86400000
-  else if (range.value === '30d') start = startOfToday() - 29 * 86400000
-  else if (range.value === 'custom') {
-    start = fromInputDate(customStart.value)
-    end = fromInputDate(customEnd.value, true)
-  }
-  return { start, end, key_id: keyId.value, model: model.value, status: status.value }
-})
+const filters = computed(() => ({
+  ...rangeBounds(range.value, customStart.value, customEnd.value),
+  key_id: keyId.value,
+  model: model.value,
+  status: status.value,
+}))
 
 const exportHref = computed(() => usageApi.usageExportUrl(filters.value))
 
