@@ -19,12 +19,10 @@ class Price:
     __slots__ = ("input", "output", "cache_read", "cache_write")
 
     def __init__(self, input_price, output_price, cache_read=None, cache_write=None):
-        self.input = float(input_price or 0)
-        self.output = float(output_price or 0)
-        self.cache_read = self.input * CACHE_READ_RATIO if cache_read is None else float(cache_read)
-        self.cache_write = (
-            self.input * CACHE_WRITE_RATIO if cache_write is None else float(cache_write)
-        )
+        self.input = input_price
+        self.output = output_price
+        self.cache_read = input_price * CACHE_READ_RATIO if cache_read is None else cache_read
+        self.cache_write = input_price * CACHE_WRITE_RATIO if cache_write is None else cache_write
 
     def scaled(self, factor):
         return Price(
@@ -67,20 +65,21 @@ def _model_candidates(model):
 
 
 class PriceBook:
-    """Resolve selling prices: admin override > external price x multiplier > default."""
+    """Resolve selling prices: admin override > external price x discount > default."""
 
-    def __init__(self, overrides, cpamp_prices, multiplier, default_price, use_cpamp=True):
+    def __init__(self, overrides, cpamp_prices, discount, default_price, use_cpamp=True):
         self.overrides = overrides
         self.cpamp = cpamp_prices if use_cpamp else {}
         self.cpamp_lower = {k.lower(): v for k, v in self.cpamp.items()}
-        self.multiplier = float(multiplier or 0)
+        self.discount = discount
         self.default = default_price
 
     def cpamp_price(self, model):
+        """Return the official price before the discount, or None."""
         for name in _model_candidates(model):
             price = self.cpamp.get(name) or self.cpamp_lower.get(name.lower())
             if price is not None:
-                return price.scaled(self.multiplier)
+                return price
         return None
 
     def resolve(self, model):
@@ -90,7 +89,7 @@ class PriceBook:
             return override, "override"
         price = self.cpamp_price(model)
         if price is not None:
-            return price, "cpamp"
+            return price.scaled(self.discount), "cpamp"
         if self.default is not None:
             return self.default, "default"
         return None, "none"
@@ -109,15 +108,15 @@ def load_overrides(conn):
 
 
 def build_price_book(conn, cpamp_prices, setting):
-    default_in = float(setting("default_input_price") or 0)
-    default_out = float(setting("default_output_price") or 0)
+    default_in = setting("default_input_price")
+    default_out = setting("default_output_price")
     default = Price(default_in, default_out) if (default_in > 0 or default_out > 0) else None
     return PriceBook(
         load_overrides(conn),
         cpamp_prices,
-        setting("cpamp_price_multiplier"),
+        setting("cpamp_price_discount"),
         default,
-        use_cpamp=bool(setting("use_cpamp_prices")),
+        use_cpamp=setting("use_cpamp_prices"),
     )
 
 
@@ -146,9 +145,15 @@ def list_prices(conn, cpamp_prices, setting, currency_symbol):
         if price is None:
             continue
         item = price.as_dict()
-        item.update(model=model, note=notes.get(model) or "", source=source)
+        item.update(
+            model=model,
+            note=notes.get(model) or "",
+            source=source,
+            # The page shows this struck through next to the discounted price.
+            official=book.cpamp_price(model).as_dict() if source == "cpamp" else None,
+        )
         items.append(item)
-    return {"items": items, "currency_symbol": currency_symbol}
+    return {"items": items, "discount": book.discount, "currency_symbol": currency_symbol}
 
 
 # ---- Administrator operations ----
@@ -228,7 +233,8 @@ def upsert_price(conn, data):
     return {"ok": True}
 
 
-def delete_price(conn, model):
+def delete_price(conn, data):
+    model = str(data.get("model") or "").strip()
     conn.execute("DELETE FROM model_prices WHERE model = ?", (model,))
     return {"ok": True}
 

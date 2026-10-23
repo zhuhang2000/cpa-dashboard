@@ -271,10 +271,17 @@ def run_portal_scenario(admin, user, bootstrap_admin, append_usage, payment_key=
         json={
             "site_name": "Scenario portal",
             "announcement": "maintenance test",
-            "cpamp_price_multiplier": 1.5,
+            "cpamp_price_discount": 0.8,
         },
     )
     assert settings["settings"]["site_name"] == "Scenario portal"
+    assert settings["settings"]["cpamp_price_discount"] == 0.8
+    for invalid in (
+        {"cpamp_price_discount": 0},
+        {"cpamp_price_discount": 1.5},
+        {"site_name": "x" * 41},
+    ):
+        call(admin, "PUT", "/api/admin/settings", expected=400, json=invalid)
     status, _ = call(user, "GET", "/api/status")
     assert status["site_name"] == "Scenario portal" and status["announcement"] == "maintenance test"
     assert status["notice_latest_at"] is None
@@ -399,7 +406,9 @@ def run_portal_scenario(admin, user, bootstrap_admin, append_usage, payment_key=
     assert overview["recharge"]["today"] == 27.34
     call(admin, "POST", "/api/admin/prices/delete", json={"model": "demo-model"})
     public, _ = call(user, "GET", "/api/prices")
-    assert public["items"][0]["source"] == "cpamp" and public["items"][0]["input"] == 1.5
+    listed = public["items"][0]
+    assert listed["source"] == "cpamp" and listed["input"] == 0.8 and public["discount"] == 0.8
+    assert listed["official"]["input"] == 1
 
     call(user, "POST", "/api/auth/logout", json={})
     call(

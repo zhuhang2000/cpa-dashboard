@@ -4,10 +4,9 @@
       <div>
         <h1 class="page-title">模型定价</h1>
         <p class="page-desc">
-          售价单位：{{ currency() }} / 百万 tokens。未单独定价的模型使用 CPA Manager Plus 同步的官方价 ×
-          <b>{{ settings?.cpamp_price_multiplier ?? '—' }}</b> 倍率，可在<RouterLink to="/admin/settings"
-            >系统设置</RouterLink
-          >中调整。
+          售价单位：{{ currency() }} / 百万 tokens。未单独定价的模型按 CPA Manager Plus 同步的官方价打折计费，当前
+          <b>{{ settings ? discount(settings.cpamp_price_discount) : '—' }}</b
+          >，可在<RouterLink to="/admin/settings">系统设置</RouterLink>中调整。
         </p>
       </div>
       <div class="page-actions">
@@ -146,7 +145,7 @@
             {{ usd(editingRow.cpamp.output) }}， 缓存读 {{ usd(editingRow.cpamp.cache_read) }}，缓存写
             {{ usd(editingRow.cpamp.cache_write) }}
             <button type="button" class="link-btn" style="margin-left: 6px" @click="fillReference">
-              按倍率 ×{{ multiplier }} 填入
+              按 {{ discount(settings.cpamp_price_discount) }}填入
             </button>
           </div>
         </div>
@@ -170,7 +169,7 @@ import StatusBadge from '@/components/base/StatusBadge.vue'
 import { pricingApi } from '@/api/pricing'
 import { settingsApi } from '@/api/settings'
 import { PRICE_SOURCES } from '@/constants'
-import { currency, num, price, relative } from '@/utils/format'
+import { currency, discount, num, price, relative } from '@/utils/format'
 import { toast } from '@/toast'
 
 const items = ref([])
@@ -218,18 +217,16 @@ function openEdit(m) {
   formOpen.value = true
 }
 
-const multiplier = computed(() => Number(settings.value?.cpamp_price_multiplier) || 1)
-
 function usd(v) {
   if (v === null || v === undefined) return '—'
   return `$${Number(v).toLocaleString('en-US', { maximumFractionDigits: 4 })}`
 }
 
-// The form holds selling prices, so the USD reference is converted with the multiplier.
+// The form holds selling prices, so the official reference is filled in at the current discount.
 function fillReference() {
   const ref = editingRow.value?.cpamp
   if (!ref) return
-  const k = multiplier.value
+  const k = settings.value.cpamp_price_discount
   const conv = (v) => Number((v * k).toFixed(6))
   Object.assign(form, {
     input: conv(ref.input),

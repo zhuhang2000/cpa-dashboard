@@ -9,6 +9,7 @@
  *
  * 使用该样式的组件 / 页面:
  *   - src/components/base/StatusBadge.vue (通用徽章封装组件 .badge)
+ *   - src/views/Pricing.vue (.badge, .badge-accent, .plain)
  *   - src/views/Usage.vue (.badge, .badge-success, .badge-danger)
  *   - src/views/admin/Overview.vue (.badge, .badge-success, .badge-danger)
  * ==============================================================================

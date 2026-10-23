@@ -70,7 +70,7 @@ export const TX_TYPES = {
 // Where a model's selling price comes from (PriceBook.resolve in the backend).
 export const PRICE_SOURCES = {
   override: { label: '自定义', tone: 'accent' },
-  cpamp: { label: '官方价×倍率', tone: 'info' },
+  cpamp: { label: '官方价', tone: 'info' },
   default: { label: '默认价格', tone: 'warning' },
   none: { label: '未定价', tone: 'danger' },
 }

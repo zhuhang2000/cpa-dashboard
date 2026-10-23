@@ -75,7 +75,7 @@ def load_config(config_path: Path | None = None) -> dict:
         },
         "pricing": {
             "use_cpamp_prices": env["USE_CPAMP_PRICES"].lower() == "true",
-            "cpamp_price_multiplier": float(env["CPAMP_PRICE_MULTIPLIER"]),
+            "cpamp_price_discount": float(env["CPAMP_PRICE_DISCOUNT"]),
             "default_input_price": float(env["DEFAULT_INPUT_PRICE"]),
             "default_output_price": float(env["DEFAULT_OUTPUT_PRICE"]),
             "bill_failed_requests": env["BILL_FAILED_REQUESTS"].lower() == "true",

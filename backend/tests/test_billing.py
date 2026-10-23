@@ -181,7 +181,7 @@ def test_pricing_precedence_aliases_and_public_visibility(billing_conn):
     settings = {
         "default_input_price": 7,
         "default_output_price": 14,
-        "cpamp_price_multiplier": 2,
+        "cpamp_price_discount": 0.5,
         "use_cpamp_prices": True,
     }
     external = pricing.prices_from_external(
@@ -196,7 +196,7 @@ def test_pricing_precedence_aliases_and_public_visibility(billing_conn):
     assert overridden.cost_micro(1000000, 0, 0, 0) == 3000000
     alias, source = book.resolve("vendor/demo")
     assert source == "cpamp"
-    assert alias.as_dict() == {"input": 4, "output": 8, "cache_read": 0.4, "cache_write": 5}
+    assert alias.as_dict() == {"input": 1, "output": 2, "cache_read": 0.1, "cache_write": 1.25}
     fallback, source = book.resolve("unknown-model")
     assert source == "default"
     assert fallback.output == 14
@@ -206,3 +206,20 @@ def test_pricing_precedence_aliases_and_public_visibility(billing_conn):
         pricing.admin_list_prices(billing_conn, external, settings.get)["items"][0]["hidden"]
         is True
     )
+
+
+def test_public_prices_carry_the_discount_and_official_prices(billing_conn):
+    settings = {
+        "default_input_price": 0,
+        "default_output_price": 0,
+        "cpamp_price_discount": 0.8,
+        "use_cpamp_prices": True,
+    }
+    official = {"input": 10, "output": 20, "cache_read": 1, "cache_write": 12.5}
+    external = pricing.prices_from_external({"Custom": official, "Official": official})
+    pricing.upsert_price(billing_conn, {"model": "Custom", "input": 3, "output": 6})
+    listing = pricing.list_prices(billing_conn, external, settings.get, "$")
+    custom, listed = listing["items"]
+    assert listing["discount"] == 0.8
+    assert (custom["input"], custom["official"]) == (3, None)
+    assert (listed["input"], listed["output"], listed["official"]) == (8, 16, official)

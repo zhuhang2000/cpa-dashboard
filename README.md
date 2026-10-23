@@ -86,7 +86,7 @@ nano .env
 | `CPA_BASE_URL` | `http://127.0.0.1:8317` | 本机 CPA 服务地址 |
 | `CPA_MANAGEMENT_KEY`| *(空)* | CPA 管理密钥**明文**（初始化 CPAMP 时的 Management Key） |
 | `CPAMP_USAGE_DB` | `/opt/services/cpa-manager-plus/data/usage.sqlite` | CPAMP 用量数据库路径 |
-| `CPAMP_PRICE_MULTIPLIER` | `1.0` | 官方美元原价倍率（如加价 20% 填 `1.2`） |
+| `CPAMP_PRICE_DISCOUNT` | `1.0` | 官方价折扣初始值（8 折填 `0.8`，`1` 为不打折），之后可在后台「系统设置」修改 |
 
 ### 3. 创建管理员与系统服务
 

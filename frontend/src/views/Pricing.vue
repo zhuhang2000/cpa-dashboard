@@ -52,8 +52,13 @@
                   </div>
                 </div>
               </td>
-              <td class="right num">{{ show(m.input) }}</td>
-              <td class="right num">{{ show(m.output) }}</td>
+              <td v-for="part in ['input', 'output']" :key="part" class="right num nowrap">
+                <div v-if="saved && m.official" class="deal">
+                  <s class="was" title="官方价">{{ show(m.official[part]) }}</s>
+                  <span class="badge badge-accent plain save">省 {{ saved }}%</span>
+                </div>
+                <div class="now">{{ show(m[part]) }}</div>
+              </td>
               <td class="right num muted">{{ show(m.cache_read) }}</td>
               <td class="right num muted">{{ show(m.cache_write) }}</td>
             </tr>
@@ -63,7 +68,7 @@
       <div class="card-footer muted" style="font-size: 12.5px">
         <span
           >费用 = 输入 tokens × 输入单价 + 输出 tokens × 输出单价（命中缓存的输入按缓存价格计算），推理 tokens
-          计入输出。</span
+          计入输出。<template v-if="saved">划线价为官方价，缓存价格同样打折。</template></span
         >
       </div>
     </div>
@@ -81,6 +86,7 @@ import { price } from '@/utils/format'
 import { toast } from '@/toast'
 
 const items = ref([])
+const discount = ref(1)
 const loading = ref(true)
 const q = ref('')
 const unit = ref('M')
@@ -89,6 +95,8 @@ const filtered = computed(() => {
   const term = q.value.toLowerCase()
   return term ? items.value.filter((m) => m.model.toLowerCase().includes(term)) : items.value
 })
+// Percent of the official price the discount saves (0.8 → 20); 0 when there is no discount.
+const saved = computed(() => Number(((1 - discount.value) * 100).toFixed(1)))
 
 function show(v) {
   if (v === null || v === undefined) return '—'
@@ -97,7 +105,9 @@ function show(v) {
 
 onMounted(async () => {
   try {
-    items.value = (await pricingApi.listPrices()).items
+    const data = await pricingApi.listPrices()
+    items.value = data.items
+    discount.value = data.discount
   } catch (e) {
     toast.error(e.message)
   } finally {
@@ -105,3 +115,41 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style scoped>
+/* A discounted price: the struck official price and the saving above the price paid. */
+.deal {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+/* The rule is drawn at the middle of the box because line-through sits at half the
+   x-height, low across digits. */
+.was {
+  position: relative;
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: none;
+}
+.was::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  border-top: 1px solid;
+}
+.save {
+  height: 20px;
+  padding: 0 7px;
+  font-size: 11.5px;
+  font-weight: 600;
+}
+.now {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+</style>

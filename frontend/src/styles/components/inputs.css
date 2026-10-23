@@ -5,7 +5,7 @@
  * 职责描述:
  *   定义表单域容器 (.field, .field-label, .field-hint)、输入框 (.input, .input-sm)、
  *   下拉选择框 (.select)、多行文本域 (.textarea)、组合输入框与前后缀 (.input-group,
- *   .input-addon, .input-prefix)、复选框 (.check)、滑动开关 (.toggle, .toggle-track)。
+ *   .input-addon, .input-prefix, .input-suffix)、复选框 (.check)、滑动开关 (.toggle, .toggle-track)。
  *
  * 使用该样式的组件 / 页面:
  *   - src/views/Login.vue (.field, .input)
@@ -20,7 +20,7 @@
  *   - src/views/admin/Users.vue (.field, .field-label, .field-hint, .input, .select, .input-group, .input-prefix)
  *   - src/views/admin/Codes.vue (.field, .field-hint, .input, .input-sm, .select, .textarea, .input-group, .input-prefix)
  *   - src/views/admin/Prices.vue (.field, .input, .toggle, .toggle-track)
- *   - src/views/admin/Settings.vue (.field, .field-hint, .input, .textarea, .input-group, .input-prefix, .toggle, .toggle-track)
+ *   - src/views/admin/Settings.vue (.field, .field-hint, .input, .textarea, .input-group, .input-prefix, .input-suffix, .toggle, .toggle-track)
  *   - src/views/recharge/OnlinePayCard.vue (.field, .field-label, .input, .input-group, .input-prefix)
  *   - src/views/recharge/RedeemCard.vue (.field, .input)
  * ==============================================================================
@@ -122,6 +122,15 @@
 }
 .input-group.has-prefix .input {
   padding-left: 28px;
+}
+/* Sits in the right padding every .input-group input already reserves. */
+.input-suffix {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
 }
 .check {
   display: inline-flex;

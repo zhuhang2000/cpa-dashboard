@@ -27,6 +27,7 @@
               id="s-base"
               v-model.trim="form.public_api_base"
               class="input mono"
+              maxlength="200"
               placeholder="https://api.example.com"
             />
             <div class="field-hint">用户调用接口的地址（即 CLIProxyAPI 对外地址），显示在概览页的快速开始中</div>
@@ -66,21 +67,17 @@
             <label class="toggle">
               <input v-model="form.use_cpamp_prices" type="checkbox" />
               <span class="toggle-track" />
-              未单独定价的模型使用官方价 × 倍率
+              未单独定价的模型使用官方价
             </label>
             <div class="field-hint">官方价来自 CPA Manager Plus 同步的模型价格（美元 / 百万 tokens）</div>
           </div>
           <div class="field">
-            <label for="s-mult">价格倍率</label>
-            <input
-              id="s-mult"
-              v-model.number="form.cpamp_price_multiplier"
-              class="input"
-              type="number"
-              min="0"
-              step="0.01"
-            />
-            <div class="field-hint">售价（美元）= 官方美元价 × 倍率。1 为按官方原价售卖，加价 20% 填 1.2</div>
+            <label for="s-discount">官方价折扣</label>
+            <div class="input-group">
+              <input id="s-discount" v-model.number="discountInput" class="input" type="number" min="0" step="any" />
+              <span class="input-suffix">折</span>
+            </div>
+            <div class="field-hint">10 为不打折，85 折填 8.5。只对官方价打折，自定义价格和默认价格不受影响</div>
           </div>
           <div class="grid grid-2" style="gap: 12px">
             <div class="field">
@@ -131,13 +128,20 @@ import { currency } from '@/utils/format'
 import { toast } from '@/toast'
 
 const form = ref(null)
+// Admins type 折 (8 = 8 折) while the API stores the billed share of the official price (0.8).
+const discountInput = ref(10)
 const saving = ref(false)
+
+function fill(settings) {
+  form.value = settings
+  discountInput.value = Number((settings.cpamp_price_discount * 10).toFixed(2))
+}
 
 async function save() {
   saving.value = true
   try {
-    const data = await settingsApi.adminPutSettings(form.value)
-    form.value = data.settings
+    const data = await settingsApi.adminPutSettings({ ...form.value, cpamp_price_discount: discountInput.value / 10 })
+    fill(data.settings)
     await refreshStatus()
     toast.success('设置已保存')
   } catch (e) {
@@ -149,7 +153,7 @@ async function save() {
 
 onMounted(async () => {
   try {
-    form.value = (await settingsApi.adminGetSettings()).settings
+    fill((await settingsApi.adminGetSettings()).settings)
   } catch (e) {
     toast.error(e.message)
   }

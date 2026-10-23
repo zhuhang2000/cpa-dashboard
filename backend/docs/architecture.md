@@ -87,7 +87,7 @@ backend/
 | `billing.py` | 金额转换、余额增减、流水、兑换码、支付订单；`users` 金额字段、`transactions`、`redeem_codes`、`orders` | 新充值渠道、兑换规则、调账 |
 | `pricing.py` | 模型价格、价格选择、费用计算、模型目录和隐藏；`model_prices`、`seen_models`、隐藏模型设置 | 定价规则、展示模型、价格覆盖 |
 | `usage.py` | 用量入库与去重、同步游标、明细、用户统计和运营报表；`usage_logs`、游标设置 | 新统计维度、导出字段、用量事件处理 |
-| `settings.py` | 管理后台允许修改的设置及缓存；运行时设置记录 | 站点公告、注册开关、价格倍率 |
+| `settings.py` | 管理后台允许修改的设置及缓存；运行时设置记录 | 站点公告、注册开关、价格折扣 |
 
 表不是拆分文件的单位。例如余额和用户身份同在 `users` 表，但余额写入统一由 `billing` 处理。报表需要跨表读取时由 `usage` 聚合；跨业务写入要调用所属服务的函数。
 
@@ -144,7 +144,7 @@ billing、pricing、settings → core / integrations（按需）
 
 `data_dir`、`frontend_dir` 和相对的 `cpamp.usage_db` 都以 `backend/config/` 为基准。首次生成的 `../data` 与 `../../frontend/dist` 分别指向 `backend/data/` 与前端构建目录。本地模拟服务使用同一文件中的 `../data-dev` 和 `../data-dev/cpamp/usage.sqlite`。
 
-网站名称、公告、注册开关、价格倍率等管理后台功能仍由 `services/settings.py` 保存到数据库；JSON 中的对应字段提供初始值，后台保存的业务设置继续生效。部署连接、密钥和路径等参数在 JSON 文件中维护。
+网站名称、公告、注册开关、价格折扣等管理后台功能仍由 `services/settings.py` 保存到数据库；JSON 中的对应字段提供初始值，后台保存的业务设置继续生效。部署连接、密钥和路径等参数在 JSON 文件中维护。
 
 旧版升级时，部署脚本负责一次迁移配置并调整相对路径，运行时不再承担旧位置查找。配置文件不纳入版本管理，也不随发布包覆盖。
 

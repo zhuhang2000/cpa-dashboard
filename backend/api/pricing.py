@@ -39,7 +39,7 @@ def admin_upsert_price(
 def admin_delete_price(
     admin=Depends(require_admin), body=Depends(json_body), conn=Depends(get_connection)
 ):
-    return pricing.delete_price(conn, str(body.get("model") or ""))
+    return pricing.delete_price(conn, body)
 
 
 @router.post("/api/admin/prices/visibility")

@@ -12,10 +12,12 @@ EDITABLE_SETTINGS = {
     "allow_register": (bool, ("allow_register",)),
     "signup_bonus": (float, ("signup_bonus",)),
     "use_cpamp_prices": (bool, ("pricing", "use_cpamp_prices")),
-    "cpamp_price_multiplier": (float, ("pricing", "cpamp_price_multiplier")),
+    "cpamp_price_discount": (float, ("pricing", "cpamp_price_discount")),
     "default_input_price": (float, ("pricing", "default_input_price")),
     "default_output_price": (float, ("pricing", "default_output_price")),
 }
+# The longest value of each text setting; the settings page inputs carry the same limits.
+MAX_TEXT = {"site_name": 40, "public_api_base": 200, "announcement": 1000}
 
 
 class RuntimeSettings:
@@ -63,9 +65,14 @@ class RuntimeSettings:
                 number = float(value)
                 if number < 0 or number != number:
                     raise ValueError("%s 不能为负数" % name)
+                if name == "cpamp_price_discount" and not 0 < number <= 1:
+                    raise ValueError("官方价折扣需大于 0 折且不超过 10 折")
                 clean[name] = number
             else:
-                clean[name] = str(value or "").strip()
+                text = str(value or "").strip()
+                if len(text) > MAX_TEXT[name]:
+                    raise ValueError("%s 不能超过 %d 个字符" % (name, MAX_TEXT[name]))
+                clean[name] = text
         with self._runtime_lock:
             conn = self.connect()
             try:

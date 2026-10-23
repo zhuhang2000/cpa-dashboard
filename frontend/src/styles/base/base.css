@@ -17,7 +17,7 @@
  *     - src/views/Keys.vue (.muted, .faint, .num, .nowrap)
  *     - src/views/Settings.vue (.muted, .num)
  *     - src/views/Usage.vue (.muted, .num, .nowrap, .mono)
- *     - src/views/Pricing.vue (.muted, .num, .mono)
+ *     - src/views/Pricing.vue (.muted, .num, .nowrap, .mono)
  *     - src/views/Register.vue (.faint, .text-success)
  *     - src/views/NotFound.vue (.muted)
  *     - src/views/admin/Overview.vue (.num, .mono)

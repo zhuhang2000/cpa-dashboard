@@ -30,6 +30,11 @@ export function price(value) {
   return `${currency()}${fixed(v, 2, 4)}`
 }
 
+// A billed share of the official price in 折: 0.8 → 8 折, 0.85 → 8.5 折.
+export function discount(ratio) {
+  return `${Number((ratio * 10).toFixed(2))} 折`
+}
+
 export function num(value) {
   return (Number(value) || 0).toLocaleString('zh-CN')
 }
