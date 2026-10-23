@@ -5,7 +5,7 @@ from copy import deepcopy
 import pytest
 
 from core.config import load_config
-from core.constants import OrderStatus, RedeemType
+from core.constants import OrderStatus, RedeemType, TxType
 from core.db import connect, init_db, transaction
 from core.security import RateLimiter
 from integrations import epay
@@ -175,6 +175,57 @@ def test_admin_positive_adjustment_requires_type(admin_client):
         assert client.post(f"/api/admin/users/{user_id}/balance", json=payload).status_code == 400
     assert client.get("/api/user/me").json()["user"]["balance"] == 0
     assert client.get("/api/billing/transactions").json()["total"] == 0
+
+
+def test_all_transactions_filters_combine_and_the_totals_follow_them(billing_conn):
+    conn = billing_conn
+    conn.execute(
+        "INSERT INTO users(id, username, password_hash, role, tag, created_at) VALUES "
+        "(2, 'member', 'unused', 'user', 'VIP', 1), (3, 'keeper', 'unused', 'manager', 'VIP', 1), "
+        "(4, 'root', 'unused', 'admin', NULL, 1)"
+    )
+    with transaction(conn):
+        billing.apply_credit(conn, 2, 5000000, TxType.ADMIN, note="线下收款", operator_id=3)
+        billing.apply_credit(conn, 2, -1000000, TxType.ADMIN, note="纠正", operator_id=3)
+        billing.apply_credit(conn, 2, 2000000, TxType.REDEEM_GIFT, ref="AAAA-BBBB-CCCC-DDDD")
+        billing.apply_credit(conn, 1, 3000000, TxType.BONUS, note="管理员赠送", operator_id=4)
+    # Entry n is written at n seconds.
+    conn.execute("UPDATE transactions SET created_at = id * 1000")
+
+    def listed(**filters):
+        return billing.list_all_transactions(conn, 1, 20, 0, filters)
+
+    every = listed()
+    totals = (every["total"], every["sum_credit"], every["sum_debit"], every["sum_amount"])
+    assert totals == (4, 10, -1, 9)
+    assert every["operators"] == [
+        {"id": 3, "username": "keeper", "role": "manager"},
+        {"id": 4, "username": "root", "role": "admin"},
+    ]
+    newest = every["items"][0]
+    assert (newest["username"], newest["tag"], newest["operator"]) == ("customer", "", "root")
+    vip = listed(tag="vip")
+    assert (vip["total"], vip["sum_amount"]) == (3, 6)
+    # Administrators see full redeem codes and who adjusted the balance.
+    assert [(item["ref"], item["operator"]) for item in vip["items"]] == [
+        ("AAAA-BBBB-CCCC-DDDD", ""),
+        ("", "keeper"),
+        ("", "keeper"),
+    ]
+    # The filters combine, and every total covers exactly the entries they keep.
+    by_keeper = listed(operator=3, type=TxType.ADMIN, tag="VIP")
+    assert [item["amount"] for item in by_keeper["items"]] == [-1, 5]
+    assert (by_keeper["sum_credit"], by_keeper["sum_debit"], by_keeper["sum_amount"]) == (5, -1, 4)
+    in_range = listed(start=2000, end=4000)
+    assert [item["amount"] for item in in_range["items"]] == [2, -1]
+    assert (in_range["sum_credit"], in_range["sum_debit"]) == (2, -1)
+    assert listed(operator=4, tag="VIP")["total"] == 0
+    assert listed(type="unknown") == every
+    nothing = {"items": [], "total": 0, "sum_amount": 0, "sum_credit": 0, "sum_debit": 0}
+    assert listed(tag="Other") == {**every, **nothing}
+    # Entries follow their user, so moving the user to another tag moves its history too.
+    conn.execute("UPDATE users SET tag = 'Other' WHERE id = 2")
+    assert listed(tag="Other")["total"] == 3
 
 
 def test_pricing_precedence_aliases_and_public_visibility(billing_conn):

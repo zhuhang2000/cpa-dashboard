@@ -67,6 +67,7 @@ class TxType:
     ONLINE = "online"
     ADMIN = "admin"
     BONUS = "bonus"
+    ALL = (REDEEM, REDEEM_GIFT, ONLINE, ADMIN, BONUS)
     RECHARGE = (REDEEM, ONLINE, ADMIN)  # gifts are excluded from all recharge statistics
 
 

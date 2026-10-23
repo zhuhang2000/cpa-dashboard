@@ -72,6 +72,25 @@ def apply_credit(conn, user_id, amount_micro, tx_type, ref=None, note=None, oper
     return balance
 
 
+def _ledger_item(row, admin):
+    """A ledger row; administrators also see full redeem codes and who adjusted the balance."""
+    ref = row["ref"] or ""
+    if not admin and row["type"] in (TxType.REDEEM, TxType.REDEEM_GIFT) and len(ref) > 9:
+        ref = ref[:4] + "-****-****-" + ref[-4:]
+    item = {
+        "id": row["id"],
+        "type": row["type"],
+        "amount": money(row["amount_micro"]),
+        "balance_after": money(row["balance_after_micro"]),
+        "ref": ref,
+        "note": row["note"] or "",
+        "created_at": row["created_at"],
+    }
+    if admin:
+        item["operator"] = row["operator"] or ""
+    return item
+
+
 def list_transactions(conn, user_id, page, size, offset, admin=False):
     """A user's ledger; administrators also see full redeem codes and who adjusted it."""
     total = conn.execute(
@@ -83,23 +102,7 @@ def list_transactions(conn, user_id, page, size, offset, admin=False):
         "WHERE t.user_id = ? ORDER BY t.id DESC LIMIT ? OFFSET ?",
         (user_id, size, offset),
     ).fetchall()
-    items = []
-    for row in rows:
-        ref = row["ref"] or ""
-        if not admin and row["type"] in (TxType.REDEEM, TxType.REDEEM_GIFT) and len(ref) > 9:
-            ref = ref[:4] + "-****-****-" + ref[-4:]
-        item = {
-            "id": row["id"],
-            "type": row["type"],
-            "amount": money(row["amount_micro"]),
-            "balance_after": money(row["balance_after_micro"]),
-            "ref": ref,
-            "note": row["note"] or "",
-            "created_at": row["created_at"],
-        }
-        if admin:
-            item["operator"] = row["operator"] or ""
-        items.append(item)
+    items = [_ledger_item(row, admin) for row in rows]
     return {"items": items, "total": total, "page": page, "page_size": size}
 
 
@@ -312,6 +315,68 @@ def adjust_balance(conn, user_id, operator_id, data, allow_gift=True):
             raise ApiError(404, "用户不存在")
         balance = apply_credit(conn, user_id, amount, tx_type, note=note, operator_id=operator_id)
     return {"balance": money(balance)}
+
+
+def list_all_transactions(conn, page, size, offset, filters):
+    """Every user's ledger, newest first, with the totals of all the filtered entries.
+
+    filters may hold type, tag, operator (a user id) and start/end (epoch ms, end exclusive).
+    tag keeps the users carrying it now, so an entry follows its user rather than the tag the
+    user had when it was written. An unknown type is ignored, like the other list filters.
+    operators lists everyone who has adjusted a balance, as the operator filter's choices.
+    """
+    where, args = ["1 = 1"], []
+    if filters.get("type") in TxType.ALL:
+        where.append("t.type = ?")
+        args.append(filters["type"])
+    tag = (filters.get("tag") or "").strip()
+    if tag:
+        where.append("u.tag = ?")
+        args.append(tag)
+    for field, expression in (
+        ("operator", "t.operator_id = ?"),
+        ("start", "t.created_at >= ?"),
+        ("end", "t.created_at < ?"),
+    ):
+        if field in filters:
+            where.append(expression)
+            args.append(filters[field])
+    clause = " AND ".join(where)
+    totals = conn.execute(
+        "SELECT COUNT(*) AS n, COALESCE(SUM(t.amount_micro), 0) AS net, "
+        "COALESCE(SUM(CASE WHEN t.amount_micro > 0 THEN t.amount_micro END), 0) AS credit, "
+        "COALESCE(SUM(CASE WHEN t.amount_micro < 0 THEN t.amount_micro END), 0) AS debit "
+        "FROM transactions t JOIN users u ON u.id = t.user_id WHERE " + clause,
+        args,
+    ).fetchone()
+    rows = conn.execute(
+        "SELECT t.*, u.username, u.tag, o.username AS operator FROM transactions t "
+        "JOIN users u ON u.id = t.user_id LEFT JOIN users o ON o.id = t.operator_id "
+        "WHERE " + clause + " ORDER BY t.id DESC LIMIT ? OFFSET ?",
+        args + [size, offset],
+    ).fetchall()
+    items = []
+    for row in rows:
+        item = _ledger_item(row, admin=True)
+        item.update(user_id=row["user_id"], username=row["username"], tag=row["tag"] or "")
+        items.append(item)
+    operators = [
+        {"id": row["id"], "username": row["username"], "role": row["role"]}
+        for row in conn.execute(
+            "SELECT DISTINCT o.id, o.username, o.role FROM transactions t "
+            "JOIN users o ON o.id = t.operator_id ORDER BY o.username"
+        )
+    ]
+    return {
+        "items": items,
+        "total": totals["n"],
+        "sum_amount": money(totals["net"]),
+        "sum_credit": money(totals["credit"]),
+        "sum_debit": money(totals["debit"]),
+        "operators": operators,
+        "page": page,
+        "page_size": size,
+    }
 
 
 def list_codes(conn, page, size, offset, status=None, batch="", query=""):

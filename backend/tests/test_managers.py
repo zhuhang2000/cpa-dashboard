@@ -72,6 +72,7 @@ def test_manager_is_refused_every_other_administrator_action(client, team):
     alice = team["alice"]
     for method, path, body in (
         ("GET", "/api/admin/overview", None),
+        ("GET", "/api/admin/billing/transactions", None),
         ("GET", "/api/admin/tags", None),
         ("POST", "/api/admin/users/tag", {"ids": [alice], "tag": ""}),
         ("POST", "/api/admin/users/archive", {"ids": [alice], "archived": True}),

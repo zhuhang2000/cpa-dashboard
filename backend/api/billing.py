@@ -10,6 +10,7 @@ from api.dependencies import (
     client_ip,
     get_connection,
     get_runtime,
+    int_arg,
     json_body,
     origin_url,
     pagination,
@@ -111,6 +112,22 @@ def admin_list_transactions(
 ):
     user = accounts.get_managed(conn, staff, user_id)
     return billing.list_transactions(conn, user["id"], *pagination(request), admin=True)
+
+
+def _ledger_filters(request):
+    filters = {}
+    for name in ("operator", "start", "end"):
+        if query_arg(request, name):
+            filters[name] = int_arg(request, name, 0)
+    for name in ("type", "tag"):
+        if query_arg(request, name):
+            filters[name] = query_arg(request, name)
+    return filters
+
+
+@router.get("/api/admin/billing/transactions", dependencies=[Depends(require_admin)])
+def admin_list_all_transactions(request: Request, conn=Depends(get_connection)):
+    return billing.list_all_transactions(conn, *pagination(request), _ledger_filters(request))
 
 
 @router.post("/api/admin/users/{user_id:int}/balance")

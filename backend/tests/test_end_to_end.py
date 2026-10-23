@@ -47,6 +47,7 @@ EXPECTED_ROUTES = {
     ("POST", "/api/admin/users/{user_id}/balance"),
     ("POST", "/api/admin/users/{user_id}/password"),
     ("GET", "/api/admin/users/{user_id}/billing/transactions"),
+    ("GET", "/api/admin/billing/transactions"),
     ("GET", "/api/admin/users/{user_id}/usage/logs"),
     ("GET", "/api/admin/codes"),
     ("POST", "/api/admin/codes"),
@@ -402,6 +403,18 @@ def run_portal_scenario(admin, user, bootstrap_admin, append_usage, payment_key=
     by_type = {entry["type"]: entry for entry in admin_ledger["items"]}
     assert admin_ledger["total"] == 3 and by_type["redeem"]["ref"] == codes[0]
     assert by_type["admin"]["operator"] == "scenario-admin" and by_type["online"]["operator"] == ""
+    tagged_ledger, _ = call(admin, "GET", "/api/admin/billing/transactions", params={"tag": "VIP"})
+    assert (tagged_ledger["total"], tagged_ledger["sum_amount"]) == (3, 27.34)
+    assert {entry["username"] for entry in tagged_ledger["items"]} == {"scenario-user"}
+    operator = tagged_ledger["operators"][0]
+    assert operator["username"] == "scenario-admin"
+    by_operator, _ = call(
+        admin,
+        "GET",
+        "/api/admin/billing/transactions",
+        params={"operator": operator["id"], "start": now_ms() - 3600000},
+    )
+    assert (by_operator["total"], by_operator["sum_credit"], by_operator["sum_debit"]) == (1, 10, 0)
     me, _ = call(user, "GET", "/api/user/me")
     assert me["user"]["balance"] == 24.34 and me["user"]["total_spent"] == 3
     assert me["user"]["total_recharge"] == 27.34
@@ -518,7 +531,7 @@ def test_all_business_endpoints_through_fastapi(tmp_path):
             for method in operations
             if method in {"get", "post", "put", "patch", "delete"}
         }
-    assert len(EXPECTED_ROUTES) == 50
+    assert len(EXPECTED_ROUTES) == 51
     assert covered == EXPECTED_ROUTES
     assert actual_routes == EXPECTED_ROUTES
     assert len(records) > 39
