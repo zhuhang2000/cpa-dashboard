@@ -1,6 +1,6 @@
 # API Portal — CLIProxyAPI 用户运营控制台
 
-API Portal 是为 **CLIProxyAPI (CPA)** 与 **CPA Manager Plus (CPAMP)** 打造的多用户商业化运营端，支持用户注册登录、自助管理 API 密钥、用量明细对账、兑换码与在线充值，以及管理员运营管控、模型定价和收支统计。
+API Portal 是为 **CLIProxyAPI (CPA)** 与 **CPA Manager Plus (CPAMP)** 打造的多用户商业化运营端，支持用户注册登录、自助管理 API 密钥、用量明细对账、兑换码与在线充值，以及管理员运营管控（可按用户标签任命管理员代为充值）、模型定价和收支统计。
 
 - **前端**：Vue 3 + Vite，纯静态资源（打包约 130 KB），由本地构建打包上传，服务器免 Node.js。
 - **后端**：Python 3.12+ (FastAPI + Uvicorn)，内置单页静态服务与定时对账调度。
@@ -93,7 +93,7 @@ nano .env
 ```bash
 cd /opt/services/api-portal/backend
 
-# 创建初始管理员账号
+# 创建初始超级管理员账号
 .venv/bin/python server.py create-admin admin
 
 # 配置开机自启
@@ -117,7 +117,7 @@ certbot --nginx -d 你的域名
 所有命令在 `backend/` 目录下由虚拟环境执行：
 
 ```bash
-# 创建管理员 / 提权已有用户
+# 创建超级管理员 / 提权已有用户（管理员在后台「用户管理 → 更多 → 设置身份」中任命）
 .venv/bin/python server.py create-admin <用户名>
 
 # 重置用户密码并强制下线

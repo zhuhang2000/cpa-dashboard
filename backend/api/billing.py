@@ -15,8 +15,10 @@ from api.dependencies import (
     pagination,
     query_arg,
     require_admin,
+    require_staff,
     require_user,
 )
+from core.constants import Role
 from services import accounts, billing
 
 router = APIRouter(tags=["billing"])
@@ -103,23 +105,26 @@ async def epay_return(request: Request, conn=Depends(get_connection), runtime=De
 # ---- Administrator endpoints ----
 
 
-@router.get(
-    "/api/admin/users/{user_id:int}/billing/transactions", dependencies=[Depends(require_admin)]
-)
-def admin_list_transactions(user_id: int, request: Request, conn=Depends(get_connection)):
-    user = accounts.get(conn, user_id)
+@router.get("/api/admin/users/{user_id:int}/billing/transactions")
+def admin_list_transactions(
+    user_id: int, request: Request, staff=Depends(require_staff), conn=Depends(get_connection)
+):
+    user = accounts.get_managed(conn, staff, user_id)
     return billing.list_transactions(conn, user["id"], *pagination(request), admin=True)
 
 
 @router.post("/api/admin/users/{user_id:int}/balance")
 def admin_adjust_balance(
     user_id: int,
-    admin=Depends(require_admin),
+    staff=Depends(require_staff),
     body=Depends(json_body),
     conn=Depends(get_connection),
     runtime=Depends(get_runtime),
 ):
-    result = billing.adjust_balance(conn, user_id, admin["id"], body)
+    user = accounts.get_managed(conn, staff, user_id)
+    # Gifts create balance without payment, so only the system administrator may give them.
+    allow_gift = staff["role"] == Role.ADMIN
+    result = billing.adjust_balance(conn, user["id"], staff["id"], body, allow_gift)
     runtime.worker.trigger()
     return result
 

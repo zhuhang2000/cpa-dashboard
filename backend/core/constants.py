@@ -6,9 +6,13 @@ data migration. Keep this module free of imports so any module can use it.
 
 
 class Role:
+    """ADMIN runs the whole site; a MANAGER only sees and credits users sharing its tag."""
+
     USER = "user"
     ADMIN = "admin"
-    ALL = (USER, ADMIN)
+    MANAGER = "manager"
+    ALL = (USER, ADMIN, MANAGER)
+    STAFF = (ADMIN, MANAGER)  # may open the user administration
 
 
 class UserStatus:

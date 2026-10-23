@@ -38,6 +38,8 @@ EXPECTED_ROUTES = {
     ("GET", "/api/admin/overview"),
     ("GET", "/api/admin/users"),
     ("POST", "/api/admin/users/archive"),
+    ("POST", "/api/admin/users/tag"),
+    ("GET", "/api/admin/tags"),
     ("PUT", "/api/admin/users/{user_id}/status"),
     ("PUT", "/api/admin/users/{user_id}/role"),
     ("GET", "/api/admin/users/{user_id}/keys"),
@@ -203,6 +205,10 @@ def run_portal_scenario(admin, user, bootstrap_admin, append_usage, payment_key=
         assert users["total"] == int(not archived)
     me, _ = call(user, "GET", "/api/user/me")
     assert "archived_at" not in me["user"]
+    tagged, _ = call(admin, "POST", "/api/admin/users/tag", json={"ids": [user_id], "tag": "VIP"})
+    assert tagged == {"updated": 1}
+    tags, _ = call(admin, "GET", "/api/admin/tags")
+    assert tags == {"items": [{"tag": "VIP", "users": 1, "managers": 0}]}
     extra, _ = call(user, "POST", "/api/keys", json={"name": "unused-admin-cleanup"})
     managed, _ = call(
         admin, "GET", f"/api/admin/users/{user_id}/keys", route="/api/admin/users/{user_id}/keys"
@@ -512,7 +518,7 @@ def test_all_business_endpoints_through_fastapi(tmp_path):
             for method in operations
             if method in {"get", "post", "put", "patch", "delete"}
         }
-    assert len(EXPECTED_ROUTES) == 48
+    assert len(EXPECTED_ROUTES) == 50
     assert covered == EXPECTED_ROUTES
     assert actual_routes == EXPECTED_ROUTES
     assert len(records) > 39

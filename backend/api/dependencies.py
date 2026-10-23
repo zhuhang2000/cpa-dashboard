@@ -103,6 +103,13 @@ def require_admin(user=Depends(require_user)):
     return user
 
 
+def require_staff(user=Depends(require_user)):
+    """Administrators and managers; the accounts service scopes a manager to its tag."""
+    if user["role"] not in Role.STAFF:
+        raise ApiError(403, "需要管理员权限")
+    return user
+
+
 async def check_csrf(request: Request):
     if request.method not in ("POST", "PUT", "PATCH", "DELETE"):
         return

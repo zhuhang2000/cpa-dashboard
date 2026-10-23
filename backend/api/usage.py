@@ -14,6 +14,7 @@ from api.dependencies import (
     pagination,
     query_arg,
     require_admin,
+    require_staff,
     require_user,
 )
 from services import accounts, usage
@@ -206,9 +207,11 @@ def usage_export(
 # ---- Administrator endpoints ----
 
 
-@router.get("/api/admin/users/{user_id:int}/usage/logs", dependencies=[Depends(require_admin)])
-def admin_usage_logs(user_id: int, request: Request, conn=Depends(get_connection)):
-    user = accounts.get(conn, user_id)
+@router.get("/api/admin/users/{user_id:int}/usage/logs")
+def admin_usage_logs(
+    user_id: int, request: Request, staff=Depends(require_staff), conn=Depends(get_connection)
+):
+    user = accounts.get_managed(conn, staff, user_id)
     return _logs_page(request, conn, user["id"])
 
 

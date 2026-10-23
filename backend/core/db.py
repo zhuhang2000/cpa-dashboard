@@ -156,7 +156,13 @@ SCHEMA_V4 = """
 ALTER TABLE users ADD COLUMN archived_at INTEGER;
 """
 
-MIGRATIONS = [SCHEMA_V1, SCHEMA_V2, SCHEMA_V3, SCHEMA_V4]
+# A regular user's tag names its group; a manager's tag names the group it serves.
+SCHEMA_V5 = """
+ALTER TABLE users ADD COLUMN tag TEXT COLLATE NOCASE;
+CREATE INDEX idx_users_tag ON users(tag);
+"""
+
+MIGRATIONS = [SCHEMA_V1, SCHEMA_V2, SCHEMA_V3, SCHEMA_V4, SCHEMA_V5]
 
 
 def now_ms():

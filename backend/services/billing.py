@@ -292,7 +292,8 @@ def recharge_daily(conn, start, tz_offset_minutes):
     ).fetchall()
 
 
-def adjust_balance(conn, user_id, operator_id, data):
+def adjust_balance(conn, user_id, operator_id, data, allow_gift=True):
+    """Credit or debit a user by hand; without allow_gift a credit must be a recharge."""
     amount = parse_money(data.get("amount"), "调整金额", minimum=-1000000, maximum=1000000)
     tx_type, default_note = TxType.ADMIN, "管理员扣款"
     if amount > 0:
@@ -300,6 +301,8 @@ def adjust_balance(conn, user_id, operator_id, data):
         if credit_type not in RedeemType.ALL:
             raise ApiError(400, "请选择充值或赠送")
         if credit_type == RedeemType.GIFT:
+            if not allow_gift:
+                raise ApiError(403, "无权赠送余额，只能充值或扣款")
             tx_type, default_note = TxType.BONUS, "管理员赠送"
         else:
             default_note = "管理员充值"

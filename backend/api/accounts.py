@@ -11,9 +11,11 @@ from api.dependencies import (
     json_body,
     pagination,
     require_admin,
+    require_staff,
     require_user,
     set_session_cookie,
 )
+from core.constants import Role
 from services import accounts, api_keys
 from services.billing import money
 
@@ -116,13 +118,13 @@ def change_password(
 
 
 @router.get("/api/admin/users")
-def admin_list_users(request: Request, admin=Depends(require_admin), conn=Depends(get_connection)):
+def admin_list_users(request: Request, staff=Depends(require_staff), conn=Depends(get_connection)):
     page, size, offset = pagination(request)
     q = (request.query_params.get("q") or "").strip()
     archived = request.query_params.get("archived") == "1"
     sort = request.query_params.get("sort") or "created"
     desc = request.query_params.get("order") != "asc"
-    total, rows = accounts.search(conn, q, size, offset, archived, sort, desc)
+    total, rows = accounts.search(conn, staff, q, size, offset, archived, sort, desc)
     key_counts = api_keys.live_counts(conn, [row["id"] for row in rows])
     items = []
     for row in rows:
@@ -132,6 +134,9 @@ def admin_list_users(request: Request, admin=Depends(require_admin), conn=Depend
             last_login_ip=row["last_login_ip"] or "",
             last_used_at=row["last_used_at"],
         )
+        # Tags are the system administrator's bookkeeping; a manager only sees its users.
+        if staff["role"] == Role.ADMIN:
+            item["tag"] = row["tag"] or ""
         items.append(item)
     return {"items": items, "total": total, "page": page, "page_size": size}
 
@@ -141,6 +146,23 @@ def admin_archive_users(
     admin=Depends(require_admin), data: dict = Depends(json_body), conn=Depends(get_connection)
 ):
     return {"updated": accounts.set_archived(conn, data.get("ids"), data.get("archived"))}
+
+
+@router.post("/api/admin/users/tag")
+def admin_tag_users(
+    admin=Depends(require_admin), data: dict = Depends(json_body), conn=Depends(get_connection)
+):
+    return {"updated": accounts.set_tags(conn, data.get("ids"), data.get("tag"))}
+
+
+@router.get("/api/admin/tags", dependencies=[Depends(require_admin)])
+def admin_list_tags(conn=Depends(get_connection)):
+    return {
+        "items": [
+            {"tag": row["tag"], "users": row["users"], "managers": row["managers"]}
+            for row in accounts.list_tags(conn)
+        ]
+    }
 
 
 @router.put("/api/admin/users/{user_id:int}/status")
@@ -164,7 +186,7 @@ def admin_set_user_role(
     data: dict = Depends(json_body),
     conn=Depends(get_connection),
 ):
-    row = accounts.set_role(conn, user_id, data.get("role"), admin["id"])
+    row = accounts.set_role(conn, user_id, data.get("role"), admin["id"], data.get("tag"))
     return {"user": user_public(row)}
 
 

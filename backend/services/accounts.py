@@ -4,13 +4,14 @@ import re
 import secrets
 
 from core.constants import Role, TxType, UserStatus
-from core.db import now_ms, transaction
+from core.db import like_pattern, now_ms, transaction
 from core.errors import ApiError
 from core.security import hash_password, new_session_token, sha256_hex, verify_password
 from services.billing import apply_credit, to_micro
 
 DAY_MS = 86400000
 MAX_BATCH_USERS = 100  # the largest user list page
+TAG_MAX_LENGTH = 20
 USER_SORTS = {
     "created": "u.id",
     "last_used": "last_used_at",
@@ -202,18 +203,47 @@ def change_password(conn, user, data, keep_session):
 # ---- Administrator operations ----
 
 
-def search(conn, q, limit, offset, archived=False, sort="created", desc=True):
-    """Archived (inactive) accounts are listed apart from the main user list.
+def _managed_scope(operator):
+    """SQL condition on users u for the accounts operator administers, with its arguments.
 
+    The system administrator manages everyone; a manager only the regular users sharing
+    its tag, which also keeps it from crediting itself or another manager.
+    """
+    if operator["role"] == Role.ADMIN:
+        return "1", []
+    if operator["role"] == Role.MANAGER:
+        return "u.role = ? AND u.tag = ?", [Role.USER, operator["tag"]]
+    return "0", []
+
+
+def get_managed(conn, operator, user_id):
+    """The account operator administers; one outside its scope reads as missing."""
+    scope, args = _managed_scope(operator)
+    row = conn.execute(
+        "SELECT * FROM users u WHERE u.id = ? AND " + scope, [user_id] + args
+    ).fetchone()
+    if row is None:
+        raise ApiError(404, "用户不存在")
+    return row
+
+
+def search(conn, operator, q, limit, offset, archived=False, sort="created", desc=True):
+    """List the accounts operator administers; q matches usernames and emails.
+
+    Archiving and tags are the system administrator's bookkeeping: only its list is split
+    by archiving and searchable by tag. A manager sees its users either way and is never
+    told its tag's name, not even through what a search for it would match.
     Rows carry last_used_at, the latest call made with any of the user's keys. Missing
     times sort as the oldest, so never-used accounts lead an ascending order.
     """
-    where = "u.archived_at IS NOT NULL" if archived else "u.archived_at IS NULL"
-    args = []
+    where, args = _managed_scope(operator)
+    columns = ["u.username", "u.email"]
+    if operator["role"] == Role.ADMIN:
+        where += " AND u.archived_at IS NOT NULL" if archived else " AND u.archived_at IS NULL"
+        columns.append("u.tag")
     if q:
-        where += " AND (u.username LIKE ? ESCAPE '\\' OR u.email LIKE ? ESCAPE '\\')"
-        pattern = "%" + q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
-        args = [pattern, pattern]
+        where += " AND (%s)" % " OR ".join("%s LIKE ? ESCAPE '\\'" % name for name in columns)
+        args += [like_pattern(q)] * len(columns)
     order = "%s %s, u.id DESC" % (USER_SORTS.get(sort, "u.id"), "DESC" if desc else "ASC")
     total = conn.execute("SELECT COUNT(*) FROM users u WHERE " + where, args).fetchone()[0]
     rows = conn.execute(
@@ -224,21 +254,64 @@ def search(conn, q, limit, offset, archived=False, sort="created", desc=True):
     return total, rows
 
 
-def set_archived(conn, user_ids, archived):
-    """Move accounts in or out of the inactive list; sign-in and keys are unaffected."""
-    if not isinstance(archived, bool):
-        raise ApiError(400, "不活跃标记不正确")
+def _check_batch(user_ids):
     if (
         not isinstance(user_ids, list)
         or not 1 <= len(user_ids) <= MAX_BATCH_USERS
         or not all(type(user_id) is int for user_id in user_ids)
     ):
         raise ApiError(400, "请选择 1-%d 位用户" % MAX_BATCH_USERS)
+
+
+def set_archived(conn, user_ids, archived):
+    """Move accounts in or out of the inactive list; sign-in and keys are unaffected."""
+    if not isinstance(archived, bool):
+        raise ApiError(400, "不活跃标记不正确")
+    _check_batch(user_ids)
     return conn.execute(
         "UPDATE users SET archived_at = CASE WHEN ? THEN COALESCE(archived_at, ?) END "
         "WHERE id IN (%s)" % ", ".join("?" * len(user_ids)),
         [archived, now_ms()] + user_ids,
     ).rowcount
+
+
+def _clean_tag(conn, tag):
+    """Collapse spaces and reuse an existing spelling so a group shows one name; '' is None."""
+    text = " ".join(str(tag or "").split())
+    if len(text) > TAG_MAX_LENGTH:
+        raise ApiError(400, "标签最多 %d 个字符" % TAG_MAX_LENGTH)
+    if not text:
+        return None
+    row = conn.execute("SELECT tag FROM users WHERE tag = ? LIMIT 1", (text,)).fetchone()
+    return row["tag"] if row else text
+
+
+def set_tags(conn, user_ids, tag):
+    """Put regular users into a tag group, or take them out with an empty tag.
+
+    A manager's tag changes with its role, so any other account refuses the whole batch.
+    Owns its transaction and returns how many users were updated.
+    """
+    _check_batch(user_ids)
+    tag = _clean_tag(conn, tag)
+    marks = ", ".join("?" * len(user_ids))
+    with transaction(conn):
+        if conn.execute(
+            "SELECT 1 FROM users WHERE role != ? AND id IN (%s)" % marks, [Role.USER] + user_ids
+        ).fetchone():
+            raise ApiError(400, "只能给普通用户设置标签，管理员请在设置身份时修改")
+        return conn.execute(
+            "UPDATE users SET tag = ? WHERE id IN (%s)" % marks, [tag] + user_ids
+        ).rowcount
+
+
+def list_tags(conn):
+    """Tags in use, each with how many regular users and managers carry it."""
+    return conn.execute(
+        "SELECT tag, SUM(role = ?) AS users, SUM(role = ?) AS managers FROM users "
+        "WHERE tag IS NOT NULL GROUP BY tag ORDER BY tag",
+        (Role.USER, Role.MANAGER),
+    ).fetchall()
 
 
 def set_status(conn, user_id, status, operator_id):
@@ -255,14 +328,24 @@ def set_status(conn, user_id, status, operator_id):
     return get(conn, row["id"])
 
 
-def set_role(conn, user_id, role, operator_id):
-    """Grant or revoke administrator rights."""
+def set_role(conn, user_id, role, operator_id, tag=None):
+    """Grant or revoke administrator rights; a manager gets the tag of the users it serves.
+
+    A regular user staying one keeps its group; administrators and demoted managers have
+    no tag, so a former manager does not become a member of the group it served.
+    """
     row = get(conn, user_id)
     if role not in Role.ALL:
         raise ApiError(400, "角色不正确")
     if row["id"] == operator_id and role != Role.ADMIN:
         raise ApiError(400, "不能取消自己的管理员身份")
-    conn.execute("UPDATE users SET role = ? WHERE id = ?", (role, row["id"]))
+    if role == Role.MANAGER:
+        tag = _clean_tag(conn, tag)
+        if tag is None:
+            raise ApiError(400, "请填写管理员负责的标签")
+    else:
+        tag = row["tag"] if role == Role.USER and row["role"] == Role.USER else None
+    conn.execute("UPDATE users SET role = ?, tag = ? WHERE id = ?", (role, tag, row["id"]))
     return get(conn, row["id"])
 
 
@@ -294,7 +377,7 @@ def create_admin(conn, username, password=None):
     row = find_by_username(conn, username)
     if row:
         conn.execute(
-            "UPDATE users SET role = ?, status = ? WHERE id = ?",
+            "UPDATE users SET role = ?, status = ?, tag = NULL WHERE id = ?",
             (Role.ADMIN, UserStatus.ACTIVE, row["id"]),
         )
         return get(conn, row["id"]), False

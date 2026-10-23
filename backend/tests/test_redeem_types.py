@@ -119,7 +119,11 @@ def test_v1_migration_preserves_existing_codes_balances_and_recharge_history(tmp
     conn = connect(path)
     try:
         assert conn.execute("PRAGMA user_version").fetchone()[0] == len(MIGRATIONS)
-        assert dict(accounts.get(conn, user_id)) == {**original_user, "archived_at": None}
+        assert dict(accounts.get(conn, user_id)) == {
+            **original_user,
+            "archived_at": None,
+            "tag": None,
+        }
         assert dict(conn.execute("SELECT * FROM transactions").fetchone()) == original_ledger
         migrated = [dict(row) for row in conn.execute("SELECT * FROM redeem_codes ORDER BY code")]
         assert migrated == [{**row, "type": RedeemType.RECHARGE} for row in original_codes]

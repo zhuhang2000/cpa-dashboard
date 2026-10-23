@@ -14,6 +14,8 @@ NOW = 1700000000000
 DAY_MS = 86400000
 # The deployment settings the key operations read.
 KEY_CONFIG = {"max_keys_per_user": 10, "key_prefix": "sk-", "min_balance_to_call": 0}
+# The operator of user listings that are not about manager scopes.
+SYSTEM_ADMIN = {"role": Role.ADMIN, "tag": None}
 
 
 @pytest.fixture
@@ -28,11 +30,11 @@ def account_db(tmp_path, monkeypatch):
         conn.close()
 
 
-def add_user(conn, username, *, role=Role.USER):
+def add_user(conn, username, *, role=Role.USER, tag=None):
     user_id = conn.execute(
-        "INSERT INTO users (username, password_hash, role, balance_micro, created_at) "
-        "VALUES (?, ?, ?, ?, ?)",
-        (username, "unused-test-hash", role, 1000000, NOW),
+        "INSERT INTO users (username, password_hash, role, tag, balance_micro, created_at) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        (username, "unused-test-hash", role, tag, 1000000, NOW),
     ).lastrowid
     return accounts.get(conn, user_id)
 
@@ -94,7 +96,9 @@ def test_archived_users_are_listed_separately_and_keep_access(account_db):
     token, _ = accounts.start_session(conn, alice["id"], "127.0.0.1", 7)
 
     def listed(q="", archived=False):
-        return [row["username"] for row in accounts.search(conn, q, 20, 0, archived)[1]]
+        return [
+            row["username"] for row in accounts.search(conn, SYSTEM_ADMIN, q, 20, 0, archived)[1]
+        ]
 
     accounts.set_archived(conn, [alice["id"]], True)
     assert listed() == ["alina", "operator"]
@@ -140,7 +144,7 @@ def test_user_list_sorts_by_latest_key_use_and_account_totals(account_db):
     api_keys.soft_delete(conn, api_keys.list_for_user(conn, recent["id"])[0])
 
     def listed(sort, desc=True):
-        rows = accounts.search(conn, "", 20, 0, False, sort, desc)[1]
+        rows = accounts.search(conn, SYSTEM_ADMIN, "", 20, 0, False, sort, desc)[1]
         return [(row["username"], row["last_used_at"]) for row in rows]
 
     assert listed("last_used") == [
@@ -175,6 +179,86 @@ def test_status_and_role_changes_are_validated_and_independent(account_db):
     )
     changed = accounts.set_status(conn, user["id"], UserStatus.BANNED, admin["id"])
     assert (changed["role"], changed["status"]) == (Role.ADMIN, UserStatus.BANNED)
+
+
+def test_role_changes_give_managers_a_tag_and_clear_it_on_demotion(account_db):
+    conn = account_db
+    admin = add_user(conn, "root", role=Role.ADMIN)
+    user = add_user(conn, "alice")
+    accounts.set_tags(conn, [user["id"]], "  Team   A ")
+    assert accounts.get(conn, user["id"])["tag"] == "Team A"
+
+    with pytest.raises(ApiError, match="负责的标签"):
+        accounts.set_role(conn, user["id"], Role.MANAGER, admin["id"], tag=" ")
+    with pytest.raises(ApiError, match="最多 20 个字符"):
+        accounts.set_role(conn, user["id"], Role.MANAGER, admin["id"], tag="x" * 21)
+    # Staying a regular user keeps the group.
+    assert accounts.set_role(conn, user["id"], Role.USER, admin["id"])["tag"] == "Team A"
+
+    manager = accounts.set_role(conn, user["id"], Role.MANAGER, admin["id"], tag="team a")
+    assert (manager["role"], manager["tag"]) == (Role.MANAGER, "Team A")
+    # A demoted manager does not join the group it served, and administrators have no tag.
+    assert accounts.set_role(conn, user["id"], Role.USER, admin["id"])["tag"] is None
+    accounts.set_role(conn, user["id"], Role.MANAGER, admin["id"], tag="Team B")
+    assert accounts.set_role(conn, user["id"], Role.ADMIN, admin["id"], tag="Team B")["tag"] is None
+
+
+def test_managers_reach_only_the_regular_users_sharing_their_tag(account_db):
+    conn = account_db
+    admin = add_user(conn, "root", role=Role.ADMIN)
+    alice = add_user(conn, "alice")
+    bob = add_user(conn, "bob")
+    carol = add_user(conn, "carol")
+    keeper = add_user(conn, "keeper", role=Role.MANAGER, tag="VIP")
+    peer = add_user(conn, "peer", role=Role.MANAGER, tag="VIP")
+    accounts.set_tags(conn, [alice["id"], carol["id"]], "vip")
+    accounts.set_tags(conn, [bob["id"]], "Other")
+    accounts.set_archived(conn, [carol["id"]], True)
+
+    def listed(operator, q="", archived=False):
+        return [row["username"] for row in accounts.search(conn, operator, q, 20, 0, archived)[1]]
+
+    assert accounts.get(conn, alice["id"])["tag"] == "VIP"
+    # Archiving only splits the administrator's list; a manager keeps seeing its users.
+    assert listed(keeper) == listed(keeper, archived=True) == ["carol", "alice"]
+    assert listed(keeper, "car") == ["carol"]
+    # Only the administrator searches tags; a manager's search never reveals its tag.
+    assert listed(admin, "vip") == ["peer", "keeper", "alice"]
+    assert listed(keeper, "vip") == []
+    assert accounts.get_managed(conn, keeper, alice["id"])["id"] == alice["id"]
+    for other in (bob, admin, keeper, peer, {"id": 9999}):
+        with pytest.raises(ApiError) as exc:
+            accounts.get_managed(conn, keeper, other["id"])
+        assert exc.value.status == 404
+    # A tag alone grants nothing: a regular user in the group manages nobody.
+    member = accounts.get(conn, alice["id"])
+    assert listed(member) == []
+    with pytest.raises(ApiError):
+        accounts.get_managed(conn, member, alice["id"])
+
+
+def test_batch_tags_apply_to_regular_users_only_and_are_counted(account_db):
+    conn = account_db
+    admin = add_user(conn, "root", role=Role.ADMIN)
+    ids = [add_user(conn, name)["id"] for name in ("alice", "bob")]
+    keeper = add_user(conn, "keeper", role=Role.MANAGER, tag="VIP")
+
+    with pytest.raises(ApiError, match="请选择"):
+        accounts.set_tags(conn, [], "VIP")
+    for other in (admin, keeper):
+        with pytest.raises(ApiError, match="只能给普通用户"):
+            accounts.set_tags(conn, ids + [other["id"]], "VIP")
+    assert [accounts.get(conn, user_id)["tag"] for user_id in ids] == [None, None]
+
+    assert accounts.set_tags(conn, ids + [9999], "vip") == 2
+    assert [dict(row) for row in accounts.list_tags(conn)] == [
+        {"tag": "VIP", "users": 2, "managers": 1}
+    ]
+    assert accounts.set_tags(conn, ids[:1], "") == 1
+    assert accounts.get(conn, ids[0])["tag"] is None
+    assert [dict(row) for row in accounts.list_tags(conn)] == [
+        {"tag": "VIP", "users": 1, "managers": 1}
+    ]
 
 
 def test_logout_revokes_only_the_selected_session(account_db):
@@ -219,13 +303,14 @@ def test_cli_admin_creation_promotion_and_password_reset(account_db):
     accounts.start_session(conn, user["id"], "127.0.0.2", 7)
 
     conn.execute(
-        "UPDATE users SET role = ?, status = ? WHERE id = ?",
-        (Role.USER, UserStatus.BANNED, user["id"]),
+        "UPDATE users SET role = ?, status = ?, tag = ? WHERE id = ?",
+        (Role.MANAGER, UserStatus.BANNED, "VIP", user["id"]),
     )
     promoted, created = accounts.create_admin(conn, "alice")
     assert created is False
     assert promoted["role"] == Role.ADMIN
     assert promoted["status"] == UserStatus.ACTIVE
+    assert promoted["tag"] is None
     assert promoted["password_hash"] == user["password_hash"]
 
     with pytest.raises(ApiError):
