@@ -66,7 +66,7 @@ export const TX_TYPES = {
   [TxType.REDEEM_GIFT]: { label: '兑换码赠送', tone: 'accent' },
   [TxType.ONLINE]: { label: '在线充值', tone: 'success' },
   [TxType.ADMIN]: { label: '管理员调整', tone: 'info' },
-  [TxType.BONUS]: { label: '赠送', tone: 'accent' },
+  [TxType.BONUS]: { label: '管理员赠送', tone: 'accent' },
 }
 
 // Where a model's selling price comes from (PriceBook.resolve in the backend).

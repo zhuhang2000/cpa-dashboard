@@ -10,7 +10,6 @@ EDITABLE_SETTINGS = {
     "public_api_base": (str, ("public_api_base",)),
     "announcement": (str, None),
     "allow_register": (bool, ("allow_register",)),
-    "signup_bonus": (float, ("signup_bonus",)),
     "use_cpamp_prices": (bool, ("pricing", "use_cpamp_prices")),
     "cpamp_price_discount": (float, ("pricing", "cpamp_price_discount")),
     "default_input_price": (float, ("pricing", "default_input_price")),

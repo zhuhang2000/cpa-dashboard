@@ -365,7 +365,7 @@ def test_admin_password_reset_revokes_sessions_and_rejects_self(account_db):
     assert accounts.authenticate_session(conn, session, 7) == (None, None)
 
 
-def test_registration_rolls_back_account_and_bonus_when_session_creation_fails(account_db):
+def test_registration_rolls_back_account_when_session_creation_fails(account_db):
     conn = account_db
     conn.execute(
         "CREATE TRIGGER reject_session BEFORE INSERT ON sessions "
@@ -379,10 +379,8 @@ def test_registration_rolls_back_account_and_bonus_when_session_creation_fails(a
             "127.0.0.1",
             RateLimiter(),
             True,
-            5,
             7,
         )
 
     assert accounts.find_by_username(conn, "alice") is None
-    assert conn.execute("SELECT COUNT(*) FROM transactions").fetchone()[0] == 0
     assert conn.execute("SELECT COUNT(*) FROM sessions").fetchone()[0] == 0

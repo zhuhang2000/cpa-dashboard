@@ -66,7 +66,7 @@ class TxType:
     REDEEM_GIFT = "redeem_gift"
     ONLINE = "online"
     ADMIN = "admin"
-    BONUS = "bonus"
+    BONUS = "bonus"  # an administrator's gift; older rows also hold the retired sign-up bonus
     ALL = (REDEEM, REDEEM_GIFT, ONLINE, ADMIN, BONUS)
     RECHARGE = (REDEEM, ONLINE, ADMIN)  # gifts are excluded from all recharge statistics
 

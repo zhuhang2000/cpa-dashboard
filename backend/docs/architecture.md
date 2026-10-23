@@ -98,10 +98,9 @@ backend/
 服务之间的当前关系为：
 
 ```text
-accounts → billing
 api_keys → billing（金额转换）
 usage → accounts、api_keys、billing、pricing
-billing、pricing、settings → core / integrations（按需）
+accounts、billing、pricing、settings → core / integrations（按需）
 ```
 
 每个请求通过 `get_connection` 获得一个连接，鉴权和处理函数共享它，请求结束或失败时关闭。后台任务和 CLI 自己打开并关闭连接。同步 SQLite 操作使用普通 `def`，由 FastAPI 在线程池执行；`async def` 中的同步数据库或网络操作需用 `run_in_threadpool`。

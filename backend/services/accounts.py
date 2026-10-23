@@ -3,11 +3,10 @@
 import re
 import secrets
 
-from core.constants import Role, TxType, UserStatus
+from core.constants import Role, UserStatus
 from core.db import like_pattern, now_ms, transaction
 from core.errors import ApiError
 from core.security import hash_password, new_session_token, sha256_hex, verify_password
-from services.billing import apply_credit, to_micro
 
 DAY_MS = 86400000
 MAX_BATCH_USERS = 100  # the largest user list page
@@ -111,7 +110,7 @@ def logout(conn, token_hash):
         conn.execute("DELETE FROM sessions WHERE token_hash = ?", (token_hash,))
 
 
-def register(conn, data, ip, limiter, allow_register, signup_bonus, session_days, user_agent=""):
+def register(conn, data, ip, limiter, allow_register, session_days, user_agent=""):
     if not allow_register:
         raise ApiError(403, "当前未开放注册")
     username = str(data.get("username") or "").strip()
@@ -124,7 +123,6 @@ def register(conn, data, ip, limiter, allow_register, signup_bonus, session_days
     if not limiter.allow("register:" + ip, 10, 3600):
         raise ApiError(429, "注册过于频繁，请稍后再试")
     password_hash = hash_password(password)
-    bonus = to_micro(signup_bonus)
     with transaction(conn):
         if find_by_username(conn, username):
             raise ApiError(409, "用户名已被占用")
@@ -135,8 +133,6 @@ def register(conn, data, ip, limiter, allow_register, signup_bonus, session_days
             "last_login_ip) VALUES (?, ?, ?, ?, ?, ?)",
             (username, email, password_hash, now_ms(), now_ms(), ip),
         ).lastrowid
-        if bonus > 0:
-            apply_credit(conn, user_id, bonus, TxType.BONUS, note="注册赠送")
         token, max_age = start_session(conn, user_id, ip, session_days, user_agent)
     return get(conn, user_id), token, max_age
 

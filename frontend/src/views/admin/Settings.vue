@@ -43,19 +43,12 @@
               placeholder="显示在用户概览页顶部，留空则不显示"
             />
           </div>
-          <div class="field">
+          <div class="field" style="margin-bottom: 0">
             <label class="toggle">
               <input v-model="form.allow_register" type="checkbox" />
               <span class="toggle-track" />
               开放注册
             </label>
-          </div>
-          <div class="field" style="margin-bottom: 0">
-            <label for="s-bonus">注册赠送金额</label>
-            <div class="input-group has-prefix">
-              <span class="input-prefix">{{ currency() }}</span>
-              <input id="s-bonus" v-model.number="form.signup_bonus" class="input" type="number" min="0" step="0.01" />
-            </div>
           </div>
         </div>
       </div>

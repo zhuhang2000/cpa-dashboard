@@ -58,7 +58,6 @@ def load_config(config_path: Path | None = None) -> dict:
         "cookie_secure": env["COOKIE_SECURE"],
         "session_days": int(env["SESSION_DAYS"]),
         "allow_register": env["ALLOW_REGISTER"].lower() == "true",
-        "signup_bonus": float(env["SIGNUP_BONUS"]),
         "max_keys_per_user": int(env["MAX_KEYS_PER_USER"]),
         "min_balance_to_call": float(env["MIN_BALANCE_TO_CALL"]),
         "key_prefix": env["KEY_PREFIX"],
@@ -95,4 +94,3 @@ def load_config(config_path: Path | None = None) -> dict:
             },
         },
     }
-

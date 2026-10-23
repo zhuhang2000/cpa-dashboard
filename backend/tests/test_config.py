@@ -1,6 +1,7 @@
 """Exercise the .env configuration loading without touching a real deployment."""
 
 from pathlib import Path
+
 import pytest
 
 from core import config
@@ -18,7 +19,6 @@ TRUST_PROXY=false
 COOKIE_SECURE=auto
 SESSION_DAYS=7
 ALLOW_REGISTER=true
-SIGNUP_BONUS=0
 MAX_KEYS_PER_USER=10
 MIN_BALANCE_TO_CALL=0
 KEY_PREFIX=sk-
@@ -113,7 +113,6 @@ def test_online_payment_needs_gateway_merchant_and_key(config_path):
 
 def test_type_conversions(config_path):
     text = SAMPLE_ENV.replace("ALLOW_REGISTER=true", "ALLOW_REGISTER=false")
-    text = text.replace("SIGNUP_BONUS=0", "SIGNUP_BONUS=10.5")
     text = text.replace("MAX_KEYS_PER_USER=10", "MAX_KEYS_PER_USER=20")
     text = text.replace("PAYMENT_PRESETS=10,30,50,100,200,500", "PAYMENT_PRESETS=5,15,50")
     text = text.replace("EPAY_CHANNELS=alipay,wxpay", "EPAY_CHANNELS=alipay")
@@ -122,7 +121,6 @@ def test_type_conversions(config_path):
 
     cfg = config.load_config(config_path)
     assert cfg["allow_register"] is False
-    assert cfg["signup_bonus"] == 10.5
     assert cfg["max_keys_per_user"] == 20
     assert cfg["payment"]["presets"] == [5, 15, 50]
     assert cfg["payment"]["epay"]["channels"] == ["alipay"]

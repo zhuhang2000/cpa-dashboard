@@ -1,12 +1,7 @@
 <template>
   <AuthShell>
     <h1 class="auth-title">创建账号</h1>
-    <p class="auth-sub">
-      <template v-if="bonus > 0"
-        >新用户赠送 <b class="text-success">{{ money(bonus) }}</b> 体验额度</template
-      >
-      <template v-else>注册后即可创建 API 密钥</template>
-    </p>
+    <p class="auth-sub">注册后按新手指引接入Codex</p>
 
     <div v-if="!store.status?.allow_register" class="alert alert-warning">
       <Icon name="lock" :size="16" />
@@ -81,7 +76,6 @@ import Icon from '@/components/base/Icon.vue'
 import PasswordInput from '@/components/base/PasswordInput.vue'
 import { accountsApi } from '@/api/accounts'
 import { setUser, store } from '@/store'
-import { money } from '@/utils/format'
 import { toast } from '@/toast'
 
 const router = useRouter()
@@ -90,7 +84,6 @@ const loading = ref(false)
 const error = ref('')
 // The confirmation field shows and hides together with the password.
 const showPassword = ref(false)
-const bonus = computed(() => Number(store.status?.signup_bonus) || 0)
 
 const strength = computed(() => {
   const p = form.password

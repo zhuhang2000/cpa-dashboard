@@ -54,7 +54,6 @@ def register(
         client_ip(request),
         runtime.limiter,
         runtime.settings.get("allow_register"),
-        runtime.settings.get("signup_bonus"),
         runtime.cfg["session_days"],
         request.headers.get("User-Agent", ""),
     )

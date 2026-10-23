@@ -24,7 +24,6 @@ def get_status(runtime=Depends(get_runtime), conn=Depends(get_connection)):
         "announcement": settings.get("announcement"),
         "notice_latest_at": latest_at(conn),
         "allow_register": settings.get("allow_register"),
-        "signup_bonus": settings.get("signup_bonus"),
         "currency_symbol": cfg["currency_symbol"],
         "max_keys_per_user": cfg["max_keys_per_user"],
         "payment": {
