@@ -5,13 +5,18 @@ import { reactive, watch } from 'vue'
 // placed from the trigger's position (`place(rect)` returns its style) also closes on scroll or
 // resize, which would leave it floating in the wrong spot.
 export function usePopover({ panel, place } = {}) {
-  const popover = reactive({ open: false, style: {}, toggle, close })
+  const popover = reactive({ open: false, style: {}, toggle, show, close })
   let trigger = null
 
   // The trigger's click handler; clicking another trigger moves the popup to that one.
   function toggle(event) {
     if (popover.open && event.currentTarget === trigger) return close()
-    trigger = event.currentTarget
+    show(event.currentTarget)
+  }
+
+  // Opens the popup at `target` without toggling, e.g. when the input of a combobox gains focus.
+  function show(target) {
+    trigger = target
     if (place) popover.style = place(trigger.getBoundingClientRect())
     popover.open = true
   }

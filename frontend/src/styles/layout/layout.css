@@ -12,6 +12,7 @@
  *   - src/layouts/AuthShell.vue (.brand-logo 品牌图标)
  *   - src/layouts/AuthArt.vue (.brand 品牌展示)
  *   - src/views/admin/Users.vue (.dropdown-menu, .dropdown-item 更多操作菜单)
+ *   - src/components/base/SuggestInput.vue (.dropdown-menu, .dropdown-item 输入建议列表)
  * ==============================================================================
  */
 
