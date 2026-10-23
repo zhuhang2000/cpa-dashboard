@@ -14,10 +14,20 @@
 
     <div class="card">
       <div class="card-header">
-        <div class="row wrap">
-          <div v-if="isAdmin" class="tabs">
-            <button class="tab" :class="{ active: !archived }" @click="setArchived(false)">用户列表</button>
-            <button class="tab" :class="{ active: archived }" @click="setArchived(true)">不活跃用户</button>
+        <div v-if="isAdmin" class="tabs">
+          <button class="tab" :class="{ active: !archived }" @click="setArchived(false)">用户列表</button>
+          <button class="tab" :class="{ active: archived }" @click="setArchived(true)">不活跃用户</button>
+        </div>
+        <div class="row wrap header-actions">
+          <div v-if="selected.length" class="row batch-bar">
+            <span class="muted">已选 {{ selected.length }} 位</span>
+            <button type="button" class="btn btn-sm" :disabled="saving" @click="archiveSelected">
+              <Icon name="archive" :size="15" />{{ archived ? '移回用户列表' : '移到不活跃' }}
+            </button>
+            <button type="button" class="btn btn-sm" :disabled="saving" @click="openTagging">
+              <Icon name="tag" :size="15" />设置标签
+            </button>
+            <button type="button" class="btn btn-sm btn-ghost" @click="selected = []">取消选择</button>
           </div>
           <SearchInput
             v-model="q"
@@ -27,17 +37,6 @@
             @search="users.load(1)"
           />
         </div>
-        <div v-if="selected.length" class="row batch-bar">
-          <span class="muted">已选 {{ selected.length }} 位</span>
-          <button type="button" class="btn btn-sm" :disabled="saving" @click="archiveSelected">
-            <Icon name="archive" :size="15" />{{ archived ? '移回用户列表' : '移到不活跃' }}
-          </button>
-          <button type="button" class="btn btn-sm" :disabled="saving" @click="openTagging">
-            <Icon name="tag" :size="15" />设置标签
-          </button>
-          <button type="button" class="btn btn-sm btn-ghost" @click="selected = []">取消选择</button>
-        </div>
-        <span v-else class="muted">{{ num(users.total) }} 位{{ archived ? '不活跃' : '' }}用户</span>
       </div>
       <div v-if="users.loading && !users.items.length" class="card-body stack" style="gap: 10px">
         <div v-for="i in 6" :key="i" class="skeleton" style="height: 34px" />
@@ -59,7 +58,6 @@
                   :indeterminate="selected.length > 0 && !allSelected"
                   :disabled="!regularIds.length"
                   aria-label="选择本页全部普通用户"
-                  title="全选本页普通用户，管理员需单独勾选"
                   @change="selectAll($event.target.checked)"
                 />
               </th>
@@ -80,7 +78,13 @@
           <tbody>
             <tr v-for="u in users.items" :key="u.id">
               <td v-if="isAdmin" class="select-col">
-                <input v-model="selected" type="checkbox" :value="u.id" :aria-label="`选择 ${u.username}`" />
+                <input
+                  v-if="u.role === Role.USER"
+                  v-model="selected"
+                  type="checkbox"
+                  :value="u.id"
+                  :aria-label="`选择 ${u.username}`"
+                />
               </td>
               <td class="nowrap">
                 <div class="row" style="gap: 6px">
@@ -186,7 +190,7 @@ import { usePagedList } from '@/composables/usePagedList'
 import { usePopover } from '@/composables/usePopover'
 import { ROLES, Role, USER_STATUSES, UserStatus } from '@/constants'
 import { store } from '@/store'
-import { date, dateTime, money, num, relative } from '@/utils/format'
+import { date, dateTime, money, relative } from '@/utils/format'
 import { toast } from '@/toast'
 
 // Tag managers share this page: the API lists only their users and never names their tag, and only the
@@ -207,8 +211,8 @@ const emptyDesc = computed(() => {
   return ''
 })
 const selected = ref([])
-// Select-all covers regular users only, as tags can only be set on them; administrators and managers
-// are ticked one by one.
+// Only regular users can be selected: the batch actions are for them, while administrators and
+// managers are handled one at a time from the row menu.
 const regularIds = computed(() => users.items.filter((u) => u.role === Role.USER).map((u) => u.id))
 const allSelected = computed(
   () => regularIds.value.length > 0 && regularIds.value.every((id) => selected.value.includes(id)),
@@ -239,17 +243,13 @@ function openMenu(event, u) {
   menu.toggle(event)
 }
 
-// A reload keeps only the selected rows that are still on screen.
-watch(
-  () => users.items,
-  (items) => {
-    selected.value = selected.value.filter((id) => items.some((u) => u.id === id))
-  },
-)
+// A reload keeps only the selected users still on screen, and still regular users.
+watch(regularIds, (ids) => {
+  selected.value = selected.value.filter((id) => ids.includes(id))
+})
 
-// Checking keeps administrators already ticked by hand; unchecking clears the whole selection.
 function selectAll(checked) {
-  selected.value = checked ? [...new Set([...selected.value, ...regularIds.value])] : []
+  selected.value = checked ? [...regularIds.value] : []
 }
 
 function setSort(key) {
@@ -349,6 +349,11 @@ onMounted(() => users.load(1))
   display: block;
   accent-color: var(--accent);
   cursor: pointer;
+}
+/* The batch actions and the search keep to the right, with or without the tabs on the left. */
+.header-actions {
+  gap: 12px;
+  margin-left: auto;
 }
 .batch-bar {
   gap: 8px;
