@@ -18,10 +18,7 @@
       </div>
       <div v-if="form.mode === 'add' && canGift" class="field">
         <label for="adj-type">类型</label>
-        <select id="adj-type" v-model="form.type" class="select" required>
-          <option disabled value="">请选择类型</option>
-          <option v-for="(entry, value) in REDEEM_TYPES" :key="value" :value="value">{{ entry.label }}</option>
-        </select>
+        <SelectMenu id="adj-type" v-model="form.type" :options="TYPE_OPTIONS" placeholder="请选择类型" />
       </div>
       <div class="field">
         <label for="adj-amount">金额</label>
@@ -48,11 +45,14 @@
 <script setup>
 import { computed, reactive, ref } from 'vue'
 import Modal from '@/components/base/Modal.vue'
+import SelectMenu from '@/components/base/SelectMenu.vue'
 import { billingApi } from '@/api/billing'
 import { REDEEM_TYPES, RedeemType, Role } from '@/constants'
 import { store } from '@/store'
 import { currency, money } from '@/utils/format'
 import { toast } from '@/toast'
+
+const TYPE_OPTIONS = Object.entries(REDEEM_TYPES).map(([value, entry]) => ({ value, label: entry.label }))
 
 const props = defineProps({ user: { type: Object, required: true } })
 // `saved` asks the list to reload; `close` follows it, or comes from cancelling.

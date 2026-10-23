@@ -4,16 +4,17 @@
     v-bind="$attrs"
     type="button"
     class="select select-menu"
+    :class="{ placeholder: !selected }"
     role="combobox"
     aria-haspopup="listbox"
     :aria-expanded="list.open"
     :aria-controls="list.open ? listId : undefined"
     :aria-activedescendant="list.open && active >= 0 ? `${listId}-${active}` : undefined"
-    :aria-label="label"
+    :aria-label="label || undefined"
     @click="toggle"
     @keydown="onKeydown"
   >
-    {{ selected?.label }}
+    {{ selected ? selected.label : placeholder }}
   </button>
   <Teleport to="body">
     <div
@@ -23,7 +24,7 @@
       class="dropdown-menu floating"
       :style="list.style"
       role="listbox"
-      :aria-label="label"
+      :aria-label="label || undefined"
       @mousedown.prevent
     >
       <button
@@ -51,12 +52,14 @@ import Icon from './Icon.vue'
 import { usePopover } from '@/composables/usePopover'
 
 // A select whose list looks like the app's dropdown menus rather than the browser's own. `options`
-// are { value, label }; `change` follows a pick that changed the value. class and the like go on the
-// trigger, a button styled as a .select (add input-sm for the small size).
+// are { value, label }; `placeholder` shows while the value matches none of them; `change` follows a
+// pick that changed the value. id, class and the like go on the trigger, a button styled as a
+// .select (add input-sm for the small size), so a <label for> names it.
 defineOptions({ inheritAttrs: false })
 const props = defineProps({
   options: { type: Array, required: true },
   label: { type: String, default: '' },
+  placeholder: { type: String, default: '' },
 })
 const value = defineModel({ type: String, default: '' })
 const emit = defineEmits(['change'])
@@ -121,5 +124,9 @@ function onKeydown(e) {
   white-space: nowrap;
   text-align: left;
   cursor: pointer;
+}
+/* Same as an empty .input's placeholder. */
+.select-menu.placeholder {
+  color: var(--faint);
 }
 </style>
