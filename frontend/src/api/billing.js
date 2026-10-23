@@ -7,6 +7,7 @@ export const billingApi = {
   createOrder: (body) => http.post('/api/billing/orders', body),
 
   adminListTransactions: (userId, query) => http.get(`/api/admin/users/${userId}/billing/transactions`, query),
+  adminListAllTransactions: (query) => http.get('/api/admin/billing/transactions', query),
   adminAdjustBalance: (userId, body) => http.post(`/api/admin/users/${userId}/balance`, body),
   adminListCodes: (query) => http.get('/api/admin/codes', query),
   adminCreateCodes: (body) => http.post('/api/admin/codes', body),

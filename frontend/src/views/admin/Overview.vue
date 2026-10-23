@@ -67,7 +67,11 @@
         :loading="!data"
         :value="money(data?.recharge.today || 0)"
         :sub="`本月 ${money(data?.recharge.month || 0)}`"
-      />
+      >
+        <template #action>
+          <button type="button" class="btn btn-sm" @click="showRecords = true">充值记录</button>
+        </template>
+      </StatCard>
       <StatCard
         label="用户余额总计"
         icon="coins"
@@ -170,6 +174,8 @@
         </div>
       </div>
     </div>
+
+    <RechargeRecordsModal v-if="showRecords" @close="showRecords = false" />
   </div>
 </template>
 
@@ -179,6 +185,7 @@ import BarChart from '@/components/base/BarChart.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import Icon from '@/components/base/Icon.vue'
 import StatCard from '@/components/base/StatCard.vue'
+import RechargeRecordsModal from '@/components/admin/RechargeRecordsModal.vue'
 import { settingsApi } from '@/api/settings'
 import { usageApi } from '@/api/usage'
 import { currency, dateTime, dayLabel, money, num } from '@/utils/format'
@@ -186,6 +193,7 @@ import { toast } from '@/toast'
 
 const data = ref(null)
 const syncing = ref(false)
+const showRecords = ref(false)
 const series = [
   { key: 'cost', label: '消费', color: 'var(--chart-1)' },
   { key: 'recharge', label: '充值', color: 'var(--chart-2)' },

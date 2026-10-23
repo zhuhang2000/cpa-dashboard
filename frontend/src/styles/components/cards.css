@@ -15,6 +15,7 @@
  *   - src/views/Settings.vue (.card, .card-header, .card-title, .card-sub, .card-body)
  *   - src/views/Usage.vue (.card, .card-body, .card-footer)
  *   - src/views/admin/Overview.vue (.card, .card-header, .card-title, .card-sub, .card-body)
+ *   - src/components/admin/RechargeRecordsModal.vue (.card)
  *   - src/views/admin/Users.vue (.card, .card-header, .card-body, .card-footer)
  *   - src/views/admin/Codes.vue (.card, .card-header, .card-body, .card-footer)
  *   - src/views/admin/Prices.vue (.card, .card-header)

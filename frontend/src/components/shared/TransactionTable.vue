@@ -8,6 +8,7 @@
       <thead>
         <tr>
           <th>时间</th>
+          <th v-if="withUser">用户</th>
           <th>类型</th>
           <th class="right">金额</th>
           <th class="right">变动后余额</th>
@@ -17,6 +18,10 @@
       <tbody>
         <tr v-for="t in list.items" :key="t.id">
           <td class="nowrap num">{{ dateTime(t.created_at) }}</td>
+          <td v-if="withUser" class="nowrap">
+            <div class="cell-main">{{ t.username }}</div>
+            <div v-if="t.tag" class="cell-sub">标签：{{ t.tag }}</div>
+          </td>
           <td><StatusBadge :map="TX_TYPES" :value="t.type" /></td>
           <td class="right num nowrap" :class="t.amount >= 0 ? 'text-success' : 'text-danger'">
             <b>{{ money(t.amount, { sign: true }) }}</b>
@@ -45,7 +50,9 @@ import { dateTime, money } from '@/utils/format'
 
 // The balance ledger: a usePagedList() of billingApi.listTransactions, or of
 // billingApi.adminListTransactions for administrators (whose rows also name the operator).
+// `withUser` adds the account column for billingApi.adminListAllTransactions, which covers every user.
 defineProps({
   list: { type: Object, required: true },
+  withUser: Boolean,
 })
 </script>
