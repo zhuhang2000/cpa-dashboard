@@ -180,9 +180,10 @@ def test_admin_positive_adjustment_requires_type(admin_client):
 def test_all_transactions_filters_combine_and_the_totals_follow_them(billing_conn):
     conn = billing_conn
     conn.execute(
-        "INSERT INTO users(id, username, password_hash, role, tag, created_at) VALUES "
-        "(2, 'member', 'unused', 'user', 'VIP', 1), (3, 'keeper', 'unused', 'manager', 'VIP', 1), "
-        "(4, 'root', 'unused', 'admin', NULL, 1)"
+        "INSERT INTO users(id, username, email, password_hash, role, tag, created_at) VALUES "
+        "(2, 'member', 'member@example.test', 'unused', 'user', 'VIP', 1), "
+        "(3, 'keeper', NULL, 'unused', 'manager', 'VIP', 1), "
+        "(4, 'root', NULL, 'unused', 'admin', NULL, 1)"
     )
     with transaction(conn):
         billing.apply_credit(conn, 2, 5000000, TxType.ADMIN, note="线下收款", operator_id=3)
@@ -220,6 +221,12 @@ def test_all_transactions_filters_combine_and_the_totals_follow_them(billing_con
     assert [item["amount"] for item in in_range["items"]] == [2, -1]
     assert (in_range["sum_credit"], in_range["sum_debit"]) == (2, -1)
     assert listed(operator=4, tag="VIP")["total"] == 0
+    # q finds the user by any part of the name or email, ignoring case.
+    by_user = listed(q="MEM")
+    assert (by_user["total"], by_user["sum_credit"], by_user["sum_debit"]) == (3, 7, -1)
+    assert listed(q="example.test")["total"] == 3
+    assert listed(q="cust", operator=4)["sum_amount"] == 3
+    assert listed(q="%")["total"] == 0
     assert listed(type="unknown") == every
     nothing = {"items": [], "total": 0, "sum_amount": 0, "sum_credit": 0, "sum_debit": 0}
     assert listed(tag="Other") == {**every, **nothing}

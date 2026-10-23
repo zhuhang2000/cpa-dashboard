@@ -5,7 +5,7 @@
  * 职责描述:
  *   定义统一的内容卡片容器 (.card) 及其标准子结构：
  *   卡片头部 (.card-header)、标题与副标题 (.card-title, .card-sub)、
- *   主体内容区 (.card-body)、底部操作栏 (.card-footer)。
+ *   主体内容区 (.card-body)、底部操作栏 (.card-footer)、表格上方的汇总条 (.summary-bar)。
  *
  * 使用该样式的组件 / 页面:
  *   - src/components/base/StatCard.vue (.card)
@@ -13,9 +13,9 @@
  *   - src/views/Keys.vue (.card, .card-header, .card-title, .card-body)
  *   - src/views/Pricing.vue (.card, .card-header, .card-body, .card-footer)
  *   - src/views/Settings.vue (.card, .card-header, .card-title, .card-sub, .card-body)
- *   - src/views/Usage.vue (.card, .card-body, .card-footer)
+ *   - src/views/Usage.vue (.card, .card-body, .card-footer, .summary-bar)
  *   - src/views/admin/Overview.vue (.card, .card-header, .card-title, .card-sub, .card-body)
- *   - src/components/admin/RechargeRecordsModal.vue (.card)
+ *   - src/components/admin/RechargeRecordsModal.vue (.card, .summary-bar)
  *   - src/views/admin/Users.vue (.card, .card-header, .card-body, .card-footer)
  *   - src/views/admin/Codes.vue (.card, .card-header, .card-body, .card-footer)
  *   - src/views/admin/Prices.vue (.card, .card-header)
@@ -68,4 +68,30 @@
   justify-content: space-between;
   gap: 12px;
   flex-wrap: wrap;
+}
+/* Totals of a filtered list, just above its table. */
+.summary-bar {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 10px 20px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 13px;
+}
+.summary-bar:first-child {
+  border-top: 0;
+  border-radius: calc(var(--radius) - 1px) calc(var(--radius) - 1px) 0 0;
+}
+.summary-bar b {
+  color: var(--text);
+  margin: 0 2px;
+}
+.summary-bar b.text-success {
+  color: var(--success);
+}
+.summary-bar b.text-danger {
+  color: var(--danger);
 }

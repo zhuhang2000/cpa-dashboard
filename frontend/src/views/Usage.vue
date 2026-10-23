@@ -160,19 +160,4 @@ onMounted(async () => {
   width: auto;
   min-width: 140px;
 }
-.summary-bar {
-  display: flex;
-  gap: 24px;
-  flex-wrap: wrap;
-  padding: 10px 20px;
-  border-top: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
-  background: var(--surface-2);
-  color: var(--muted);
-  font-size: 13px;
-}
-.summary-bar b {
-  color: var(--text);
-  margin: 0 2px;
-}
 </style>

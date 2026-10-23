@@ -119,7 +119,7 @@ def _ledger_filters(request):
     for name in ("operator", "start", "end"):
         if query_arg(request, name):
             filters[name] = int_arg(request, name, 0)
-    for name in ("type", "tag"):
+    for name in ("q", "type", "tag"):
         if query_arg(request, name):
             filters[name] = query_arg(request, name)
     return filters

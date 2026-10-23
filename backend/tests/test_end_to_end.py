@@ -403,7 +403,9 @@ def run_portal_scenario(admin, user, bootstrap_admin, append_usage, payment_key=
     by_type = {entry["type"]: entry for entry in admin_ledger["items"]}
     assert admin_ledger["total"] == 3 and by_type["redeem"]["ref"] == codes[0]
     assert by_type["admin"]["operator"] == "scenario-admin" and by_type["online"]["operator"] == ""
-    tagged_ledger, _ = call(admin, "GET", "/api/admin/billing/transactions", params={"tag": "VIP"})
+    tagged_ledger, _ = call(
+        admin, "GET", "/api/admin/billing/transactions", params={"tag": "VIP", "q": "scenario-user"}
+    )
     assert (tagged_ledger["total"], tagged_ledger["sum_amount"]) == (3, 27.34)
     assert {entry["username"] for entry in tagged_ledger["items"]} == {"scenario-user"}
     operator = tagged_ledger["operators"][0]

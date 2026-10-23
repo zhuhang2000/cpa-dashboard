@@ -320,12 +320,17 @@ def adjust_balance(conn, user_id, operator_id, data, allow_gift=True):
 def list_all_transactions(conn, page, size, offset, filters):
     """Every user's ledger, newest first, with the totals of all the filtered entries.
 
-    filters may hold type, tag, operator (a user id) and start/end (epoch ms, end exclusive).
-    tag keeps the users carrying it now, so an entry follows its user rather than the tag the
-    user had when it was written. An unknown type is ignored, like the other list filters.
+    filters may hold q (part of the user's name or email), type, tag, operator (a user id) and
+    start/end (epoch ms, end exclusive). tag keeps the users carrying it now, so an entry
+    follows its user rather than the tag the user had when it was written. An unknown type is
+    ignored, like the other list filters.
     operators lists everyone who has adjusted a balance, as the operator filter's choices.
     """
     where, args = ["1 = 1"], []
+    query = (filters.get("q") or "").strip()
+    if query:
+        where.append("(u.username LIKE ? ESCAPE '\\' OR u.email LIKE ? ESCAPE '\\')")
+        args += [like_pattern(query)] * 2
     if filters.get("type") in TxType.ALL:
         where.append("t.type = ?")
         args.append(filters["type"])

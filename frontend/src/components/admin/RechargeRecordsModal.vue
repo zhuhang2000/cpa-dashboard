@@ -1,20 +1,46 @@
 <template>
   <Modal open xwide title="充值记录" @close="emit('close')">
     <div class="stack">
-      <div class="records-filters">
-        <div class="tabs">
-          <button
-            v-for="r in RANGES"
-            :key="r.key"
-            type="button"
-            class="tab"
-            :class="{ active: range === r.key }"
-            @click="setRange(r.key)"
-          >
-            {{ r.label }}
-          </button>
+      <div class="records-toolbar">
+        <div class="records-bar">
+          <div class="records-filters">
+            <SelectMenu
+              v-model="range"
+              :options="RANGE_OPTIONS"
+              class="input-sm"
+              label="时间范围"
+              @change="records.load(1)"
+            />
+            <SelectMenu
+              v-model="type"
+              :options="TYPE_OPTIONS"
+              class="input-sm"
+              label="类型"
+              @change="records.load(1)"
+            />
+            <SelectMenu
+              v-model="tag"
+              :options="tagOptions"
+              class="input-sm"
+              label="用户标签"
+              @change="records.load(1)"
+            />
+            <SelectMenu
+              v-model="operator"
+              :options="operatorOptions"
+              class="input-sm"
+              label="操作人"
+              @change="records.load(1)"
+            />
+          </div>
+          <SearchInput
+            v-model="q"
+            placeholder="搜索用户名或邮箱，回车确认"
+            label="搜索用户"
+            @search="records.load(1)"
+          />
         </div>
-        <template v-if="range === 'custom'">
+        <div v-if="range === 'custom'" class="records-filters">
           <input
             v-model="customStart"
             class="input input-sm"
@@ -30,32 +56,23 @@
             aria-label="结束日期"
             @change="records.load(1)"
           />
-        </template>
-        <SelectMenu v-model="type" :options="TYPE_OPTIONS" class="input-sm" label="类型" @change="records.load(1)" />
-        <SelectMenu v-model="tag" :options="tagOptions" class="input-sm" label="用户标签" @change="records.load(1)" />
-        <SelectMenu
-          v-model="operator"
-          :options="operatorOptions"
-          class="input-sm"
-          label="操作人"
-          @change="records.load(1)"
-        />
-      </div>
-      <div class="records-summary">
-        <span>
-          <b class="num">{{ num(records.total) }}</b> 条记录
-        </span>
-        <span>
-          增加 <b class="num text-success">{{ money(records.sum_credit, { sign: true }) }}</b>
-        </span>
-        <span>
-          扣减 <b class="num text-danger">{{ money(records.sum_debit) }}</b>
-        </span>
-        <span>
-          合计 <b class="num">{{ money(records.sum_amount, { sign: true }) }}</b>
-        </span>
+        </div>
       </div>
       <div class="card">
+        <div class="summary-bar">
+          <span
+            ><b class="num">{{ num(records.total) }}</b> 条记录</span
+          >
+          <span
+            >增加 <b class="num text-success">{{ money(records.sum_credit, { sign: true }) }}</b></span
+          >
+          <span
+            >扣减 <b class="num text-danger">{{ money(records.sum_debit) }}</b></span
+          >
+          <span
+            >合计 <b class="num">{{ money(records.sum_amount, { sign: true }) }}</b></span
+          >
+        </div>
         <TransactionTable :list="records" with-user />
       </div>
     </div>
@@ -68,6 +85,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import Modal from '@/components/base/Modal.vue'
+import SearchInput from '@/components/base/SearchInput.vue'
 import SelectMenu from '@/components/base/SelectMenu.vue'
 import TransactionTable from '@/components/shared/TransactionTable.vue'
 import { accountsApi } from '@/api/accounts'
@@ -76,13 +94,14 @@ import { usePagedList } from '@/composables/usePagedList'
 import { ROLES, TX_TYPES } from '@/constants'
 import { money, num, rangeBounds, toInputDate } from '@/utils/format'
 
-const RANGES = [
-  { key: 'today', label: '今天' },
-  { key: '7d', label: '近 7 天' },
-  { key: 'month', label: '本月' },
-  { key: 'last_month', label: '上月' },
-  { key: 'all', label: '全部' },
-  { key: 'custom', label: '自定义' },
+// Presets understood by rangeBounds.
+const RANGE_OPTIONS = [
+  { value: 'today', label: '今天' },
+  { value: '7d', label: '近 7 天' },
+  { value: 'month', label: '本月' },
+  { value: 'last_month', label: '上月' },
+  { value: 'all', label: '全部时间' },
+  { value: 'custom', label: '自定义' },
 ]
 const TYPE_OPTIONS = [
   { value: '', label: '全部类型' },
@@ -96,6 +115,7 @@ const range = ref('month')
 // A custom range starts as this month so far.
 const customStart = ref(toInputDate(rangeBounds('month').start))
 const customEnd = ref(toInputDate(Date.now()))
+const q = ref('')
 const type = ref('')
 const tag = ref('')
 const operator = ref('')
@@ -105,6 +125,7 @@ const records = usePagedList(
   billingApi.adminListAllTransactions,
   () => ({
     ...rangeBounds(range.value, customStart.value, customEnd.value),
+    q: q.value,
     type: type.value,
     tag: tag.value,
     operator: operator.value,
@@ -123,11 +144,6 @@ const operatorOptions = computed(() => [
   })),
 ])
 
-function setRange(key) {
-  range.value = key
-  records.load(1)
-}
-
 onMounted(async () => {
   records.load(1)
   // A failed load only leaves the tag filter at "all".
@@ -140,6 +156,19 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* One row of dropdowns with the user search at its end; a custom range adds its dates below. */
+.records-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.records-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
 .records-filters {
   display: flex;
   align-items: center;
@@ -150,21 +179,6 @@ onMounted(async () => {
 .records-filters .input,
 .records-filters :deep(.select) {
   width: auto;
-  min-width: 140px;
-}
-.records-summary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 20px;
-  color: var(--muted);
-}
-.records-summary b {
-  color: var(--text);
-}
-.records-summary b.text-success {
-  color: var(--success);
-}
-.records-summary b.text-danger {
-  color: var(--danger);
+  min-width: 120px;
 }
 </style>
