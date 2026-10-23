@@ -10,6 +10,8 @@
  *   - src/views/Pricing.vue (.tabs, .tab)
  *   - src/views/Usage.vue (.tabs, .tab)
  *   - src/views/admin/Users.vue (.tabs, .tab)
+ *   - src/components/admin/UserBalanceModal.vue (.tabs, .tab)
+ *   - src/components/admin/UserRoleModal.vue (.tabs, .tab)
  *   - src/views/admin/Codes.vue (.tabs, .tab)
  *   - src/views/recharge/index.vue (.tabs, .tab)
  * ==============================================================================

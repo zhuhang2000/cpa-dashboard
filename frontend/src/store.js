@@ -1,6 +1,7 @@
 import { reactive } from 'vue'
 import { accountsApi } from '@/api/accounts'
 import { settingsApi } from '@/api/settings'
+import { Role } from '@/constants'
 
 export const store = reactive({
   status: null, // site info from /api/status
@@ -69,6 +70,14 @@ export async function refreshUser({ throttle = 0 } = {}) {
 export function setUser(user) {
   store.user = user
   store.userLoaded = true
+}
+
+// Whether the signed-in user may open a page, given the route's merged meta. Admin pages are for
+// the system administrator; one marked `staff` is also open to tag managers.
+export function canOpen(meta) {
+  if (!meta.admin) return true
+  const role = store.user?.role
+  return role === Role.ADMIN || (role === Role.MANAGER && Boolean(meta.staff))
 }
 
 export async function logout() {

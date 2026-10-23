@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { setUnauthorizedHandler } from '@/api/http'
 import { Role } from './constants'
-import { ensureStatus, ensureUser, store } from './store'
+import { canOpen, ensureStatus, ensureUser, store } from './store'
 import AppLayout from '@/layouts/AppLayout.vue'
 import Login from '@/views/Login.vue'
 import Register from '@/views/Register.vue'
@@ -21,9 +21,14 @@ const consolePages = [
   { path: 'pricing', component: () => import('@/views/Pricing.vue'), meta: { title: '模型价格', icon: 'tag' } },
   { path: 'settings', component: () => import('@/views/Settings.vue'), meta: { title: '个人设置', icon: 'settings' } },
 ]
+// `staff: true` opens a page to tag managers as well (see canOpen in store.js).
 const adminPages = [
   { path: '', component: () => import('@/views/admin/Overview.vue'), meta: { title: '运营概况', icon: 'trend' } },
-  { path: 'users', component: () => import('@/views/admin/Users.vue'), meta: { title: '用户管理', icon: 'users' } },
+  {
+    path: 'users',
+    component: () => import('@/views/admin/Users.vue'),
+    meta: { title: '用户管理', icon: 'users', staff: true },
+  },
   { path: 'codes', component: () => import('@/views/admin/Codes.vue'), meta: { title: '兑换码', icon: 'ticket' } },
   { path: 'prices', component: () => import('@/views/admin/Prices.vue'), meta: { title: '模型定价', icon: 'coins' } },
   {
@@ -64,7 +69,7 @@ router.beforeEach(async (to) => {
     return { path: '/login', query: to.fullPath !== '/' ? { redirect: to.fullPath } : {} }
   }
   if (to.meta.guest && store.user) return { path: '/' }
-  if (to.meta.admin && store.user?.role !== Role.ADMIN) return { path: '/' }
+  if (!canOpen(to.meta)) return { path: store.user?.role === Role.MANAGER ? '/admin/users' : '/' }
   return true
 })
 

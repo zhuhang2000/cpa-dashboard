@@ -11,6 +11,8 @@ export const accountsApi = {
 
   adminListUsers: (query) => http.get('/api/admin/users', query),
   adminArchiveUsers: (body) => http.post('/api/admin/users/archive', body),
+  adminTagUsers: (body) => http.post('/api/admin/users/tag', body),
+  adminListTags: () => http.get('/api/admin/tags'),
   adminSetUserStatus: (id, body) => http.put(`/api/admin/users/${id}/status`, body),
   adminSetUserRole: (id, body) => http.put(`/api/admin/users/${id}/role`, body),
   adminResetPassword: (id, body) => http.post(`/api/admin/users/${id}/password`, body),

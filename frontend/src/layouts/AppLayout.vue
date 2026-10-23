@@ -79,8 +79,8 @@ import GuideTour from './GuideTour.vue'
 import Icon from '@/components/base/Icon.vue'
 import NoticeBell from '@/components/notices/NoticeBell.vue'
 import { usePopover } from '@/composables/usePopover'
-import { ROLES, Role } from '@/constants'
-import { effectiveTheme, logout, refreshUser, store, toggleTheme } from '@/store'
+import { ROLES } from '@/constants'
+import { canOpen, effectiveTheme, logout, refreshUser, store, toggleTheme } from '@/store'
 import { money } from '@/utils/format'
 
 const route = useRoute()
@@ -90,23 +90,22 @@ const userMenuPanel = ref(null)
 const userMenu = usePopover({ panel: userMenuPanel })
 
 const siteName = computed(() => store.status?.site_name || 'API 控制台')
-const isAdmin = computed(() => store.user?.role === Role.ADMIN)
 
 // The sidebar mirrors the route table in router.js: each child group of this layout's route is a
-// section listing its pages that have an icon. Admin groups are shown to admins only.
+// section listing the pages with an icon that the user may open. Sections left empty are hidden.
 const sections = computed(() =>
   route.matched[0].children
-    .filter((group) => !group.meta.admin || isAdmin.value)
     .map((group) => ({
       label: group.meta.section,
       items: group.children
-        .filter((page) => page.meta.icon)
+        .filter((page) => page.meta.icon && canOpen({ ...group.meta, ...page.meta }))
         .map((page) => ({
           to: `/${[group.path, page.path].filter(Boolean).join('/')}`,
           label: page.meta.title,
           icon: page.meta.icon,
         })),
-    })),
+    }))
+    .filter((section) => section.items.length),
 )
 const initial = computed(() => (store.user?.username || '?').slice(0, 1).toUpperCase())
 const lowBalance = computed(() => (store.user?.balance ?? 1) <= 0)

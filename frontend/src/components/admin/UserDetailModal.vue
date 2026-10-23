@@ -5,7 +5,7 @@
         <div class="modal-title">{{ title }}</div>
         <div v-if="!removing" class="tabs">
           <button
-            v-for="t in TABS"
+            v-for="t in tabs"
             :key="t.key"
             type="button"
             class="tab"
@@ -115,7 +115,8 @@ import { keysApi } from '@/api/api_keys'
 import { billingApi } from '@/api/billing'
 import { usageApi } from '@/api/usage'
 import { usePagedList } from '@/composables/usePagedList'
-import { KEY_STATES, KeyState, UserStatus } from '@/constants'
+import { KEY_STATES, KeyState, Role, UserStatus } from '@/constants'
+import { store } from '@/store'
 import { date, dateTime, money, num, relative } from '@/utils/format'
 import { toast } from '@/toast'
 
@@ -127,7 +128,9 @@ const TABS = [
 
 const props = defineProps({ user: { type: Object, required: true } })
 const emit = defineEmits(['close', 'deleted'])
-const tab = ref('keys')
+// A key would let a tag manager spend the user's balance, so only the system administrator sees keys.
+const tabs = store.user?.role === Role.ADMIN ? TABS : TABS.filter((t) => t.key !== 'keys')
+const tab = ref(tabs[0].key)
 const items = ref([])
 const loading = ref(false)
 const deleting = ref(false)
@@ -135,7 +138,7 @@ const removing = ref(null)
 const error = ref('')
 let mounted = true
 
-// The ledger and usage tabs load the first time they are opened.
+// Each tab loads the first time it is opened.
 const ledger = usePagedList((query) => billingApi.adminListTransactions(props.user.id, query))
 const calls = usePagedList(
   (query) => usageApi.adminUsageLogs(props.user.id, query),
@@ -143,7 +146,7 @@ const calls = usePagedList(
   { sum_cost: 0 },
 )
 const lists = { ledger, usage: calls }
-const opened = new Set(['keys'])
+const opened = new Set()
 
 const title = computed(() => (removing.value ? '删除 API 密钥' : `用户详情 · ${props.user.username}`))
 
@@ -157,7 +160,8 @@ function setTab(key) {
   tab.value = key
   if (opened.has(key)) return
   opened.add(key)
-  lists[key].load(1)
+  if (key === 'keys') loadKeys()
+  else lists[key].load(1)
 }
 
 async function loadKeys() {
@@ -209,7 +213,7 @@ function close() {
   if (!deleting.value) emit('close')
 }
 
-onMounted(loadKeys)
+onMounted(() => setTab(tab.value))
 onBeforeUnmount(() => {
   mounted = false
   items.value = []

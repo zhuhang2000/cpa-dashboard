@@ -3,8 +3,11 @@
     <div class="page-header">
       <div>
         <h1 class="page-title">用户管理</h1>
-        <p class="page-desc">
-          点击用户名查看密钥、余额流水和调用记录；按最近调用排序可找出长期不用的账号，勾选后批量移到不活跃。
+        <p v-if="isAdmin" class="page-desc">
+          点击用户名查看密钥、余额流水和调用记录；按最近调用排序可找出长期不用的账号，勾选后可批量移到不活跃或设置标签。
+        </p>
+        <p v-else class="page-desc">
+          这里列出由你负责的用户，你可以为他们充值或扣款，点击用户名查看余额流水和调用记录。
         </p>
       </div>
     </div>
@@ -12,13 +15,13 @@
     <div class="card">
       <div class="card-header">
         <div class="row wrap">
-          <div class="tabs">
+          <div v-if="isAdmin" class="tabs">
             <button class="tab" :class="{ active: !archived }" @click="setArchived(false)">用户列表</button>
             <button class="tab" :class="{ active: archived }" @click="setArchived(true)">不活跃用户</button>
           </div>
           <SearchInput
             v-model="q"
-            placeholder="搜索用户名或邮箱，回车确认"
+            :placeholder="isAdmin ? '搜索用户名、邮箱或标签，回车确认' : '搜索用户名或邮箱，回车确认'"
             label="搜索用户"
             style="width: 300px"
             @search="users.load(1)"
@@ -28,6 +31,9 @@
           <span class="muted">已选 {{ selected.length }} 位</span>
           <button type="button" class="btn btn-sm" :disabled="saving" @click="archiveSelected">
             <Icon name="archive" :size="15" />{{ archived ? '移回用户列表' : '移到不活跃' }}
+          </button>
+          <button type="button" class="btn btn-sm" :disabled="saving" @click="openTagging">
+            <Icon name="tag" :size="15" />设置标签
           </button>
           <button type="button" class="btn btn-sm btn-ghost" @click="selected = []">取消选择</button>
         </div>
@@ -40,18 +46,20 @@
         v-else-if="!users.items.length"
         icon="users"
         :title="archived ? '没有不活跃用户' : '没有找到用户'"
-        :desc="archived ? '在用户列表中勾选用户后点击“移到不活跃”即可移入' : ''"
+        :desc="emptyDesc"
       />
       <div v-else class="table-wrap">
         <table class="table">
           <thead>
             <tr>
-              <th class="select-col">
+              <th v-if="isAdmin" class="select-col">
                 <input
                   type="checkbox"
                   :checked="allSelected"
                   :indeterminate="selected.length > 0 && !allSelected"
-                  aria-label="选择本页全部用户"
+                  :disabled="!regularIds.length"
+                  aria-label="选择本页全部普通用户"
+                  title="全选本页普通用户，管理员需单独勾选"
                   @change="selectAll($event.target.checked)"
                 />
               </th>
@@ -71,7 +79,7 @@
           </thead>
           <tbody>
             <tr v-for="u in users.items" :key="u.id">
-              <td class="select-col">
+              <td v-if="isAdmin" class="select-col">
                 <input v-model="selected" type="checkbox" :value="u.id" :aria-label="`选择 ${u.username}`" />
               </td>
               <td class="nowrap">
@@ -84,7 +92,14 @@
                   >
                     {{ u.username }}
                   </button>
-                  <StatusBadge v-if="u.role === Role.ADMIN" class="plain" :map="ROLES" :value="u.role" />
+                  <StatusBadge v-if="u.role !== Role.USER" class="plain" :map="ROLES" :value="u.role" />
+                  <span
+                    v-if="isAdmin && u.tag"
+                    class="badge plain"
+                    :title="u.role === Role.MANAGER ? '负责的标签' : '所属标签'"
+                  >
+                    <Icon name="tag" :size="12" />{{ u.tag }}
+                  </span>
                   <StatusBadge v-if="u.status !== UserStatus.ACTIVE" :map="USER_STATUSES" :value="u.status" />
                 </div>
                 <div class="cell-sub">
@@ -110,8 +125,8 @@
                 </div>
               </td>
               <td class="actions">
-                <button class="link-btn" @click="openAdjust(u)">调整余额</button>
-                <button v-if="u.id !== store.user?.id" class="link-btn more" @click="openMenu($event, u)">
+                <button class="link-btn" @click="adjusting = u">调整余额</button>
+                <button v-if="isAdmin && u.id !== store.user?.id" class="link-btn more" @click="openMenu($event, u)">
                   更多<Icon name="chevron-down" :size="13" />
                 </button>
               </td>
@@ -135,9 +150,7 @@
           {{ menuUser.status === UserStatus.ACTIVE ? '禁用账号' : '启用账号' }}
         </button>
         <button class="dropdown-item" @click="openReset(menuUser)"><Icon name="key" :size="15" />重置密码</button>
-        <button class="dropdown-item" @click="toggleRole(menuUser)">
-          <Icon name="shield" :size="15" />{{ menuUser.role === Role.ADMIN ? '取消管理员' : '设为管理员' }}
-        </button>
+        <button class="dropdown-item" @click="openRole(menuUser)"><Icon name="shield" :size="15" />设置身份</button>
       </div>
     </Teleport>
 
@@ -148,86 +161,10 @@
       @close="detailUser = null"
       @deleted="users.load()"
     />
-
-    <Modal :open="!!adjusting" title="调整余额" @close="adjusting = null">
-      <form id="adjust-form" @submit.prevent="adjust">
-        <p class="muted" style="margin-bottom: 14px">
-          用户 <b style="color: var(--text)">{{ adjusting?.username }}</b> 当前余额
-          <b class="num" style="color: var(--text)">{{ money(adjusting?.balance || 0) }}</b>
-        </p>
-        <div class="field">
-          <span class="field-label">操作</span>
-          <div class="tabs">
-            <button type="button" class="tab" :class="{ active: form.mode === 'add' }" @click="form.mode = 'add'">
-              增加
-            </button>
-            <button type="button" class="tab" :class="{ active: form.mode === 'sub' }" @click="form.mode = 'sub'">
-              扣减
-            </button>
-          </div>
-        </div>
-        <div v-if="form.mode === 'add'" class="field">
-          <label for="adj-type">类型</label>
-          <select id="adj-type" v-model="form.type" class="select" required>
-            <option disabled value="">请选择类型</option>
-            <option v-for="(entry, value) in REDEEM_TYPES" :key="value" :value="value">{{ entry.label }}</option>
-          </select>
-        </div>
-        <div class="field">
-          <label for="adj-amount">金额</label>
-          <div class="input-group has-prefix">
-            <span class="input-prefix">{{ currency() }}</span>
-            <input id="adj-amount" v-model="form.amount" class="input" type="number" min="0.01" step="0.01" required />
-          </div>
-          <div class="field-hint">
-            {{
-              form.mode === 'sub'
-                ? '扣减余额，不抵扣充值统计，也不计入调用消费。'
-                : !form.type
-                  ? '请选择充值或赠送。'
-                  : form.type === RedeemType.GIFT
-                    ? '赠送仅增加余额，不计入充值统计。'
-                    : '充值增加余额，并计入充值统计。'
-            }}
-          </div>
-        </div>
-        <div class="field">
-          <label for="adj-note">备注</label>
-          <input id="adj-note" v-model.trim="form.note" class="input" maxlength="100" placeholder="选填，用户可见" />
-        </div>
-      </form>
-      <template #footer>
-        <button class="btn" @click="adjusting = null">取消</button>
-        <button class="btn btn-primary" form="adjust-form" :disabled="saving">
-          确认{{ form.mode === 'add' ? '增加' : '扣减' }}
-        </button>
-      </template>
-    </Modal>
-
-    <Modal :open="!!resetting" title="重置密码" @close="resetting = null">
-      <form id="reset-form" @submit.prevent="resetPassword">
-        <p class="muted" style="margin-bottom: 14px">
-          为用户 <b style="color: var(--text)">{{ resetting?.username }}</b> 设置新密码，重置后该用户需重新登录。
-        </p>
-        <div class="field">
-          <label for="reset-pass">新密码</label>
-          <PasswordInput
-            id="reset-pass"
-            v-model="newPassword"
-            autocomplete="new-password"
-            minlength="8"
-            maxlength="128"
-            placeholder="至少 8 位"
-            required
-          />
-          <div class="field-hint">请通过安全渠道将新密码告知用户，并提醒其登录后在个人设置中修改。</div>
-        </div>
-      </form>
-      <template #footer>
-        <button class="btn" @click="resetting = null">取消</button>
-        <button class="btn btn-primary" form="reset-form" :disabled="saving">确认重置</button>
-      </template>
-    </Modal>
+    <UserBalanceModal v-if="adjusting" :user="adjusting" @close="adjusting = null" @saved="users.load()" />
+    <UserPasswordModal v-if="resetting" :user="resetting" @close="resetting = null" />
+    <UserRoleModal v-if="assigning" :user="assigning" @close="assigning = null" @saved="users.load()" />
+    <UserTagModal v-if="tagging" :ids="tagging" @close="tagging = null" @saved="afterTagging" />
   </div>
 </template>
 
@@ -235,22 +172,26 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import Icon from '@/components/base/Icon.vue'
-import Modal from '@/components/base/Modal.vue'
 import Pagination from '@/components/base/Pagination.vue'
-import PasswordInput from '@/components/base/PasswordInput.vue'
 import SearchInput from '@/components/base/SearchInput.vue'
 import SortButton from '@/components/base/SortButton.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
+import UserBalanceModal from '@/components/admin/UserBalanceModal.vue'
 import UserDetailModal from '@/components/admin/UserDetailModal.vue'
+import UserPasswordModal from '@/components/admin/UserPasswordModal.vue'
+import UserRoleModal from '@/components/admin/UserRoleModal.vue'
+import UserTagModal from '@/components/admin/UserTagModal.vue'
 import { accountsApi } from '@/api/accounts'
-import { billingApi } from '@/api/billing'
 import { usePagedList } from '@/composables/usePagedList'
 import { usePopover } from '@/composables/usePopover'
-import { REDEEM_TYPES, RedeemType, ROLES, Role, USER_STATUSES, UserStatus } from '@/constants'
+import { ROLES, Role, USER_STATUSES, UserStatus } from '@/constants'
 import { store } from '@/store'
-import { currency, date, dateTime, money, num, relative } from '@/utils/format'
+import { date, dateTime, money, num, relative } from '@/utils/format'
 import { toast } from '@/toast'
 
+// Tag managers share this page: the API lists only their users and never names their tag, and only the
+// system administrator gets the selection, the inactive tab and the row menu (gifts: UserBalanceModal).
+const isAdmin = computed(() => store.user?.role === Role.ADMIN)
 const q = ref('')
 const archived = ref(false)
 const sort = reactive({ key: 'created', desc: true })
@@ -260,14 +201,25 @@ const users = usePagedList(accountsApi.adminListUsers, () => ({
   sort: sort.key,
   order: sort.desc ? 'desc' : 'asc',
 }))
+const emptyDesc = computed(() => {
+  if (archived.value) return '在用户列表中勾选用户后点击“移到不活跃”即可移入'
+  if (!isAdmin.value && !q.value) return '超级管理员把用户分配给你后，他们会显示在这里'
+  return ''
+})
 const selected = ref([])
-const allSelected = computed(() => users.items.length > 0 && users.items.every((u) => selected.value.includes(u.id)))
-const saving = ref(false)
-const adjusting = ref(null)
+// Select-all covers regular users only, as tags can only be set on them; administrators and managers
+// are ticked one by one.
+const regularIds = computed(() => users.items.filter((u) => u.role === Role.USER).map((u) => u.id))
+const allSelected = computed(
+  () => regularIds.value.length > 0 && regularIds.value.every((id) => selected.value.includes(id)),
+)
+const saving = ref(false) // archiving the selection
+// What each dialog works on; a dialog is mounted only while it has something.
 const detailUser = ref(null)
+const adjusting = ref(null)
 const resetting = ref(null)
-const newPassword = ref('')
-const form = reactive({ mode: 'add', type: '', amount: '', note: '' })
+const assigning = ref(null)
+const tagging = ref(null) // the ids of the users being tagged
 
 // The table scrolls horizontally, so the row menu is teleported and placed by its button.
 const menuPanel = ref(null)
@@ -295,8 +247,9 @@ watch(
   },
 )
 
+// Checking keeps administrators already ticked by hand; unchecking clears the whole selection.
 function selectAll(checked) {
-  selected.value = checked ? users.items.map((u) => u.id) : []
+  selected.value = checked ? [...new Set([...selected.value, ...regularIds.value])] : []
 }
 
 function setSort(key) {
@@ -332,51 +285,24 @@ function openDetail(u) {
   detailUser.value = u
 }
 
-function openAdjust(u) {
-  adjusting.value = u
-  Object.assign(form, { mode: 'add', type: '', amount: '', note: '' })
-}
-
-async function adjust() {
-  if (saving.value) return
-  if (form.mode === 'add' && !form.type) return toast.error('请选择充值或赠送')
-  const value = Number(form.amount)
-  if (!(value > 0)) return toast.error('请输入大于 0 的金额')
-  saving.value = true
-  try {
-    const amount = form.mode === 'add' ? value : -value
-    const payload = { amount, note: form.note }
-    if (form.mode === 'add') payload.type = form.type
-    const data = await billingApi.adminAdjustBalance(adjusting.value.id, payload)
-    toast.success(`已调整，当前余额 ${money(data.balance)}`)
-    adjusting.value = null
-    await users.load()
-  } catch (e) {
-    toast.error(e.message)
-  } finally {
-    saving.value = false
-  }
-}
-
 function openReset(u) {
   menu.close()
   resetting.value = u
-  newPassword.value = ''
 }
 
-async function resetPassword() {
-  if (saving.value) return
-  if (newPassword.value.length < 8) return toast.error('密码至少 8 位')
-  saving.value = true
-  try {
-    await accountsApi.adminResetPassword(resetting.value.id, { password: newPassword.value })
-    toast.success(`已重置 ${resetting.value.username} 的密码`)
-    resetting.value = null
-  } catch (e) {
-    toast.error(e.message)
-  } finally {
-    saving.value = false
-  }
+function openRole(u) {
+  menu.close()
+  assigning.value = u
+}
+
+function openTagging() {
+  tagging.value = [...selected.value]
+}
+
+// Tagged users leave the selection, as after archiving.
+function afterTagging() {
+  selected.value = []
+  users.load()
 }
 
 function setArchived(value) {
@@ -402,13 +328,6 @@ function toggleStatus(u) {
   runMenuAction(
     () => accountsApi.adminSetUserStatus(u.id, { status }),
     status === UserStatus.ACTIVE ? '已启用' : '已禁用，该用户的密钥将停止工作',
-  )
-}
-function toggleRole(u) {
-  const role = u.role === Role.ADMIN ? Role.USER : Role.ADMIN
-  runMenuAction(
-    () => accountsApi.adminSetUserRole(u.id, { role }),
-    role === Role.ADMIN ? '已设为管理员' : '已取消管理员',
   )
 }
 

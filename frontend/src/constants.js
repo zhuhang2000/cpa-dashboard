@@ -2,7 +2,8 @@
 // The value objects mirror the backend's constants.py: when a value is added there, add it
 // here as well, together with its entry in the matching label map below.
 
-export const Role = { USER: 'user', ADMIN: 'admin' }
+// A MANAGER only sees and credits the regular users that share its tag.
+export const Role = { USER: 'user', ADMIN: 'admin', MANAGER: 'manager' }
 
 export const UserStatus = { ACTIVE: 'active', BANNED: 'banned' }
 
@@ -26,7 +27,8 @@ export const TxType = { REDEEM: 'redeem', REDEEM_GIFT: 'redeem_gift', ONLINE: 'o
 // Label and badge tone (badge-<tone>, '' for neutral) of each value, shown by <StatusBadge>.
 export const ROLES = {
   [Role.USER]: { label: '普通用户', tone: '' },
-  [Role.ADMIN]: { label: '管理员', tone: 'accent' },
+  [Role.MANAGER]: { label: '管理员', tone: 'info' },
+  [Role.ADMIN]: { label: '超级管理员', tone: 'accent' },
 }
 
 export const USER_STATUSES = {
