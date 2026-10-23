@@ -19,7 +19,10 @@
         <tr v-for="t in list.items" :key="t.id">
           <td class="nowrap num">{{ dateTime(t.created_at) }}</td>
           <td v-if="withUser" class="nowrap">
-            <div class="cell-main">{{ t.username }}</div>
+            <div class="row" style="gap: 4px">
+              <span class="cell-main">{{ t.username }}</span>
+              <CopyButton :text="t.username" />
+            </div>
             <div v-if="t.tag" class="cell-sub">标签：{{ t.tag }}</div>
           </td>
           <td><StatusBadge :map="TX_TYPES" :value="t.type" /></td>
@@ -42,6 +45,7 @@
 </template>
 
 <script setup>
+import CopyButton from '@/components/base/CopyButton.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import Pagination from '@/components/base/Pagination.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
