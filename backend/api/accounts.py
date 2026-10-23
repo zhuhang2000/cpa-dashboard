@@ -14,7 +14,6 @@ from api.dependencies import (
     require_user,
     set_session_cookie,
 )
-from core.errors import ApiError
 from services import accounts, api_keys
 from services.billing import money
 
@@ -39,12 +38,7 @@ def user_public(row):
 # ---- User endpoints ----
 
 
-def _registration_allowed(runtime=Depends(get_runtime)):
-    if not runtime.settings.get("allow_register"):
-        raise ApiError(403, "当前未开放注册")
-
-
-@router.post("/api/auth/register", dependencies=[Depends(_registration_allowed)])
+@router.post("/api/auth/register")
 def register(
     request: Request,
     response: Response,
@@ -59,7 +53,7 @@ def register(
         runtime.limiter,
         runtime.settings.get("allow_register"),
         runtime.settings.get("signup_bonus"),
-        runtime.cfg.get("session_days"),
+        runtime.cfg["session_days"],
         request.headers.get("User-Agent", ""),
     )
     set_session_cookie(request, response, token, max_age)
@@ -79,7 +73,7 @@ def login(
         data,
         client_ip(request),
         runtime.limiter,
-        runtime.cfg.get("session_days"),
+        runtime.cfg["session_days"],
         request.headers.get("User-Agent", ""),
     )
     set_session_cookie(request, response, token, max_age)

@@ -108,7 +108,7 @@ billing、pricing、settings → core / integrations（按需）
 
 一个完整写操作只能有一个事务入口。批量用量入账由 `usage.apply_batch` 持有事务，依次完成事件去重写入、`billing.charge_usage` 扣费、`api_keys.record_usage` 计数、`pricing.touch_model` 更新模型、保存游标。任一步失败，整批回滚。参与该事务的辅助函数复用传入的连接，不再开启嵌套事务。
 
-`billing.apply_credit` 和 `charge_usage` 要在调用方事务内执行；`billing.generate_codes` 自己持有整批生成事务。增加或修改写操作时，应在函数说明里明确事务由谁负责。
+`billing.apply_credit` 和 `charge_usage` 要在调用方事务内执行；`billing.create_codes` 自己持有整批生成事务。增加或修改写操作时，应在函数说明里明确事务由谁负责。
 
 ## 新需求应该改哪里
 

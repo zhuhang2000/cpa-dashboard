@@ -103,29 +103,9 @@ def list_transactions(conn, user_id, page, size, offset, admin=False):
     return {"items": items, "total": total, "page": page, "page_size": size}
 
 
-def generate_codes(conn, amount_micro, count, batch, expires_at, created_by, code_type):
-    """Generate unique recharge or gift codes in one transaction for the API and CLI."""
-    if code_type not in RedeemType.ALL:
-        raise ApiError(400, "兑换码类型必须为充值或赠送")
-    codes = []
-    with transaction(conn):
-        while len(codes) < count:
-            code = new_redeem_code()
-            inserted = conn.execute(
-                "INSERT OR IGNORE INTO redeem_codes (code, amount_micro, batch, created_by, created_at, "
-                "expires_at, type) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (code, amount_micro, batch, created_by, now_ms(), expires_at, code_type),
-            ).rowcount
-            if inserted:
-                codes.append(code)
-    return codes
-
-
 def epay_conf(cfg):
-    conf = cfg["payment"].get("epay") or {}
-    if conf.get("enabled") and conf.get("gateway") and conf.get("pid") and conf.get("key"):
-        return conf
-    return None
+    conf = cfg["payment"]["epay"]
+    return conf if conf["enabled"] else None
 
 
 # ---- User operations ----
@@ -208,7 +188,7 @@ def create_order(conn, cfg, setting, limiter, user_id, data, origin_url):
     if conf is None:
         raise ApiError(400, "在线支付未开启，请使用兑换码充值")
     channel = str(data.get("channel") or "")
-    if channel not in (conf.get("channels") or []):
+    if channel not in conf["channels"]:
         raise ApiError(400, "不支持的支付方式")
     pay = cfg["payment"]
     try:
@@ -217,22 +197,20 @@ def create_order(conn, cfg, setting, limiter, user_id, data, origin_url):
         raise ApiError(400, "金额格式不正确")
     if (
         not amount.is_finite()
-        or amount < Decimal(str(pay.get("min_amount") or 1))
-        or amount > Decimal(str(pay.get("max_amount") or 10000))
+        or amount < Decimal(str(pay["min_amount"]))
+        or amount > Decimal(str(pay["max_amount"]))
     ):
-        raise ApiError(
-            400, "充值金额需在 %s - %s 之间" % (pay.get("min_amount"), pay.get("max_amount"))
-        )
+        raise ApiError(400, "充值金额需在 %s - %s 之间" % (pay["min_amount"], pay["max_amount"]))
     if not limiter.allow("order:%d" % user_id, 20, 3600):
         raise ApiError(429, "下单过于频繁，请稍后再试")
-    credit = to_micro(amount * Decimal(str(pay.get("credit_ratio") or 1)))
+    credit = to_micro(amount * Decimal(str(pay["credit_ratio"])))
     order_no = "P%s%06d" % (time.strftime("%Y%m%d%H%M%S"), secrets.randbelow(1000000))
     conn.execute(
         "INSERT INTO orders (order_no, user_id, channel, pay_amount, credit_micro, created_at) "
         "VALUES (?, ?, ?, ?, ?, ?)",
         (order_no, user_id, channel, str(amount), credit, now_ms()),
     )
-    site = (conf.get("site_url") or origin_url).rstrip("/")
+    site = (conf["site_url"] or origin_url).rstrip("/")
     site_name = setting("site_name")
     pay_url = epay.build_pay_url(
         conf,
@@ -310,7 +288,7 @@ def recharge_daily(conn, start, tz_offset_minutes):
         "SELECT strftime('%%Y-%%m-%%d', created_at / 1000 + ?, 'unixepoch') AS d, "
         "SUM(amount_micro) AS recharge FROM transactions WHERE type IN (%s) AND amount_micro > 0 "
         "AND created_at >= ? GROUP BY d" % placeholders,
-        (int(tz_offset_minutes) * 60, *TxType.RECHARGE, start),
+        (tz_offset_minutes * 60, *TxType.RECHARGE, start),
     ).fetchall()
 
 
@@ -385,6 +363,7 @@ def list_codes(conn, page, size, offset, status=None, batch="", query=""):
 
 
 def create_codes(conn, operator_id, data):
+    """Generate unique recharge or gift codes in one transaction for the API and CLI."""
     amount = parse_money(data.get("amount"), "面额", minimum=0.01, maximum=100000)
     try:
         count = int(data.get("count") or 1)
@@ -403,7 +382,19 @@ def create_codes(conn, operator_id, data):
             raise ApiError(400, "有效期需在 1-3650 天之间")
         expires_at = now_ms() + days * DAY_MS
     code_type = data.get("type")
-    codes = generate_codes(conn, amount, count, batch, expires_at, operator_id, code_type)
+    if code_type not in RedeemType.ALL:
+        raise ApiError(400, "兑换码类型必须为充值或赠送")
+    codes = []
+    with transaction(conn):
+        while len(codes) < count:
+            code = new_redeem_code()
+            inserted = conn.execute(
+                "INSERT OR IGNORE INTO redeem_codes (code, amount_micro, batch, created_by, created_at, "
+                "expires_at, type) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (code, amount, batch, operator_id, now_ms(), expires_at, code_type),
+            ).rowcount
+            if inserted:
+                codes.append(code)
     return {"codes": codes, "amount": money(amount), "batch": batch or "", "type": code_type}
 
 

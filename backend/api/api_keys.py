@@ -18,7 +18,7 @@ def to_public(cfg, row, user):
     return {
         "id": row["id"],
         "name": row["name"],
-        "masked": _mask(row["key"], api_keys.key_prefix(cfg)),
+        "masked": _mask(row["key"], cfg["key_prefix"]),
         "status": row["status"],
         "state": api_keys.state(row, user, api_keys.min_balance_micro(cfg), now_ms()),
         "quota": None if row["quota_micro"] is None else money(row["quota_micro"]),
@@ -40,7 +40,7 @@ def list_keys(
     rows = api_keys.list_for_user(conn, user["id"])
     return {
         "items": [to_public(runtime.cfg, row, user) for row in rows],
-        "max_keys": api_keys.max_keys(runtime.cfg),
+        "max_keys": runtime.cfg["max_keys_per_user"],
     }
 
 

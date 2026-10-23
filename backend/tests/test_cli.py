@@ -32,6 +32,17 @@ def test_cli_commands_keep_paths_and_database_format(tmp_path):
         assert result.returncode == 0, result.stderr
         return result.stdout
 
+    def refused(*args):
+        result = subprocess.run(
+            [sys.executable, str(backend / "server.py"), *args],
+            cwd=tmp_path,
+            text=True,
+            capture_output=True,
+            timeout=20,
+        )
+        assert result.returncode != 0
+        return result.stderr
+
     help_text = run("--help")
     assert "create-admin" in help_text
     assert "--config" not in help_text
@@ -53,6 +64,8 @@ def test_cli_commands_keep_paths_and_database_format(tmp_path):
     ).splitlines()
     assert len(codes) == 2 and codes[0] != codes[1]
     gifts = run("gen-codes", "--amount", "7", "--type", "gift").splitlines()
+    assert "单次最多生成 500 个" in refused("gen-codes", "--amount", "5", "--count", "501")
+    assert "密码至少 8 位" in refused("reset-password", "admin", "--password", "short")
     assert len(gifts) == 1
     conn = connect(backend / "data" / "portal.sqlite")
     try:

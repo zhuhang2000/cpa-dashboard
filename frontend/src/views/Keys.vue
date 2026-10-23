@@ -191,7 +191,7 @@ import { toast } from '@/toast'
 const route = useRoute()
 const router = useRouter()
 const items = ref([])
-const maxKeys = ref(store.status?.max_keys_per_user || 10)
+const maxKeys = ref(store.status.max_keys_per_user)
 const loading = ref(false)
 const saving = ref(false)
 const formOpen = ref(false)

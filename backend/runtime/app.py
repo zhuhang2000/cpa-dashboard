@@ -37,9 +37,9 @@ class Runtime:
         self.limiter = RateLimiter()
         self.settings = RuntimeSettings(cfg, self.db)
         self.cpa = CPAClient(
-            cfg["cpa"].get("base_url"),
-            cfg["cpa"].get("management_key"),
-            timeout=float(cfg["cpa"].get("timeout_seconds") or 8),
+            cfg["cpa"]["base_url"],
+            cfg["cpa"]["management_key"],
+            timeout=cfg["cpa"]["timeout_seconds"],
         )
         self.worker = SyncWorker(self)
 

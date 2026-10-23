@@ -33,6 +33,18 @@ def load_config(config_path: Path | None = None) -> dict:
     def resolve(p: str) -> str:
         return os.path.normpath(os.path.join(base, p)) if p and not os.path.isabs(p) else p
 
+    # Lower bounds that keep the usage sync from spinning (interval) or crawling (batch).
+    interval = int(env["CPAMP_SYNC_INTERVAL_SECONDS"])
+    batch_size = int(env["CPAMP_BATCH_SIZE"])
+    if interval < 3:
+        raise ValueError("CPAMP_SYNC_INTERVAL_SECONDS 不能小于 3")
+    if batch_size < 100:
+        raise ValueError("CPAMP_BATCH_SIZE 不能小于 100")
+    # Online payment needs the gateway, merchant id and key as well as the switch.
+    epay_enabled = env["EPAY_ENABLED"].lower() == "true" and all(
+        env[name] for name in ("EPAY_GATEWAY", "EPAY_PID", "EPAY_KEY")
+    )
+
     return {
         "listen": env["LISTEN"],
         "port": int(env["PORT"]),
@@ -58,8 +70,8 @@ def load_config(config_path: Path | None = None) -> dict:
         },
         "cpamp": {
             "usage_db": resolve(env["CPAMP_USAGE_DB"]),
-            "sync_interval_seconds": int(env["CPAMP_SYNC_INTERVAL_SECONDS"]),
-            "batch_size": int(env["CPAMP_BATCH_SIZE"]),
+            "sync_interval_seconds": interval,
+            "batch_size": batch_size,
         },
         "pricing": {
             "use_cpamp_prices": env["USE_CPAMP_PRICES"].lower() == "true",
@@ -74,7 +86,7 @@ def load_config(config_path: Path | None = None) -> dict:
             "max_amount": float(env["PAYMENT_MAX_AMOUNT"]),
             "credit_ratio": float(env["PAYMENT_CREDIT_RATIO"]),
             "epay": {
-                "enabled": env["EPAY_ENABLED"].lower() == "true",
+                "enabled": epay_enabled,
                 "gateway": env["EPAY_GATEWAY"],
                 "pid": env["EPAY_PID"],
                 "key": env["EPAY_KEY"],

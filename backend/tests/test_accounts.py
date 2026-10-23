@@ -12,6 +12,8 @@ from services import accounts, api_keys
 
 NOW = 1700000000000
 DAY_MS = 86400000
+# The deployment settings the key operations read.
+KEY_CONFIG = {"max_keys_per_user": 10, "key_prefix": "sk-", "min_balance_to_call": 0}
 
 
 @pytest.fixture
@@ -132,7 +134,7 @@ def test_user_list_sorts_by_latest_key_use_and_account_totals(account_db):
         (recent, "main", NOW - 60 * DAY_MS),
         (recent, "retired", NOW - DAY_MS),
     ):
-        key = api_keys.create(conn, {}, row["id"], {"name": name})
+        key = api_keys.create(conn, KEY_CONFIG, row["id"], {"name": name})
         conn.execute("UPDATE api_keys SET last_used_at = ? WHERE id = ?", (used, key["id"]))
     # A deleted key's calls still belong to the account's history.
     api_keys.soft_delete(conn, api_keys.list_for_user(conn, recent["id"])[0])
@@ -190,7 +192,7 @@ def test_users_cannot_read_or_change_another_users_key(account_db):
     conn = account_db
     alice = add_user(conn, "alice")
     bob = add_user(conn, "bob")
-    key = api_keys.create(conn, {}, alice["id"], {"name": "Alice's key"})
+    key = api_keys.create(conn, KEY_CONFIG, alice["id"], {"name": "Alice's key"})
 
     with pytest.raises(ApiError) as exc:
         api_keys.get_owned(conn, bob["id"], key["id"])
@@ -202,7 +204,7 @@ def test_users_cannot_read_or_change_another_users_key(account_db):
     with pytest.raises(ApiError) as exc:
         api_keys.get_owned(conn, alice["id"], key["id"])
     assert exc.value.status == 404
-    desired, managed = api_keys.desired_and_managed(conn, {})
+    desired, managed = api_keys.desired_and_managed(conn, KEY_CONFIG)
     assert key["key"] not in desired
     assert key["key"] in managed
 
@@ -226,6 +228,10 @@ def test_cli_admin_creation_promotion_and_password_reset(account_db):
     assert promoted["status"] == UserStatus.ACTIVE
     assert promoted["password_hash"] == user["password_hash"]
 
+    with pytest.raises(ApiError):
+        accounts.reset_password(conn, user["id"], "short")
+    with pytest.raises(ApiError):
+        accounts.create_admin(conn, "bob", "short")
     accounts.reset_password(conn, user["id"], "replacement-password")
     updated = accounts.find_by_username(conn, "ALICE")
     assert verify_password("replacement-password", updated["password_hash"])

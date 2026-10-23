@@ -100,12 +100,11 @@ def test_payment_callback_rejects_bad_signature_without_writing(billing_conn):
     assert billing_conn.execute("SELECT balance_micro FROM users").fetchone()[0] == 10000000
 
 
-def test_generate_codes_supports_cli_and_retries_collisions(billing_conn, monkeypatch):
+def test_create_codes_supports_cli_and_retries_collisions(billing_conn, monkeypatch):
     values = iter(["AAAA-BBBB-CCCC-DDDD", "AAAA-BBBB-CCCC-DDDD", "1111-2222-3333-4444"])
     monkeypatch.setattr(billing, "new_redeem_code", lambda: next(values))
-    codes = billing.generate_codes(
-        billing_conn, 5000000, 2, "cli-batch", None, None, RedeemType.RECHARGE
-    )
+    data = {"amount": "5", "count": 2, "batch": "cli-batch", "type": RedeemType.RECHARGE}
+    codes = billing.create_codes(billing_conn, None, data)["codes"]
     assert codes == ["AAAA-BBBB-CCCC-DDDD", "1111-2222-3333-4444"]
     rows = billing_conn.execute("SELECT * FROM redeem_codes ORDER BY code").fetchall()
     assert len(rows) == 2
@@ -119,7 +118,9 @@ def test_code_generation_rolls_back_partial_batch(billing_conn, monkeypatch):
     values = iter(["AAAA-BBBB-CCCC-DDDD"])
     monkeypatch.setattr(billing, "new_redeem_code", lambda: next(values))
     with pytest.raises(StopIteration):
-        billing.generate_codes(billing_conn, 5000000, 2, "partial", None, None, RedeemType.RECHARGE)
+        billing.create_codes(
+            billing_conn, None, {"amount": 5, "count": 2, "type": RedeemType.RECHARGE}
+        )
     assert billing_conn.execute("SELECT COUNT(*) FROM redeem_codes").fetchone()[0] == 0
 
 

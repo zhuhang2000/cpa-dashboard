@@ -63,7 +63,7 @@ def authenticate_session(conn, token, session_days):
     now = now_ms()
     if row is None or row["session_expires_at"] <= now or row["status"] != UserStatus.ACTIVE:
         return None, None
-    lifetime = int(session_days or 7) * DAY_MS
+    lifetime = session_days * DAY_MS
     if row["session_expires_at"] - now < lifetime // 2:
         conn.execute(
             "UPDATE sessions SET expires_at = ? WHERE token_hash = ?", (now + lifetime, token_hash)
@@ -73,7 +73,8 @@ def authenticate_session(conn, token, session_days):
 
 
 def reset_password(conn, user_id, password):
-    """CLI reset: retain its existing password policy and revoke every session."""
+    """Set a new password and revoke every session (administrator reset and CLI)."""
+    validate_password(password)
     with transaction(conn):
         conn.execute(
             "UPDATE users SET password_hash = ? WHERE id = ?", (hash_password(password), user_id)
@@ -93,7 +94,7 @@ def _dummy_hash():
 def start_session(conn, user_id, ip, session_days, user_agent=""):
     """Create a session in the caller's transaction and return (token, max_age)."""
     token = new_session_token()
-    lifetime = int(session_days or 7) * DAY_MS
+    lifetime = session_days * DAY_MS
     now = now_ms()
     conn.execute("DELETE FROM sessions WHERE expires_at < ?", (now,))
     conn.execute(
@@ -122,7 +123,7 @@ def register(conn, data, ip, limiter, allow_register, signup_bonus, session_days
     if not limiter.allow("register:" + ip, 10, 3600):
         raise ApiError(429, "注册过于频繁，请稍后再试")
     password_hash = hash_password(password)
-    bonus = to_micro(signup_bonus or 0)
+    bonus = to_micro(signup_bonus)
     with transaction(conn):
         if find_by_username(conn, username):
             raise ApiError(409, "用户名已被占用")
@@ -270,9 +271,7 @@ def admin_reset_password(conn, user_id, data, operator_id):
     row = get(conn, user_id)
     if row["id"] == operator_id:
         raise ApiError(400, "请在个人设置中修改自己的密码")
-    password = str(data.get("password") or "")
-    validate_password(password)
-    reset_password(conn, row["id"], password)
+    reset_password(conn, row["id"], str(data.get("password") or ""))
 
 
 def overview_counts(conn, today):
@@ -301,6 +300,7 @@ def create_admin(conn, username, password=None):
         return get(conn, row["id"]), False
     if password is None:
         raise ValueError("password is required for a new administrator")
+    validate_password(password)
     user_id = conn.execute(
         "INSERT INTO users (username, password_hash, role, created_at) VALUES (?, ?, ?, ?)",
         (username, hash_password(password), Role.ADMIN, now_ms()),

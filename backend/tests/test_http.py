@@ -48,6 +48,15 @@ def test_json_contract(client, body, message):
     assert response.json() == {"error": message}
 
 
+def test_closed_registration_is_refused(client, runtime):
+    runtime.settings.update({"allow_register": False})
+    response = client.post(
+        "/api/auth/register", json={"username": "member", "password": "password-123"}
+    )
+    assert response.status_code == 403
+    assert response.json() == {"error": "当前未开放注册"}
+
+
 def test_csrf_content_type_and_body_limit(client):
     client.headers.pop("X-Requested-With")
     assert client.post("/api/auth/logout", json={}).json() == {"error": "非法请求来源"}

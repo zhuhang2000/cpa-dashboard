@@ -122,8 +122,8 @@ class SyncWorker:
                 usage.initialize_cursor(conn, cursor, cpamp.recent_models(src, cursor))
                 log.info("usage cursor initialised at CPAMP event id %s", cursor)
             keys = api_keys.billing_owners(conn)
-            bill_failed = bool(self.runtime.cfg["pricing"].get("bill_failed_requests"))
-            batch_size = max(100, int(self.runtime.cfg["cpamp"].get("batch_size") or 1000))
+            bill_failed = self.runtime.cfg["pricing"]["bill_failed_requests"]
+            batch_size = self.runtime.cfg["cpamp"]["batch_size"]
             billed = 0
             while True:
                 rows = cpamp.read_events(src, cursor, batch_size, columns)
@@ -153,7 +153,7 @@ class SyncWorker:
     def reconcile_keys(self):
         state = self.state["cpa"]
         cpa = self.runtime.cpa
-        state["enabled"] = bool(cpa.configured and self.runtime.cfg["cpa"].get("sync_keys", True))
+        state["enabled"] = cpa.configured and self.runtime.cfg["cpa"]["sync_keys"]
         if not state["enabled"] or time.time() < self._cpa_backoff_until:
             return
         conn = self.runtime.db()
@@ -198,7 +198,7 @@ class SyncWorker:
         self._cpa_backoff_until = 0.0
 
     def _loop(self):
-        interval = max(3, int(self.runtime.cfg["cpamp"].get("sync_interval_seconds") or 15))
+        interval = self.runtime.cfg["cpamp"]["sync_interval_seconds"]
         while not self._stop.is_set():
             self._wake.clear()
             self.run_once()

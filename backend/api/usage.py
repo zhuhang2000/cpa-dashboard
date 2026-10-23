@@ -69,7 +69,7 @@ def _usage_item(row):
 
 
 def _time_label(ts, tz_offset_minutes, date_only=False):
-    offset = int(tz_offset_minutes or 0) * 60000
+    offset = tz_offset_minutes * 60000
     local = datetime.datetime.fromtimestamp((ts + offset) / 1000, tz=datetime.timezone.utc)
     return local.strftime("%Y-%m-%d" if date_only else "%Y-%m-%d %H:%M:%S")
 
@@ -99,7 +99,7 @@ def usage_summary(
     runtime=Depends(get_runtime),
 ):
     days = int_arg(request, "days", 30, 1, 90)
-    tz_offset = runtime.cfg.get("tz_offset_minutes")
+    tz_offset = runtime.cfg["tz_offset_minutes"]
     report = usage.summary(conn, user["id"], days, tz_offset)
     for field in ("today", "month", "range"):
         report[field]["cost"] = money(report[field]["cost"])
@@ -175,7 +175,7 @@ def usage_export(
             "耗时(ms)",
         ]
     )
-    tz_offset = runtime.cfg.get("tz_offset_minutes")
+    tz_offset = runtime.cfg["tz_offset_minutes"]
     for row in rows:
         writer.writerow(
             [
@@ -214,7 +214,7 @@ def admin_usage_logs(user_id: int, request: Request, conn=Depends(get_connection
 
 @router.get("/api/admin/overview", dependencies=[Depends(require_admin)])
 def admin_overview(conn=Depends(get_connection), runtime=Depends(get_runtime)):
-    tz_offset = runtime.cfg.get("tz_offset_minutes")
+    tz_offset = runtime.cfg["tz_offset_minutes"]
     report = usage.overview(conn, tz_offset)
     daily = _daily_series(
         tz_offset, report["start"], 14, report["daily"], {"requests": int, "cost": money}
@@ -247,7 +247,7 @@ def admin_overview(conn=Depends(get_connection), runtime=Depends(get_runtime)):
         "config": {
             "cpa_base_url": runtime.cpa.base,
             "cpa_configured": runtime.cpa.configured,
-            "cpamp_usage_db": runtime.cfg["cpamp"].get("usage_db"),
+            "cpamp_usage_db": runtime.cfg["cpamp"]["usage_db"],
             "online_payment": epay_conf(runtime.cfg) is not None,
         },
     }

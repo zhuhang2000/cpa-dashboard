@@ -14,11 +14,7 @@ DEFAULT_NAME = "默认密钥"
 
 
 def min_balance_micro(cfg):
-    return to_micro(cfg.get("min_balance_to_call") or 0)
-
-
-def key_prefix(cfg):
-    return cfg.get("key_prefix") or "sk-"
+    return to_micro(cfg["min_balance_to_call"])
 
 
 def state(key_row, user_row, min_balance, now):
@@ -59,10 +55,6 @@ def soft_delete(conn, key_row):
 
 
 # ---- User operations ----
-
-
-def max_keys(cfg):
-    return int(cfg.get("max_keys_per_user") or 10)
 
 
 def hash_key(key):
@@ -110,11 +102,11 @@ def create(conn, cfg, user_id, data):
     name = parse_name(data.get("name"), DEFAULT_NAME)
     quota = parse_quota(data.get("quota"))
     expires_at = parse_optional_ts(data.get("expires_at"), "过期时间")
-    limit = max_keys(cfg)
+    limit = cfg["max_keys_per_user"]
     with transaction(conn):
         if count_live(conn, user_id) >= limit:
             raise ApiError(400, "每个账号最多创建 %d 个密钥" % limit)
-        key = new_api_key(key_prefix(cfg))
+        key = new_api_key(cfg["key_prefix"])
         key_id = conn.execute(
             "INSERT INTO api_keys (user_id, name, key, key_hash, quota_micro, expires_at, created_at) "
             "VALUES (?, ?, ?, ?, ?, ?, ?)",

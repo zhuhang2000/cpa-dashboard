@@ -157,7 +157,7 @@ def test_admin_only_generation_requires_valid_type(redeem_portal):
     conn = runtime.db()
     try:
         with pytest.raises(ApiError) as exc:
-            billing.generate_codes(conn, 5000000, 1, None, None, None, code_type="invalid")
+            billing.create_codes(conn, None, {"amount": 5, "type": "invalid"})
         assert exc.value.status == 400
     finally:
         conn.close()

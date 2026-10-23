@@ -18,12 +18,12 @@ KEY_CLOCK_SKEW_MS = 5 * 60 * 1000
 
 
 def day_start(ts, tz_offset_minutes):
-    offset = int(tz_offset_minutes or 0) * 60000
+    offset = tz_offset_minutes * 60000
     return ((ts + offset) // DAY_MS) * DAY_MS - offset
 
 
 def month_start(ts, tz_offset_minutes):
-    offset = int(tz_offset_minutes or 0) * 60000
+    offset = tz_offset_minutes * 60000
     local = datetime.datetime.fromtimestamp((ts + offset) / 1000, tz=datetime.timezone.utc)
     first = datetime.datetime(local.year, local.month, 1, tzinfo=datetime.timezone.utc)
     return int(first.timestamp() * 1000) - offset
@@ -93,7 +93,7 @@ def summary(conn, user_id, days, tz_offset_minutes, now=None):
         "SUM(input_tokens + cache_read_tokens + cache_write_tokens) AS input_tokens, "
         "SUM(output_tokens) AS output_tokens, SUM(failed) AS failed "
         "FROM usage_logs WHERE user_id = ? AND ts >= ? GROUP BY d",
-        (int(tz_offset_minutes or 0) * 60, user_id, start),
+        (tz_offset_minutes * 60, user_id, start),
     ).fetchall()
     by_model = conn.execute(
         "SELECT model, COUNT(*) AS requests, SUM(cost_micro) AS cost, SUM(total_tokens) AS tokens "
@@ -156,7 +156,7 @@ def overview(conn, tz_offset_minutes, now=None):
     daily = conn.execute(
         "SELECT strftime('%Y-%m-%d', ts / 1000 + ?, 'unixepoch') AS d, COUNT(*) AS requests, "
         "SUM(cost_micro) AS cost FROM usage_logs WHERE ts >= ? GROUP BY d",
-        (int(tz_offset_minutes or 0) * 60, start),
+        (tz_offset_minutes * 60, start),
     ).fetchall()
     top_users = conn.execute(
         "SELECT u.id, u.username, COUNT(*) AS requests, SUM(l.cost_micro) AS cost FROM usage_logs l "

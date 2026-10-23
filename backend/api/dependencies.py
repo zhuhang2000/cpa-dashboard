@@ -27,7 +27,7 @@ def get_connection(runtime=Depends(get_runtime)):
 
 
 def client_ip(request: Request):
-    if get_runtime(request).cfg.get("trust_proxy"):
+    if get_runtime(request).cfg["trust_proxy"]:
         real = request.headers.get("X-Real-IP")
         if real:
             return real.strip()
@@ -38,7 +38,7 @@ def client_ip(request: Request):
 
 
 def request_host(request: Request):
-    if get_runtime(request).cfg.get("trust_proxy"):
+    if get_runtime(request).cfg["trust_proxy"]:
         forwarded = request.headers.get("X-Forwarded-Host")
         if forwarded:
             return forwarded.split(",")[0].strip()
@@ -46,7 +46,7 @@ def request_host(request: Request):
 
 
 def is_https(request: Request):
-    if get_runtime(request).cfg.get("trust_proxy"):
+    if get_runtime(request).cfg["trust_proxy"]:
         return request.headers.get("X-Forwarded-Proto", "").split(",")[0].strip().lower() == "https"
     return request.url.scheme == "https"
 
@@ -56,7 +56,7 @@ def origin_url(request: Request):
 
 
 def _session_cookie(request: Request, token, max_age):
-    secure_conf = get_runtime(request).cfg.get("cookie_secure", "auto")
+    secure_conf = get_runtime(request).cfg["cookie_secure"]
     secure = is_https(request) if secure_conf == "auto" else bool(secure_conf)
     value = f"{SESSION_COOKIE}={token}; Path=/; HttpOnly; SameSite=Lax; Max-Age={max_age}"
     return value + ("; Secure" if secure else "")
@@ -82,9 +82,7 @@ def current_user(request: Request, conn=Depends(get_connection), runtime=Depends
     cookie = jar.get(SESSION_COOKIE)
     if not cookie:
         return None
-    user, renewal = accounts.authenticate_session(
-        conn, cookie.value, runtime.cfg.get("session_days")
-    )
+    user, renewal = accounts.authenticate_session(conn, cookie.value, runtime.cfg["session_days"])
     if user is not None:
         request.state.session_hash = sha256_hex(cookie.value)
         if renewal is not None:

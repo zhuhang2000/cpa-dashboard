@@ -91,6 +91,26 @@ def test_relative_paths_are_based_on_env_directory(config_path):
     assert Path(cfg["cpamp"]["usage_db"]) == config_path.parent / "ext" / "usage.sqlite"
 
 
+def test_sync_settings_below_their_lower_bounds_are_refused(config_path):
+    for old, new in (
+        ("CPAMP_SYNC_INTERVAL_SECONDS=15", "CPAMP_SYNC_INTERVAL_SECONDS=2"),
+        ("CPAMP_BATCH_SIZE=1000", "CPAMP_BATCH_SIZE=99"),
+    ):
+        config_path.write_text(SAMPLE_ENV.replace(old, new))
+        with pytest.raises(ValueError):
+            config.load_config(config_path)
+
+
+def test_online_payment_needs_gateway_merchant_and_key(config_path):
+    text = SAMPLE_ENV.replace("EPAY_ENABLED=false", "EPAY_ENABLED=true")
+    config_path.write_text(text)
+    assert config.load_config(config_path)["payment"]["epay"]["enabled"] is False
+    text = text.replace("EPAY_GATEWAY=", "EPAY_GATEWAY=https://pay.example.test")
+    text = text.replace("EPAY_PID=", "EPAY_PID=1001").replace("EPAY_KEY=", "EPAY_KEY=k")
+    config_path.write_text(text)
+    assert config.load_config(config_path)["payment"]["epay"]["enabled"] is True
+
+
 def test_type_conversions(config_path):
     text = SAMPLE_ENV.replace("ALLOW_REGISTER=true", "ALLOW_REGISTER=false")
     text = text.replace("SIGNUP_BONUS=0", "SIGNUP_BONUS=10.5")
