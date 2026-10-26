@@ -77,7 +77,7 @@ def delete_key(
     conn=Depends(get_connection),
     runtime=Depends(get_runtime),
 ):
-    api_keys.soft_delete(conn, api_keys.get_owned(conn, user["id"], key_id))
+    api_keys.soft_delete(conn, api_keys.get_owned(conn, user["id"], key_id)["id"])
     runtime.worker.trigger()
     return {"ok": True}
 
@@ -107,6 +107,6 @@ def admin_list_keys(user_id: int, conn=Depends(get_connection), runtime=Depends(
 def admin_delete_key(
     user_id: int, key_id: int, conn=Depends(get_connection), runtime=Depends(get_runtime)
 ):
-    api_keys.soft_delete(conn, api_keys.get_owned(conn, user_id, key_id))
+    api_keys.soft_delete(conn, key_id)
     runtime.worker.trigger()
     return {"ok": True}

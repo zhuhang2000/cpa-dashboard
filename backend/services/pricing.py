@@ -3,7 +3,6 @@
 import re
 
 from core.db import get_setting, now_ms, set_setting, transaction
-from core.errors import ApiError
 
 MICRO = 1000000
 PER_MILLION = 1000000.0
@@ -194,31 +193,14 @@ def admin_list_prices(conn, cpamp_prices, setting):
     return {"items": items, "cpamp_models": len(cpamp_prices)}
 
 
-def _price_value(data, name, label, optional=False):
-    value = data.get(name)
-    if value in (None, ""):
-        if optional:
-            return None
-        raise ApiError(400, "请填写%s" % label)
-    try:
-        number = float(value)
-    except (TypeError, ValueError):
-        raise ApiError(400, "%s格式不正确" % label)
-    if number < 0 or number != number or number > 1e6:
-        raise ApiError(400, "%s超出范围" % label)
-    return number
-
-
 def upsert_price(conn, data):
-    model = str(data.get("model") or "").strip()
-    if not model or len(model) > 128:
-        raise ApiError(400, "模型名称需为 1-128 个字符")
+    model = data["model"]
     values = (
-        _price_value(data, "input", "输入价格"),
-        _price_value(data, "output", "输出价格"),
-        _price_value(data, "cache_read", "缓存读取价格", optional=True),
-        _price_value(data, "cache_write", "缓存写入价格", optional=True),
-        str(data.get("note") or "").strip()[:100] or None,
+        data["input"],
+        data["output"],
+        data.get("cache_read"),
+        data.get("cache_write"),
+        data.get("note"),
     )
     with transaction(conn):
         conn.execute(
@@ -234,15 +216,12 @@ def upsert_price(conn, data):
 
 
 def delete_price(conn, data):
-    model = str(data.get("model") or "").strip()
-    conn.execute("DELETE FROM model_prices WHERE model = ?", (model,))
+    conn.execute("DELETE FROM model_prices WHERE model = ?", (data["model"],))
     return {"ok": True}
 
 
 def set_visibility(conn, data):
-    model = str(data.get("model") or "").strip()
-    if not model:
-        raise ApiError(400, "缺少模型名称")
+    model = data["model"]
     with transaction(conn):
         hidden = set(get_setting(conn, "hidden_models", []) or [])
         if data.get("hidden"):

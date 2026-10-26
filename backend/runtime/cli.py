@@ -67,7 +67,9 @@ def cmd_reset_password(runtime, username, password=None):
         row = accounts.find_by_username(conn, username)
         if row is None:
             sys.exit("用户不存在: %s" % username)
-        accounts.reset_password(conn, row["id"], password or _ask_password())
+        password = password or _ask_password()
+        accounts.validate_password(password)
+        accounts.reset_password(conn, row["id"], password)
     except ApiError as exc:
         sys.exit(exc.message)
     finally:
@@ -121,7 +123,7 @@ def main():
     p.add_argument("username")
     p.add_argument("--password")
     p = sub.add_parser("gen-codes", help="generate redeem codes")
-    p.add_argument("--amount", required=True)
+    p.add_argument("--amount", type=float, required=True)
     p.add_argument("--count", type=int, default=1)
     p.add_argument("--batch")
     p.add_argument("--expires-days", type=int, default=0)

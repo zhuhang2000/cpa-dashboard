@@ -4,7 +4,6 @@ from fastapi import APIRouter, Depends
 
 from api.dependencies import get_connection, get_runtime, json_body, require_admin
 from core.constants import VERSION
-from core.errors import ApiError
 from services.billing import epay_conf
 from services.notices import latest_at
 
@@ -48,10 +47,7 @@ def admin_get_settings(runtime=Depends(get_runtime)):
 
 @router.put("/api/admin/settings", dependencies=[Depends(require_admin)])
 def admin_put_settings(data: dict = Depends(json_body), runtime=Depends(get_runtime)):
-    try:
-        result = runtime.settings.update(data)
-    except (TypeError, ValueError) as exc:
-        raise ApiError(400, "设置格式不正确: %s" % exc)
+    result = runtime.settings.update(data)
     runtime.worker.invalidate_prices()
     return {"settings": result}
 

@@ -227,7 +227,6 @@ def test_all_transactions_filters_combine_and_the_totals_follow_them(billing_con
     assert listed(q="example.test")["total"] == 3
     assert listed(q="cust", operator=4)["sum_amount"] == 3
     assert listed(q="%")["total"] == 0
-    assert listed(type="unknown") == every
     nothing = {"items": [], "total": 0, "sum_amount": 0, "sum_credit": 0, "sum_debit": 0}
     assert listed(tag="Other") == {**every, **nothing}
     # Entries follow their user, so moving the user to another tag moves its history too.

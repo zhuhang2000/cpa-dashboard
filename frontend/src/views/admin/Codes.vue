@@ -108,7 +108,16 @@
             <label for="gen-amount">面额</label>
             <div class="input-group has-prefix">
               <span class="input-prefix">{{ currency() }}</span>
-              <input id="gen-amount" v-model="gen.amount" class="input" type="number" min="0.01" step="0.01" required />
+              <input
+                id="gen-amount"
+                v-model="gen.amount"
+                class="input"
+                type="number"
+                min="0.01"
+                max="100000"
+                step="0.01"
+                required
+              />
             </div>
           </div>
           <div class="field">
@@ -218,7 +227,7 @@ async function generate() {
       amount: gen.amount,
       count: Number(gen.count),
       type: gen.type,
-      batch: gen.batch,
+      batch: gen.batch || null,
       expires_days: gen.expires_days ? Number(gen.expires_days) : null,
     })
     genOpen.value = false

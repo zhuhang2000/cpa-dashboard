@@ -174,10 +174,10 @@ def admin_set_user_status(
     conn=Depends(get_connection),
     runtime=Depends(get_runtime),
 ):
-    row = accounts.set_status(conn, user_id, data.get("status"), admin["id"])
+    accounts.set_status(conn, user_id, data.get("status"))
     # Key availability follows the account status, so sync CPA now.
     runtime.worker.trigger()
-    return {"user": user_public(row)}
+    return {"ok": True}
 
 
 @router.put("/api/admin/users/{user_id:int}/alias")
@@ -198,5 +198,5 @@ def admin_reset_password(
     data: dict = Depends(json_body),
     conn=Depends(get_connection),
 ):
-    accounts.admin_reset_password(conn, user_id, data, admin["id"])
+    accounts.reset_password(conn, user_id, data.get("password"))
     return {"ok": True}

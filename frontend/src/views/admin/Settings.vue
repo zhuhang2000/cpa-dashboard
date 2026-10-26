@@ -67,7 +67,16 @@
           <div class="field">
             <label for="s-discount">官方价折扣</label>
             <div class="input-group">
-              <input id="s-discount" v-model.number="discountInput" class="input" type="number" min="0" step="any" />
+              <input
+                id="s-discount"
+                v-model.number="discountInput"
+                class="input"
+                type="number"
+                min="0.01"
+                max="10"
+                step="any"
+                required
+              />
               <span class="input-suffix">折</span>
             </div>
             <div class="field-hint">10 为不打折，85 折填 8.5。只对官方价打折，自定义价格和默认价格不受影响</div>
@@ -82,6 +91,7 @@
                 type="number"
                 min="0"
                 step="any"
+                required
               />
             </div>
             <div class="field">
@@ -93,6 +103,7 @@
                 type="number"
                 min="0"
                 step="any"
+                required
               />
             </div>
           </div>
@@ -133,7 +144,11 @@ function fill(settings) {
 async function save() {
   saving.value = true
   try {
-    const data = await settingsApi.adminPutSettings({ ...form.value, cpamp_price_discount: discountInput.value / 10 })
+    const data = await settingsApi.adminPutSettings({
+      ...form.value,
+      announcement: form.value.announcement.trim(),
+      cpamp_price_discount: discountInput.value / 10,
+    })
     fill(data.settings)
     await refreshStatus()
     toast.success('设置已保存')

@@ -47,10 +47,10 @@ def get_owned(conn, user_id, key_id):
     return row
 
 
-def soft_delete(conn, key_row):
+def soft_delete(conn, key_id):
     conn.execute(
-        "UPDATE api_keys SET status = ?, deleted_at = ? WHERE id = ?",
-        (KeyStatus.DELETED, now_ms(), key_row["id"]),
+        "UPDATE api_keys SET status = ?, deleted_at = ? WHERE id = ? AND status != ?",
+        (KeyStatus.DELETED, now_ms(), key_id, KeyStatus.DELETED),
     )
 
 

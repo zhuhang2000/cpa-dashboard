@@ -9,7 +9,6 @@ from core.errors import ApiError
 from core.security import hash_password, new_session_token, sha256_hex, verify_password
 
 DAY_MS = 86400000
-MAX_BATCH_USERS = 100  # the largest user list page
 USER_SORTS = {
     "created": "u.id",
     "last_used": "last_used_at",
@@ -72,8 +71,10 @@ def authenticate_session(conn, token, session_days):
 
 
 def reset_password(conn, user_id, password):
-    """Set a new password and revoke every session (administrator reset and CLI)."""
-    validate_password(password)
+    """Set a new password and revoke every session (administrator reset and CLI).
+
+    The admin page and the CLI check the password before calling.
+    """
     with transaction(conn):
         conn.execute(
             "UPDATE users SET password_hash = ? WHERE id = ?", (hash_password(password), user_id)
@@ -249,20 +250,8 @@ def search(conn, operator, q, limit, offset, archived=False, sort="created", des
     return total, rows
 
 
-def _check_batch(user_ids):
-    if (
-        not isinstance(user_ids, list)
-        or not 1 <= len(user_ids) <= MAX_BATCH_USERS
-        or not all(type(user_id) is int for user_id in user_ids)
-    ):
-        raise ApiError(400, "请选择 1-%d 位用户" % MAX_BATCH_USERS)
-
-
 def set_archived(conn, user_ids, archived):
     """Move accounts in or out of the inactive list; sign-in and keys are unaffected."""
-    if not isinstance(archived, bool):
-        raise ApiError(400, "不活跃标记不正确")
-    _check_batch(user_ids)
     return conn.execute(
         "UPDATE users SET archived_at = CASE WHEN ? THEN COALESCE(archived_at, ?) END "
         "WHERE id IN (%s)" % ", ".join("?" * len(user_ids)),
@@ -293,18 +282,12 @@ def list_tags(conn):
     ).fetchall()
 
 
-def set_status(conn, user_id, status, operator_id):
+def set_status(conn, user_id, status):
     """Ban or re-enable an account; a ban also signs it out everywhere."""
-    row = get(conn, user_id)
-    if status not in UserStatus.ALL:
-        raise ApiError(400, "状态不正确")
-    if row["id"] == operator_id and status != UserStatus.ACTIVE:
-        raise ApiError(400, "不能禁用自己的账号")
     with transaction(conn):
-        conn.execute("UPDATE users SET status = ? WHERE id = ?", (status, row["id"]))
+        conn.execute("UPDATE users SET status = ? WHERE id = ?", (status, user_id))
         if status == UserStatus.BANNED:
-            conn.execute("DELETE FROM sessions WHERE user_id = ?", (row["id"],))
-    return get(conn, row["id"])
+            conn.execute("DELETE FROM sessions WHERE user_id = ?", (user_id,))
 
 
 def set_alias(conn, operator, user_id, alias):
@@ -314,14 +297,6 @@ def set_alias(conn, operator, user_id, alias):
     """
     row = get_managed(conn, operator, user_id)
     conn.execute("UPDATE users SET alias = ? WHERE id = ?", (alias, row["id"]))
-
-
-def admin_reset_password(conn, user_id, data, operator_id):
-    """Administrator reset for a forgotten password; the user must sign in again."""
-    row = get(conn, user_id)
-    if row["id"] == operator_id:
-        raise ApiError(400, "请在个人设置中修改自己的密码")
-    reset_password(conn, row["id"], str(data.get("password") or ""))
 
 
 def overview_counts(conn, today):

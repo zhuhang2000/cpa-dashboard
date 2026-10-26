@@ -322,23 +322,16 @@ def list_all_transactions(conn, page, size, offset, filters):
 
     filters may hold q (part of the user's name or email), type, tag, operator (a user id) and
     start/end (epoch ms, end exclusive). tag keeps the users carrying it now, so an entry
-    follows its user rather than the tag the user had when it was written. An unknown type is
-    ignored, like the other list filters.
+    follows its user rather than the tag the user had when it was written.
     operators lists everyone who has adjusted a balance, as the operator filter's choices.
     """
     where, args = ["1 = 1"], []
-    query = (filters.get("q") or "").strip()
-    if query:
+    if "q" in filters:
         where.append("(u.username LIKE ? ESCAPE '\\' OR u.email LIKE ? ESCAPE '\\')")
-        args += [like_pattern(query)] * 2
-    if filters.get("type") in TxType.ALL:
-        where.append("t.type = ?")
-        args.append(filters["type"])
-    tag = (filters.get("tag") or "").strip()
-    if tag:
-        where.append("u.tag = ?")
-        args.append(tag)
+        args += [like_pattern(filters["q"])] * 2
     for field, expression in (
+        ("type", "t.type = ?"),
+        ("tag", "u.tag = ?"),
         ("operator", "t.operator_id = ?"),
         ("start", "t.created_at >= ?"),
         ("end", "t.created_at < ?"),
@@ -386,14 +379,12 @@ def list_all_transactions(conn, page, size, offset, filters):
 
 def list_codes(conn, page, size, offset, status=None, batch="", query=""):
     where, args = ["1 = 1"], []
-    if status in RedeemStatus.ALL:
+    if status:
         where.append("c.status = ?")
         args.append(status)
-    batch = batch.strip()
     if batch:
         where.append("c.batch = ?")
         args.append(batch)
-    query = query.strip().upper()
     if query:
         where.append("c.code LIKE ? ESCAPE '\\'")
         args.append(like_pattern(query))
@@ -437,44 +428,32 @@ def list_codes(conn, page, size, offset, status=None, batch="", query=""):
 
 def create_codes(conn, operator_id, data):
     """Generate unique recharge or gift codes in one transaction for the API and CLI."""
-    amount = parse_money(data.get("amount"), "面额", minimum=0.01, maximum=100000)
-    try:
-        count = int(data.get("count") or 1)
-    except (TypeError, ValueError):
-        raise ApiError(400, "数量格式不正确")
-    if not 1 <= count <= 500:
-        raise ApiError(400, "单次最多生成 500 个")
-    batch = str(data.get("batch") or "").strip()[:32] or None
-    expires_at = None
-    if data.get("expires_days"):
-        try:
-            days = int(data["expires_days"])
-        except (TypeError, ValueError):
-            raise ApiError(400, "有效期格式不正确")
-        if not 1 <= days <= 3650:
-            raise ApiError(400, "有效期需在 1-3650 天之间")
-        expires_at = now_ms() + days * DAY_MS
-    code_type = data.get("type")
-    if code_type not in RedeemType.ALL:
-        raise ApiError(400, "兑换码类型必须为充值或赠送")
+    amount = to_micro(data["amount"])
+    count = data.get("count", 1)
+    batch = data.get("batch")
+    days = data.get("expires_days")
+    expires_at = now_ms() + days * DAY_MS if days else None
+    code_type = data["type"]
     codes = []
+    # A clashing code is drawn again; any other failed insert raises and rolls the batch back.
     with transaction(conn):
         while len(codes) < count:
             code = new_redeem_code()
-            inserted = conn.execute(
-                "INSERT OR IGNORE INTO redeem_codes (code, amount_micro, batch, created_by, created_at, "
+            if conn.execute("SELECT 1 FROM redeem_codes WHERE code = ?", (code,)).fetchone():
+                continue
+            conn.execute(
+                "INSERT INTO redeem_codes (code, amount_micro, batch, created_by, created_at, "
                 "expires_at, type) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 (code, amount, batch, operator_id, now_ms(), expires_at, code_type),
-            ).rowcount
-            if inserted:
-                codes.append(code)
+            )
+            codes.append(code)
     return {"codes": codes, "amount": money(amount), "batch": batch or "", "type": code_type}
 
 
 def delete_code(conn, code):
     changed = conn.execute(
         "DELETE FROM redeem_codes WHERE code = ? AND status IN (?, ?)",
-        (code.upper(), RedeemStatus.UNUSED, RedeemStatus.DISABLED),
+        (code, RedeemStatus.UNUSED, RedeemStatus.DISABLED),
     ).rowcount
     if not changed:
         raise ApiError(400, "兑换码不存在或已使用，无法删除")

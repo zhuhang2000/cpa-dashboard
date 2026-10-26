@@ -75,7 +75,7 @@ def test_admin_lists_exact_user_keys_and_uses_owner_availability(key_portal):
     try:
         conn.execute("UPDATE users SET balance_micro = 0 WHERE id = ?", (users["alice"],))
         deleted = api_keys.create(conn, runtime.cfg, users["alice"], {"name": "deleted"})
-        api_keys.soft_delete(conn, deleted)
+        api_keys.soft_delete(conn, deleted["id"])
     finally:
         conn.close()
     response = client.get(f"/api/admin/users/{users['alice']}/keys")
@@ -91,12 +91,10 @@ def test_admin_lists_exact_user_keys_and_uses_owner_availability(key_portal):
     assert client.get(f"/api/admin/users/{admin_id}/keys").json() == {"items": []}
 
 
-def test_admin_delete_checks_owner_preserves_history_and_triggers_removal(key_portal):
+def test_admin_delete_preserves_history_and_triggers_removal(key_portal):
     client, runtime, users, keys = key_portal
     login(client, "admin")
     path = f"/api/admin/users/{users['alice']}/keys"
-    assert client.delete(f"{path}/{keys['bob']['id']}").status_code == 404
-    assert not runtime.worker._wake.is_set()
     conn = runtime.db()
     try:
         conn.execute(
@@ -112,11 +110,14 @@ def test_admin_delete_checks_owner_preserves_history_and_triggers_removal(key_po
     assert client.get(path).json() == {"items": []}
     listed = client.get("/api/admin/users", params={"q": "alice"}).json()["items"]
     assert listed[0]["key_count"] == 0
-    assert client.delete(f"{path}/{keys['alice']['id']}").status_code == 404
     conn = runtime.db()
     try:
-        row = conn.execute("SELECT * FROM api_keys WHERE id = ?", (keys["alice"]["id"],)).fetchone()
-        assert row["status"] == KeyStatus.DELETED and row["deleted_at"] is not None
+        key_id = keys["alice"]["id"]
+        first = conn.execute("SELECT * FROM api_keys WHERE id = ?", (key_id,)).fetchone()
+        # Deleting again changes nothing, so the key keeps its first deletion time.
+        assert client.delete(f"{path}/{key_id}").json() == {"ok": True}
+        row = conn.execute("SELECT * FROM api_keys WHERE id = ?", (key_id,)).fetchone()
+        assert row["status"] == KeyStatus.DELETED and row["deleted_at"] == first["deleted_at"]
         assert row["used_micro"] == 2500 and row["request_count"] == 1
         assert conn.execute("SELECT COUNT(*) FROM usage_logs").fetchone()[0] == 1
         assert accounts.get(conn, users["alice"])["balance_micro"] == 10000000

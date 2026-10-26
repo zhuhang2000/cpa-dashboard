@@ -90,6 +90,7 @@
             id="p-model"
             v-model.trim="form.model"
             class="input mono"
+            maxlength="128"
             placeholder="与请求中的 model 完全一致，如 gpt-5"
             required
           />
@@ -97,11 +98,29 @@
         <div class="grid grid-2" style="gap: 12px">
           <div class="field">
             <label for="p-in">输入价格</label>
-            <input id="p-in" v-model="form.input" class="input" type="number" min="0" step="any" required />
+            <input
+              id="p-in"
+              v-model="form.input"
+              class="input"
+              type="number"
+              min="0"
+              max="1000000"
+              step="any"
+              required
+            />
           </div>
           <div class="field">
             <label for="p-out">输出价格</label>
-            <input id="p-out" v-model="form.output" class="input" type="number" min="0" step="any" required />
+            <input
+              id="p-out"
+              v-model="form.output"
+              class="input"
+              type="number"
+              min="0"
+              max="1000000"
+              step="any"
+              required
+            />
           </div>
           <div class="field">
             <label for="p-cr">缓存读取价格 <span class="faint">（选填）</span></label>
@@ -111,6 +130,7 @@
               class="input"
               type="number"
               min="0"
+              max="1000000"
               step="any"
               :placeholder="`默认 输入×0.1`"
             />
@@ -123,6 +143,7 @@
               class="input"
               type="number"
               min="0"
+              max="1000000"
               step="any"
               :placeholder="`默认 输入×1.25`"
             />
@@ -245,7 +266,7 @@ async function save() {
       output: form.output,
       cache_read: form.cache_read === '' ? null : form.cache_read,
       cache_write: form.cache_write === '' ? null : form.cache_write,
-      note: form.note,
+      note: form.note || null,
     })
     toast.success('价格已保存，新的调用将按此价格计费')
     formOpen.value = false

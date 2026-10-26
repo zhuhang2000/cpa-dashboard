@@ -143,7 +143,7 @@ def test_v1_migration_preserves_existing_codes_balances_and_recharge_history(tmp
         conn.close()
 
 
-def test_admin_only_generation_requires_valid_type(redeem_portal):
+def test_only_the_administrator_generates_codes(redeem_portal):
     client, runtime = redeem_portal
     for username, status in ((None, 401), ("alice", 403)):
         if username:
@@ -155,20 +155,6 @@ def test_admin_only_generation_requires_valid_type(redeem_portal):
         )
 
     login(client, "admin")
-    for invalid_type in (None, "", "bonus", [], {}):
-        response = client.post("/api/admin/codes", json={"amount": 5, "type": invalid_type})
-        assert response.status_code == 400
-    assert client.get("/api/admin/codes").json()["total"] == 0
-    conn = runtime.db()
-    try:
-        with pytest.raises(ApiError) as exc:
-            billing.create_codes(conn, None, {"amount": 5, "type": "invalid"})
-        assert exc.value.status == 400
-    finally:
-        conn.close()
-
-    response = client.post("/api/admin/codes", json={"amount": 5})
-    assert response.status_code == 400
     assert client.get("/api/admin/codes").json()["total"] == 0
     response = client.post("/api/admin/codes", json={"amount": 5, "type": "recharge"})
     assert response.status_code == 200

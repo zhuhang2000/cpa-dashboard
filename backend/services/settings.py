@@ -15,8 +15,6 @@ EDITABLE_SETTINGS = {
     "default_input_price": (float, ("pricing", "default_input_price")),
     "default_output_price": (float, ("pricing", "default_output_price")),
 }
-# The longest value of each text setting; the settings page inputs carry the same limits.
-MAX_TEXT = {"site_name": 40, "public_api_base": 200, "announcement": 1000}
 
 
 class RuntimeSettings:
@@ -53,30 +51,11 @@ class RuntimeSettings:
         return {name: self.get(name) for name in EDITABLE_SETTINGS}
 
     def update(self, values):
-        clean = {}
-        for name, value in values.items():
-            if name not in EDITABLE_SETTINGS:
-                continue
-            kind = EDITABLE_SETTINGS[name][0]
-            if kind is bool:
-                clean[name] = bool(value)
-            elif kind is float:
-                number = float(value)
-                if number < 0 or number != number:
-                    raise ValueError("%s 不能为负数" % name)
-                if name == "cpamp_price_discount" and not 0 < number <= 1:
-                    raise ValueError("官方价折扣需大于 0 折且不超过 10 折")
-                clean[name] = number
-            else:
-                text = str(value or "").strip()
-                if len(text) > MAX_TEXT[name]:
-                    raise ValueError("%s 不能超过 %d 个字符" % (name, MAX_TEXT[name]))
-                clean[name] = text
         with self._runtime_lock:
             conn = self.connect()
             try:
                 current = get_setting(conn, "runtime_settings", {}) or {}
-                current.update(clean)
+                current.update(values)
                 set_setting(conn, "runtime_settings", current)
             finally:
                 conn.close()

@@ -40,7 +40,7 @@ const input = ref(null)
 onMounted(() => input.value?.focus())
 
 function submit() {
-  if (!props.saving && draft.value.trim()) emit('submit', draft.value)
+  if (!props.saving && draft.value.trim()) emit('submit', draft.value.trim())
 }
 </script>
 
