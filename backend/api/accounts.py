@@ -152,7 +152,8 @@ def admin_archive_users(
 def admin_tag_users(
     admin=Depends(require_admin), data: dict = Depends(json_body), conn=Depends(get_connection)
 ):
-    return {"updated": accounts.set_tags(conn, data.get("ids"), data.get("tag"))}
+    updated = accounts.set_tags(conn, data.get("ids"), data.get("tag"), data.get("manager", False))
+    return {"updated": updated}
 
 
 @router.get("/api/admin/tags", dependencies=[Depends(require_admin)])
@@ -176,17 +177,6 @@ def admin_set_user_status(
     row = accounts.set_status(conn, user_id, data.get("status"), admin["id"])
     # Key availability follows the account status, so sync CPA now.
     runtime.worker.trigger()
-    return {"user": user_public(row)}
-
-
-@router.put("/api/admin/users/{user_id:int}/role")
-def admin_set_user_role(
-    user_id: int,
-    admin=Depends(require_admin),
-    data: dict = Depends(json_body),
-    conn=Depends(get_connection),
-):
-    row = accounts.set_role(conn, user_id, data.get("role"), admin["id"], data.get("tag"))
     return {"user": user_public(row)}
 
 

@@ -283,22 +283,28 @@ def _clean_tag(conn, tag):
     return row["tag"] if row else text
 
 
-def set_tags(conn, user_ids, tag):
-    """Put regular users into a tag group, or take them out with an empty tag.
+def set_tags(conn, user_ids, tag, manager=False):
+    """Put users into a tag group as members, or as managers serving it.
 
-    A manager's tag changes with its role, so any other account refuses the whole batch.
-    Owns its transaction and returns how many users were updated.
+    An empty tag takes members out of any group, while a manager always needs the group it
+    serves. The system administrator belongs to no group, so naming it refuses the whole
+    batch. Owns its transaction and returns how many users were updated.
     """
+    if not isinstance(manager, bool):
+        raise ApiError(400, "身份不正确")
     _check_batch(user_ids)
     tag = _clean_tag(conn, tag)
+    if manager and tag is None:
+        raise ApiError(400, "请填写管理员负责的标签")
     marks = ", ".join("?" * len(user_ids))
     with transaction(conn):
         if conn.execute(
-            "SELECT 1 FROM users WHERE role != ? AND id IN (%s)" % marks, [Role.USER] + user_ids
+            "SELECT 1 FROM users WHERE role = ? AND id IN (%s)" % marks, [Role.ADMIN] + user_ids
         ).fetchone():
-            raise ApiError(400, "只能给普通用户设置标签，管理员请在设置身份时修改")
+            raise ApiError(400, "超级管理员不能设置标签")
         return conn.execute(
-            "UPDATE users SET tag = ? WHERE id IN (%s)" % marks, [tag] + user_ids
+            "UPDATE users SET role = ?, tag = ? WHERE id IN (%s)" % marks,
+            [Role.MANAGER if manager else Role.USER, tag] + user_ids,
         ).rowcount
 
 
@@ -322,27 +328,6 @@ def set_status(conn, user_id, status, operator_id):
         conn.execute("UPDATE users SET status = ? WHERE id = ?", (status, row["id"]))
         if status == UserStatus.BANNED:
             conn.execute("DELETE FROM sessions WHERE user_id = ?", (row["id"],))
-    return get(conn, row["id"])
-
-
-def set_role(conn, user_id, role, operator_id, tag=None):
-    """Grant or revoke administrator rights; a manager gets the tag of the users it serves.
-
-    A regular user staying one keeps its group; administrators and demoted managers have
-    no tag, so a former manager does not become a member of the group it served.
-    """
-    row = get(conn, user_id)
-    if role not in Role.ALL:
-        raise ApiError(400, "角色不正确")
-    if row["id"] == operator_id and role != Role.ADMIN:
-        raise ApiError(400, "不能取消自己的管理员身份")
-    if role == Role.MANAGER:
-        tag = _clean_tag(conn, tag)
-        if tag is None:
-            raise ApiError(400, "请填写管理员负责的标签")
-    else:
-        tag = row["tag"] if role == Role.USER and row["role"] == Role.USER else None
-    conn.execute("UPDATE users SET role = ?, tag = ? WHERE id = ?", (role, tag, row["id"]))
     return get(conn, row["id"])
 
 

@@ -158,49 +158,47 @@ def test_user_list_sorts_by_latest_key_use_and_account_totals(account_db):
     assert listed("unknown") == listed("created")
 
 
-def test_status_and_role_changes_are_validated_and_independent(account_db):
+def test_status_changes_are_validated_and_keep_the_role(account_db):
     conn = account_db
     admin = add_user(conn, "root", role=Role.ADMIN)
-    user = add_user(conn, "alice")
+    user = add_user(conn, "alice", role=Role.MANAGER, tag="VIP")
 
     with pytest.raises(ApiError, match="状态不正确"):
         accounts.set_status(conn, user["id"], "deleted", admin["id"])
-    with pytest.raises(ApiError, match="角色不正确"):
-        accounts.set_role(conn, user["id"], None, admin["id"])
     with pytest.raises(ApiError, match="不能禁用自己"):
         accounts.set_status(conn, admin["id"], UserStatus.BANNED, admin["id"])
-    with pytest.raises(ApiError, match="不能取消自己"):
-        accounts.set_role(conn, admin["id"], Role.USER, admin["id"])
     with pytest.raises(ApiError, match="用户不存在"):
-        accounts.set_role(conn, 9999, Role.ADMIN, admin["id"])
+        accounts.set_status(conn, 9999, UserStatus.BANNED, admin["id"])
 
-    assert (
-        accounts.set_role(conn, user["id"], Role.ADMIN, admin["id"])["status"] == UserStatus.ACTIVE
-    )
     changed = accounts.set_status(conn, user["id"], UserStatus.BANNED, admin["id"])
-    assert (changed["role"], changed["status"]) == (Role.ADMIN, UserStatus.BANNED)
+    assert (changed["role"], changed["tag"]) == (Role.MANAGER, "VIP")
+    assert changed["status"] == UserStatus.BANNED
 
 
-def test_role_changes_give_managers_a_tag_and_clear_it_on_demotion(account_db):
+def test_tags_make_users_members_or_managers_of_a_group(account_db):
     conn = account_db
-    admin = add_user(conn, "root", role=Role.ADMIN)
     user = add_user(conn, "alice")
     accounts.set_tags(conn, [user["id"]], "  Team   A ")
     assert accounts.get(conn, user["id"])["tag"] == "Team A"
 
     with pytest.raises(ApiError, match="负责的标签"):
-        accounts.set_role(conn, user["id"], Role.MANAGER, admin["id"], tag=" ")
+        accounts.set_tags(conn, [user["id"]], " ", manager=True)
     with pytest.raises(ApiError, match="最多 20 个字符"):
-        accounts.set_role(conn, user["id"], Role.MANAGER, admin["id"], tag="x" * 21)
-    # Staying a regular user keeps the group.
-    assert accounts.set_role(conn, user["id"], Role.USER, admin["id"])["tag"] == "Team A"
+        accounts.set_tags(conn, [user["id"]], "x" * 21, manager=True)
+    with pytest.raises(ApiError, match="身份不正确"):
+        accounts.set_tags(conn, [user["id"]], "Team A", manager="yes")
+    assert accounts.get(conn, user["id"])["role"] == Role.USER
 
-    manager = accounts.set_role(conn, user["id"], Role.MANAGER, admin["id"], tag="team a")
+    # The existing spelling of a group wins, for managers as for members.
+    accounts.set_tags(conn, [user["id"]], "team a", manager=True)
+    manager = accounts.get(conn, user["id"])
     assert (manager["role"], manager["tag"]) == (Role.MANAGER, "Team A")
-    # A demoted manager does not join the group it served, and administrators have no tag.
-    assert accounts.set_role(conn, user["id"], Role.USER, admin["id"])["tag"] is None
-    accounts.set_role(conn, user["id"], Role.MANAGER, admin["id"], tag="Team B")
-    assert accounts.set_role(conn, user["id"], Role.ADMIN, admin["id"], tag="Team B")["tag"] is None
+    # Back as a member, a former manager joins the group it is given, or none.
+    accounts.set_tags(conn, [user["id"]], "Team B")
+    member = accounts.get(conn, user["id"])
+    assert (member["role"], member["tag"]) == (Role.USER, "Team B")
+    accounts.set_tags(conn, [user["id"]], "")
+    assert accounts.get(conn, user["id"])["tag"] is None
 
 
 def test_managers_reach_only_the_regular_users_sharing_their_tag(account_db):
@@ -237,7 +235,7 @@ def test_managers_reach_only_the_regular_users_sharing_their_tag(account_db):
         accounts.get_managed(conn, member, alice["id"])
 
 
-def test_batch_tags_apply_to_regular_users_only_and_are_counted(account_db):
+def test_batch_tags_refuse_the_system_administrator_and_are_counted(account_db):
     conn = account_db
     admin = add_user(conn, "root", role=Role.ADMIN)
     ids = [add_user(conn, name)["id"] for name in ("alice", "bob")]
@@ -245,20 +243,21 @@ def test_batch_tags_apply_to_regular_users_only_and_are_counted(account_db):
 
     with pytest.raises(ApiError, match="请选择"):
         accounts.set_tags(conn, [], "VIP")
-    for other in (admin, keeper):
-        with pytest.raises(ApiError, match="只能给普通用户"):
-            accounts.set_tags(conn, ids + [other["id"]], "VIP")
+    with pytest.raises(ApiError, match="超级管理员不能设置标签"):
+        accounts.set_tags(conn, ids + [admin["id"]], "VIP")
     assert [accounts.get(conn, user_id)["tag"] for user_id in ids] == [None, None]
 
     assert accounts.set_tags(conn, ids + [9999], "vip") == 2
     assert [dict(row) for row in accounts.list_tags(conn)] == [
         {"tag": "VIP", "users": 2, "managers": 1}
     ]
-    assert accounts.set_tags(conn, ids[:1], "") == 1
-    assert accounts.get(conn, ids[0])["tag"] is None
+    # One batch can appoint several managers of a group.
+    assert accounts.set_tags(conn, ids[:1] + [keeper["id"]], "VIP", manager=True) == 2
     assert [dict(row) for row in accounts.list_tags(conn)] == [
-        {"tag": "VIP", "users": 1, "managers": 1}
+        {"tag": "VIP", "users": 1, "managers": 2}
     ]
+    assert accounts.set_tags(conn, ids[1:], "") == 1
+    assert accounts.get(conn, ids[1])["tag"] is None
 
 
 def test_aliases_name_managed_accounts_and_find_them(account_db):

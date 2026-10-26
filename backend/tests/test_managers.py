@@ -77,7 +77,6 @@ def test_manager_is_refused_every_other_administrator_action(client, team):
         ("POST", "/api/admin/users/tag", {"ids": [alice], "tag": ""}),
         ("POST", "/api/admin/users/archive", {"ids": [alice], "archived": True}),
         ("PUT", f"/api/admin/users/{alice}/status", {"status": "banned"}),
-        ("PUT", f"/api/admin/users/{alice}/role", {"role": "manager", "tag": "VIP"}),
         ("POST", f"/api/admin/users/{alice}/password", {"password": "replacement"}),
         ("GET", f"/api/admin/users/{alice}/keys", None),
         ("GET", "/api/admin/codes", None),
@@ -132,23 +131,26 @@ def test_manager_aliases_its_members_for_all_staff_but_not_the_user(client, team
     assert client.put(path, json={"alias": "x"}).status_code == 403
 
 
-def test_scope_follows_the_administrators_tag_and_role_changes(client, team):
+def test_scope_follows_the_tags_the_administrator_sets(client, team):
     login(client, "root")
-    response = client.put(f"/api/admin/users/{team['bob']}/role", json={"role": "manager"})
-    assert response.status_code == 400
-    assert response.json() == {"error": "请填写管理员负责的标签"}
-    promoted = client.put(
-        f"/api/admin/users/{team['bob']}/role", json={"role": "manager", "tag": "vip"}
-    ).json()["user"]
-    assert promoted["role"] == Role.MANAGER
+    path = "/api/admin/users/tag"
+    for body, error in (
+        ({"ids": [team["bob"]], "tag": "", "manager": True}, "请填写管理员负责的标签"),
+        ({"ids": [team["root"]], "tag": "VIP"}, "超级管理员不能设置标签"),
+    ):
+        response = client.post(path, json=body)
+        assert response.status_code == 400
+        assert response.json() == {"error": error}
+    promoted = client.post(path, json={"ids": [team["bob"]], "tag": "vip", "manager": True})
+    assert promoted.json() == {"updated": 1}
     listed = client.get("/api/admin/users", params={"q": "bob"}).json()["items"]
-    assert listed[0]["tag"] == "VIP"
+    assert (listed[0]["role"], listed[0]["tag"]) == (Role.MANAGER, "VIP")
     assert client.get("/api/admin/tags").json() == {
         "items": [{"tag": "VIP", "users": 1, "managers": 3}]
     }
-    moved = client.post("/api/admin/users/tag", json={"ids": [team["alice"]], "tag": "Other"})
+    moved = client.post(path, json={"ids": [team["alice"]], "tag": "Other"})
     assert moved.json() == {"updated": 1}
-    client.put(f"/api/admin/users/{team['peer']}/role", json={"role": "user"})
+    client.post(path, json={"ids": [team["peer"]], "tag": ""})
 
     login(client, "keeper")
     assert client.get("/api/admin/users").json()["items"] == []

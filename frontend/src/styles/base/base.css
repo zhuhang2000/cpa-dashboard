@@ -23,7 +23,7 @@
  *     - src/views/admin/Overview.vue (.num, .mono)
  *     - src/views/admin/Users.vue (.muted, .text-success, .num, .text-danger, .nowrap)
  *     - src/components/admin/users/UserBalanceModal.vue (.muted, .num)
- *     - src/components/admin/users/UserAlias.vue, UserPasswordModal.vue, UserRoleModal.vue, UserTagModal.vue (.muted)
+ *     - src/components/admin/users/UserAlias.vue, UserPasswordModal.vue, UserTagModal.vue (.muted)
  *     - src/components/admin/overview/RechargeRecordsModal.vue (.muted, .num, .text-success, .text-danger)
  *     - src/views/admin/Codes.vue (.muted, .faint, .num, .nowrap, .mono)
  *     - src/views/admin/Prices.vue (.muted, .faint, .num, .nowrap, .mono)

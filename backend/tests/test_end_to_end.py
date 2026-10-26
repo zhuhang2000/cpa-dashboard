@@ -41,7 +41,6 @@ EXPECTED_ROUTES = {
     ("POST", "/api/admin/users/tag"),
     ("GET", "/api/admin/tags"),
     ("PUT", "/api/admin/users/{user_id}/status"),
-    ("PUT", "/api/admin/users/{user_id}/role"),
     ("PUT", "/api/admin/users/{user_id}/alias"),
     ("GET", "/api/admin/users/{user_id}/keys"),
     ("DELETE", "/api/admin/users/{user_id}/keys/{key_id}"),
@@ -231,13 +230,6 @@ def run_portal_scenario(admin, user, bootstrap_admin, append_usage, payment_key=
         "DELETE",
         f"/api/admin/users/{user_id}/keys/{extra['item']['id']}",
         route="/api/admin/users/{user_id}/keys/{key_id}",
-    )
-    call(
-        admin,
-        "PUT",
-        f"/api/admin/users/{user_id}/role",
-        route="/api/admin/users/{user_id}/role",
-        json={"role": "user"},
     )
     call(
         admin,
@@ -544,7 +536,7 @@ def test_all_business_endpoints_through_fastapi(tmp_path):
             for method in operations
             if method in {"get", "post", "put", "patch", "delete"}
         }
-    assert len(EXPECTED_ROUTES) == 52
+    assert len(EXPECTED_ROUTES) == 51
     assert covered == EXPECTED_ROUTES
     assert actual_routes == EXPECTED_ROUTES
     assert len(records) > 39

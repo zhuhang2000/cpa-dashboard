@@ -4,7 +4,7 @@
       <div>
         <h1 class="page-title">用户管理</h1>
         <p v-if="isAdmin" class="page-desc">
-          点击用户名查看密钥、余额流水和调用记录，点铅笔可设置用户别名；按最近调用排序可找出长期不用的账号，勾选后可批量移到不活跃或设置标签。
+          点击用户名查看密钥、余额流水和调用记录，点铅笔可设置用户别名；按最近调用排序可找出长期不用的账号，勾选后可批量移到不活跃，或设置标签、任命标签管理员。
         </p>
         <p v-else class="page-desc">
           这里列出由你负责的用户，你可以为他们充值或扣款。点击用户名查看余额流水和调用记录，点铅笔可设置用户别名。
@@ -56,8 +56,8 @@
                   type="checkbox"
                   :checked="allSelected"
                   :indeterminate="selected.length > 0 && !allSelected"
-                  :disabled="!regularIds.length"
-                  aria-label="选择本页全部普通用户"
+                  :disabled="!selectableIds.length"
+                  aria-label="选择本页全部用户"
                   @change="selectAll($event.target.checked)"
                 />
               </th>
@@ -79,7 +79,7 @@
             <tr v-for="u in users.items" :key="u.id">
               <td v-if="isAdmin" class="select-col">
                 <input
-                  v-if="u.role === Role.USER"
+                  v-if="u.role !== Role.ADMIN"
                   v-model="selected"
                   type="checkbox"
                   :value="u.id"
@@ -158,7 +158,6 @@
           {{ menuUser.status === UserStatus.ACTIVE ? '禁用账号' : '启用账号' }}
         </button>
         <button class="dropdown-item" @click="openReset(menuUser)"><Icon name="key" :size="15" />重置密码</button>
-        <button class="dropdown-item" @click="openRole(menuUser)"><Icon name="shield" :size="15" />设置身份</button>
       </div>
     </Teleport>
 
@@ -171,7 +170,6 @@
     />
     <UserBalanceModal v-if="adjusting" :user="adjusting" @close="adjusting = null" @saved="users.load()" />
     <UserPasswordModal v-if="resetting" :user="resetting" @close="resetting = null" />
-    <UserRoleModal v-if="assigning" :user="assigning" @close="assigning = null" @saved="users.load()" />
     <UserTagModal v-if="tagging" :ids="tagging" @close="tagging = null" @saved="afterTagging" />
   </div>
 </template>
@@ -189,7 +187,6 @@ import UserAlias from '@/components/admin/users/UserAlias.vue'
 import UserBalanceModal from '@/components/admin/users/UserBalanceModal.vue'
 import UserDetailModal from '@/components/admin/users/UserDetailModal.vue'
 import UserPasswordModal from '@/components/admin/users/UserPasswordModal.vue'
-import UserRoleModal from '@/components/admin/users/UserRoleModal.vue'
 import UserTagModal from '@/components/admin/users/UserTagModal.vue'
 import { accountsApi } from '@/api/accounts'
 import { usePagedList } from '@/composables/usePagedList'
@@ -217,18 +214,16 @@ const emptyDesc = computed(() => {
   return ''
 })
 const selected = ref([])
-// Only regular users can be selected: the batch actions are for them, while administrators and
-// managers are handled one at a time from the row menu.
-const regularIds = computed(() => users.items.filter((u) => u.role === Role.USER).map((u) => u.id))
+// Members and tag managers can be selected; the system administrator belongs to no tag group.
+const selectableIds = computed(() => users.items.filter((u) => u.role !== Role.ADMIN).map((u) => u.id))
 const allSelected = computed(
-  () => regularIds.value.length > 0 && regularIds.value.every((id) => selected.value.includes(id)),
+  () => selectableIds.value.length > 0 && selectableIds.value.every((id) => selected.value.includes(id)),
 )
 const saving = ref(false) // archiving the selection
 // What each dialog works on; a dialog is mounted only while it has something.
 const detailUser = ref(null)
 const adjusting = ref(null)
 const resetting = ref(null)
-const assigning = ref(null)
 const tagging = ref(null) // the ids of the users being tagged
 
 // The table scrolls horizontally, so the row menu is teleported and placed by its button.
@@ -249,13 +244,13 @@ function openMenu(event, u) {
   menu.toggle(event)
 }
 
-// A reload keeps only the selected users still on screen, and still regular users.
-watch(regularIds, (ids) => {
+// A reload keeps only the selected users still on screen, and still selectable.
+watch(selectableIds, (ids) => {
   selected.value = selected.value.filter((id) => ids.includes(id))
 })
 
 function selectAll(checked) {
-  selected.value = checked ? [...regularIds.value] : []
+  selected.value = checked ? [...selectableIds.value] : []
 }
 
 function setSort(key) {
@@ -294,11 +289,6 @@ function openDetail(u) {
 function openReset(u) {
   menu.close()
   resetting.value = u
-}
-
-function openRole(u) {
-  menu.close()
-  assigning.value = u
 }
 
 function openTagging() {
