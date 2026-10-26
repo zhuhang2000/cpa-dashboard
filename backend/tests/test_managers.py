@@ -112,6 +112,26 @@ def test_manager_credits_its_members_but_cannot_gift(client, team):
     assert client.post(path, json={"amount": 1, "type": "gift"}).json() == {"balance": 4}
 
 
+def test_manager_aliases_its_members_for_all_staff_but_not_the_user(client, team):
+    login(client, "keeper")
+    path = f"/api/admin/users/{team['alice']}/alias"
+    assert client.put(path, json={"alias": " 张三 "}).json() == {"alias": "张三"}
+    for other in ("keeper", "peer", "root", "bob"):
+        response = client.put(f"/api/admin/users/{team[other]}/alias", json={"alias": "x"})
+        assert response.status_code == 404, other
+    found = client.get("/api/admin/users", params={"q": "张三"}).json()["items"]
+    assert [(item["username"], item["alias"]) for item in found] == [("alice", "张三")]
+
+    login(client, "root")
+    listed = client.get("/api/admin/users", params={"q": "张三"}).json()["items"]
+    assert [(item["username"], item["alias"]) for item in listed] == [("alice", "张三")]
+    assert client.put(path, json={"alias": ""}).json() == {"alias": ""}
+
+    me = login(client, "alice")
+    assert "alias" not in me and "alias" not in client.get("/api/user/me").json()["user"]
+    assert client.put(path, json={"alias": "x"}).status_code == 403
+
+
 def test_scope_follows_the_administrators_tag_and_role_changes(client, team):
     login(client, "root")
     response = client.put(f"/api/admin/users/{team['bob']}/role", json={"role": "manager"})

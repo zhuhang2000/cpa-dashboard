@@ -261,6 +261,34 @@ def test_batch_tags_apply_to_regular_users_only_and_are_counted(account_db):
     ]
 
 
+def test_aliases_name_managed_accounts_and_find_them(account_db):
+    conn = account_db
+    admin = add_user(conn, "root", role=Role.ADMIN)
+    alice = add_user(conn, "alice", tag="VIP")
+    bob = add_user(conn, "bob")
+    keeper = add_user(conn, "keeper", role=Role.MANAGER, tag="VIP")
+
+    def listed(operator, q):
+        return [row["username"] for row in accounts.search(conn, operator, q, 20, 0)[1]]
+
+    assert accounts.set_alias(conn, admin, alice["id"], "  张三   计科 ")["alias"] == "张三 计科"
+    assert accounts.set_alias(conn, admin, admin["id"], "站长")["alias"] == "站长"
+    with pytest.raises(ApiError, match="别名最多"):
+        accounts.set_alias(conn, admin, bob["id"], "x" * 21)
+    assert accounts.get(conn, bob["id"])["alias"] is None
+    assert listed(admin, "张三") == listed(keeper, "张三") == ["alice"]
+
+    # A manager names only the users it serves, and the whole staff shares that name.
+    assert accounts.set_alias(conn, keeper, alice["id"], "小张")["alias"] == "小张"
+    for other in (bob, admin, keeper):
+        with pytest.raises(ApiError) as exc:
+            accounts.set_alias(conn, keeper, other["id"], "x")
+        assert exc.value.status == 404
+    assert listed(admin, "小张") == ["alice"]
+    assert accounts.set_alias(conn, admin, alice["id"], " ")["alias"] is None
+    assert listed(admin, "小张") == []
+
+
 def test_logout_revokes_only_the_selected_session(account_db):
     conn = account_db
     user = add_user(conn, "alice")

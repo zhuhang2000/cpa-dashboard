@@ -11,6 +11,7 @@ from core.security import hash_password, new_session_token, sha256_hex, verify_p
 DAY_MS = 86400000
 MAX_BATCH_USERS = 100  # the largest user list page
 TAG_MAX_LENGTH = 20
+ALIAS_MAX_LENGTH = 20
 USER_SORTS = {
     "created": "u.id",
     "last_used": "last_used_at",
@@ -224,7 +225,7 @@ def get_managed(conn, operator, user_id):
 
 
 def search(conn, operator, q, limit, offset, archived=False, sort="created", desc=True):
-    """List the accounts operator administers; q matches usernames and emails.
+    """List the accounts operator administers; q matches usernames, emails and aliases.
 
     Archiving and tags are the system administrator's bookkeeping: only its list is split
     by archiving and searchable by tag. A manager sees its users either way and is never
@@ -233,7 +234,7 @@ def search(conn, operator, q, limit, offset, archived=False, sort="created", des
     times sort as the oldest, so never-used accounts lead an ascending order.
     """
     where, args = _managed_scope(operator)
-    columns = ["u.username", "u.email"]
+    columns = ["u.username", "u.email", "u.alias"]
     if operator["role"] == Role.ADMIN:
         where += " AND u.archived_at IS NOT NULL" if archived else " AND u.archived_at IS NULL"
         columns.append("u.tag")
@@ -342,6 +343,19 @@ def set_role(conn, user_id, role, operator_id, tag=None):
     else:
         tag = row["tag"] if role == Role.USER and row["role"] == Role.USER else None
     conn.execute("UPDATE users SET role = ?, tag = ? WHERE id = ?", (role, tag, row["id"]))
+    return get(conn, row["id"])
+
+
+def set_alias(conn, operator, user_id, alias):
+    """Name an account operator administers so staff can recognize it; '' clears the name.
+
+    All staff share one alias per account, and its owner never sees it.
+    """
+    row = get_managed(conn, operator, user_id)
+    text = " ".join(str(alias or "").split())
+    if len(text) > ALIAS_MAX_LENGTH:
+        raise ApiError(400, "别名最多 %d 个字符" % ALIAS_MAX_LENGTH)
+    conn.execute("UPDATE users SET alias = ? WHERE id = ?", (text or None, row["id"]))
     return get(conn, row["id"])
 
 

@@ -129,6 +129,7 @@ def admin_list_users(request: Request, staff=Depends(require_staff), conn=Depend
     for row in rows:
         item = user_public(row)
         item.update(
+            alias=row["alias"] or "",
             key_count=key_counts.get(row["id"], 0),
             last_login_ip=row["last_login_ip"] or "",
             last_used_at=row["last_used_at"],
@@ -187,6 +188,17 @@ def admin_set_user_role(
 ):
     row = accounts.set_role(conn, user_id, data.get("role"), admin["id"], data.get("tag"))
     return {"user": user_public(row)}
+
+
+@router.put("/api/admin/users/{user_id:int}/alias")
+def admin_set_user_alias(
+    user_id: int,
+    staff=Depends(require_staff),
+    data: dict = Depends(json_body),
+    conn=Depends(get_connection),
+):
+    row = accounts.set_alias(conn, staff, user_id, data.get("alias"))
+    return {"alias": row["alias"] or ""}
 
 
 @router.post("/api/admin/users/{user_id:int}/password")

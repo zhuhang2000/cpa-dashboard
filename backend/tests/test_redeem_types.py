@@ -123,6 +123,7 @@ def test_v1_migration_preserves_existing_codes_balances_and_recharge_history(tmp
             **original_user,
             "archived_at": None,
             "tag": None,
+            "alias": None,
         }
         assert dict(conn.execute("SELECT * FROM transactions").fetchone()) == original_ledger
         migrated = [dict(row) for row in conn.execute("SELECT * FROM redeem_codes ORDER BY code")]

@@ -42,6 +42,7 @@ EXPECTED_ROUTES = {
     ("GET", "/api/admin/tags"),
     ("PUT", "/api/admin/users/{user_id}/status"),
     ("PUT", "/api/admin/users/{user_id}/role"),
+    ("PUT", "/api/admin/users/{user_id}/alias"),
     ("GET", "/api/admin/users/{user_id}/keys"),
     ("DELETE", "/api/admin/users/{user_id}/keys/{key_id}"),
     ("POST", "/api/admin/users/{user_id}/balance"),
@@ -210,6 +211,16 @@ def run_portal_scenario(admin, user, bootstrap_admin, append_usage, payment_key=
     assert tagged == {"updated": 1}
     tags, _ = call(admin, "GET", "/api/admin/tags")
     assert tags == {"items": [{"tag": "VIP", "users": 1, "managers": 0}]}
+    aliased, _ = call(
+        admin,
+        "PUT",
+        f"/api/admin/users/{user_id}/alias",
+        route="/api/admin/users/{user_id}/alias",
+        json={"alias": "场景用户"},
+    )
+    assert aliased == {"alias": "场景用户"}
+    users, _ = call(admin, "GET", "/api/admin/users", params={"q": "场景"})
+    assert [item["id"] for item in users["items"]] == [user_id]
     extra, _ = call(user, "POST", "/api/keys", json={"name": "unused-admin-cleanup"})
     managed, _ = call(
         admin, "GET", f"/api/admin/users/{user_id}/keys", route="/api/admin/users/{user_id}/keys"
@@ -533,7 +544,7 @@ def test_all_business_endpoints_through_fastapi(tmp_path):
             for method in operations
             if method in {"get", "post", "put", "patch", "delete"}
         }
-    assert len(EXPECTED_ROUTES) == 51
+    assert len(EXPECTED_ROUTES) == 52
     assert covered == EXPECTED_ROUTES
     assert actual_routes == EXPECTED_ROUTES
     assert len(records) > 39
