@@ -22,6 +22,7 @@
  *   - src/views/admin/Overview.vue (.btn, .btn-sm)
  *   - src/components/admin/overview/RechargeRecordsModal.vue (.btn)
  *   - src/views/admin/Users.vue (.btn, .btn-sm, .btn-ghost, .link-btn)
+ *   - src/components/admin/users/UserAlias.vue (.btn, .btn-primary, .link-btn)
  *   - src/components/admin/users/UserBalanceModal.vue (.btn, .btn-primary)
  *   - src/components/admin/users/UserPasswordModal.vue (.btn, .btn-primary)
  *   - src/components/admin/users/UserRoleModal.vue (.btn, .btn-primary)

@@ -4,10 +4,10 @@
       <div>
         <h1 class="page-title">用户管理</h1>
         <p v-if="isAdmin" class="page-desc">
-          点击用户名查看密钥、余额流水和调用记录；按最近调用排序可找出长期不用的账号，勾选后可批量移到不活跃或设置标签。
+          点击用户名查看密钥、余额流水和调用记录，点铅笔可设置用户别名；按最近调用排序可找出长期不用的账号，勾选后可批量移到不活跃或设置标签。
         </p>
         <p v-else class="page-desc">
-          这里列出由你负责的用户，你可以为他们充值或扣款，点击用户名查看余额流水和调用记录。
+          这里列出由你负责的用户，你可以为他们充值或扣款。点击用户名查看余额流水和调用记录，点铅笔可设置用户别名。
         </p>
       </div>
     </div>
@@ -31,7 +31,7 @@
           </div>
           <SearchInput
             v-model="q"
-            :placeholder="isAdmin ? '搜索用户名、邮箱或标签，回车确认' : '搜索用户名或邮箱，回车确认'"
+            :placeholder="isAdmin ? '搜索用户名、别名、邮箱或标签，回车确认' : '搜索用户名、别名或邮箱，回车确认'"
             label="搜索用户"
             style="width: 300px"
             @search="users.load(1)"
@@ -87,28 +87,32 @@
                 />
               </td>
               <td class="nowrap">
-                <div class="row" style="gap: 6px">
-                  <button
-                    type="button"
-                    class="link-btn cell-main user-link"
-                    :aria-label="`查看 ${u.username} 的详情`"
-                    @click="openDetail(u)"
-                  >
-                    {{ u.username }}
-                  </button>
-                  <StatusBadge v-if="u.role !== Role.USER" class="plain" :map="ROLES" :value="u.role" />
-                  <span
-                    v-if="isAdmin && u.tag"
-                    class="badge plain"
-                    :title="u.role === Role.MANAGER ? '负责的标签' : '所属标签'"
-                  >
-                    <Icon name="tag" :size="12" />{{ u.tag }}
-                  </span>
-                  <StatusBadge v-if="u.status !== UserStatus.ACTIVE" :map="USER_STATUSES" :value="u.status" />
-                </div>
-                <div class="cell-sub">
-                  #{{ u.id }} · {{ u.email || '未填写邮箱' }} ·
-                  <button type="button" class="link-btn" @click="openDetail(u)">{{ u.key_count }} 个密钥</button>
+                <div class="stack" style="gap: 6px">
+                  <div class="row">
+                    <button
+                      type="button"
+                      class="link-btn cell-main user-link"
+                      :aria-label="`查看 ${u.username} 的详情`"
+                      @click="openDetail(u)"
+                    >
+                      {{ u.username }}
+                    </button>
+                    <RoleIcon v-if="u.role !== Role.USER" :role="u.role" />
+                    <UserAlias :user="u" @saved="users.load()" />
+                    <span
+                      v-if="isAdmin && u.tag"
+                      class="badge plain"
+                      :title="u.role === Role.MANAGER ? '负责的标签' : '所属标签'"
+                    >
+                      <Icon name="tag" :size="12" />{{ u.tag }}
+                    </span>
+                    <StatusBadge v-if="u.status !== UserStatus.ACTIVE" :map="USER_STATUSES" :value="u.status" />
+                  </div>
+                  <div class="row cell-sub user-meta">
+                    <span class="num">#{{ u.id }}</span>
+                    <span>{{ u.email || '未填写邮箱' }}</span>
+                    <button type="button" class="link-btn" @click="openDetail(u)">{{ u.key_count }} 个密钥</button>
+                  </div>
                 </div>
               </td>
               <td class="right num nowrap" :class="{ 'text-danger': u.balance <= 0 }">
@@ -180,6 +184,8 @@ import Pagination from '@/components/base/Pagination.vue'
 import SearchInput from '@/components/base/SearchInput.vue'
 import SortButton from '@/components/base/SortButton.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
+import RoleIcon from '@/components/admin/users/RoleIcon.vue'
+import UserAlias from '@/components/admin/users/UserAlias.vue'
 import UserBalanceModal from '@/components/admin/users/UserBalanceModal.vue'
 import UserDetailModal from '@/components/admin/users/UserDetailModal.vue'
 import UserPasswordModal from '@/components/admin/users/UserPasswordModal.vue'
@@ -188,7 +194,7 @@ import UserTagModal from '@/components/admin/users/UserTagModal.vue'
 import { accountsApi } from '@/api/accounts'
 import { usePagedList } from '@/composables/usePagedList'
 import { usePopover } from '@/composables/usePopover'
-import { ROLES, Role, USER_STATUSES, UserStatus } from '@/constants'
+import { Role, USER_STATUSES, UserStatus } from '@/constants'
 import { store } from '@/store'
 import { date, dateTime, money, relative } from '@/utils/format'
 import { toast } from '@/toast'
@@ -340,6 +346,10 @@ onMounted(() => users.load(1))
 }
 .user-link:hover {
   color: var(--accent);
+}
+.user-meta > * + * {
+  padding-left: 8px;
+  border-left: 1px solid var(--border-strong);
 }
 .select-col {
   width: 1%;

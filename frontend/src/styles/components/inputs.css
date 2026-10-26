@@ -19,6 +19,7 @@
  *   - src/components/base/SearchInput.vue (.input, .input-sm, .input-group, .input-prefix)
  *   - src/components/base/SuggestInput.vue (.input, .input-group, .input-addon)
  *   - src/components/base/SelectMenu.vue (.select 触发按钮)
+ *   - src/components/admin/users/UserAlias.vue (.field, .field-hint, .input)
  *   - src/components/admin/users/UserBalanceModal.vue (.field, .field-label, .field-hint, .input, .input-group, .input-prefix)
  *   - src/components/admin/users/UserPasswordModal.vue (.field, .field-hint)
  *   - src/components/admin/users/UserRoleModal.vue (.field, .field-label, .field-hint)
