@@ -8,7 +8,7 @@
       <div class="auth-hero">
         <span class="auth-eyebrow"><Icon name="zap" :size="14" />订阅额度的备用电源</span>
         <h2>你的 <span class="auth-highlight">AI 充电宝</span></h2>
-        <p>订阅触发 5 小时限制？接上 API，马上接着用。</p>
+        <p>订阅限额又降智？接上 API，满血接着用。</p>
         <AuthArt class="auth-art" />
         <ul class="auth-points">
           <li v-for="point in points" :key="point.title">
@@ -44,7 +44,7 @@ const siteName = computed(() => store.status?.site_name || 'API 控制台')
 const year = new Date().getFullYear()
 
 const points = [
-  { icon: 'clock', title: '不用干等', desc: '额度用完，立刻续航' },
+  { icon: 'zap', title: '随时满血', desc: '不用等，不降智' },
   { icon: 'coins', title: '官方同价', desc: '充 1 元当 1 美元用' },
   { icon: 'wallet', title: '余额不过期', desc: '用多少扣多少' },
 ]
