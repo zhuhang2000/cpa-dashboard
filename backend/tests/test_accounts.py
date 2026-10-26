@@ -164,14 +164,14 @@ def test_tags_make_users_members_or_managers_of_a_group(account_db):
         row = accounts.get(conn, user["id"])
         return row["role"], row["tag"]
 
-    accounts.set_tags(conn, [user["id"]], "Team A")
+    accounts.set_tags(conn, [user["id"]], "Team A", manager=False)
     assert state() == (Role.USER, "Team A")
     accounts.set_tags(conn, [user["id"]], "Team A", manager=True)
     assert state() == (Role.MANAGER, "Team A")
     # Back as a member, a former manager joins the group it is given, or none.
-    accounts.set_tags(conn, [user["id"]], "Team B")
+    accounts.set_tags(conn, [user["id"]], "Team B", manager=False)
     assert state() == (Role.USER, "Team B")
-    accounts.set_tags(conn, [user["id"]], None)
+    accounts.set_tags(conn, [user["id"]], None, manager=False)
     assert state() == (Role.USER, None)
 
 
@@ -183,8 +183,8 @@ def test_managers_reach_only_the_regular_users_sharing_their_tag(account_db):
     carol = add_user(conn, "carol")
     keeper = add_user(conn, "keeper", role=Role.MANAGER, tag="VIP")
     peer = add_user(conn, "peer", role=Role.MANAGER, tag="VIP")
-    accounts.set_tags(conn, [alice["id"], carol["id"]], "VIP")
-    accounts.set_tags(conn, [bob["id"]], "Other")
+    accounts.set_tags(conn, [alice["id"], carol["id"]], "VIP", manager=False)
+    accounts.set_tags(conn, [bob["id"]], "Other", manager=False)
     accounts.set_archived(conn, [carol["id"]], True)
 
     def listed(operator, q="", archived=False):
@@ -220,7 +220,7 @@ def test_batch_tags_skip_the_system_administrator_and_are_counted(account_db):
     untouched = accounts.get(conn, admin["id"])
     assert (untouched["role"], untouched["tag"]) == (Role.ADMIN, None)
 
-    assert accounts.set_tags(conn, ids, "VIP") == 2
+    assert accounts.set_tags(conn, ids, "VIP", manager=False) == 2
     assert [dict(row) for row in accounts.list_tags(conn)] == [
         {"tag": "VIP", "users": 2, "managers": 1}
     ]
@@ -229,7 +229,7 @@ def test_batch_tags_skip_the_system_administrator_and_are_counted(account_db):
     assert [dict(row) for row in accounts.list_tags(conn)] == [
         {"tag": "VIP", "users": 1, "managers": 2}
     ]
-    assert accounts.set_tags(conn, ids[1:], None) == 1
+    assert accounts.set_tags(conn, ids[1:], None, manager=False) == 1
     assert accounts.get(conn, ids[1])["tag"] is None
 
 

@@ -71,10 +71,8 @@ def authenticate_session(conn, token, session_days):
 
 
 def reset_password(conn, user_id, password):
-    """Set a new password and revoke every session (administrator reset and CLI).
-
-    The admin page and the CLI check the password before calling.
-    """
+    """Set a new password and revoke every session (administrator reset and CLI)."""
+    validate_password(password)
     with transaction(conn):
         conn.execute(
             "UPDATE users SET password_hash = ? WHERE id = ?", (hash_password(password), user_id)
@@ -224,14 +222,7 @@ def get_managed(conn, operator, user_id):
 
 
 def search(conn, operator, q, limit, offset, archived=False, sort="created", desc=True):
-    """List the accounts operator administers; q matches usernames, emails and aliases.
-
-    Archiving and tags are the system administrator's bookkeeping: only its list is split
-    by archiving and searchable by tag. A manager sees its users either way and is never
-    told its tag's name, not even through what a search for it would match.
-    Rows carry last_used_at, the latest call made with any of the user's keys. Missing
-    times sort as the oldest, so never-used accounts lead an ascending order.
-    """
+    """List the accounts operator administers; q matches usernames, emails and aliases."""
     where, args = _managed_scope(operator)
     columns = ["u.username", "u.email", "u.alias"]
     if operator["role"] == Role.ADMIN:
@@ -259,12 +250,10 @@ def set_archived(conn, user_ids, archived):
     ).rowcount
 
 
-def set_tags(conn, user_ids, tag, manager=False):
-    """Put users into a tag group as members, or as managers serving it; a None tag takes
-    members out of any group. The values come tidied by the admin page.
+def set_tags(conn, user_ids, tag, manager):
+    """Put users into a tag group as members, or as managers serving it.
 
-    The system administrator belongs to no group and is skipped, like unknown ids; returns how
-    many users were updated.
+    A None tag takes members out of any group, while a manager always needs the group it serves.
     """
     return conn.execute(
         "UPDATE users SET role = ?, tag = ? WHERE role != ? AND id IN (%s)"

@@ -67,9 +67,7 @@ def cmd_reset_password(runtime, username, password=None):
         row = accounts.find_by_username(conn, username)
         if row is None:
             sys.exit("用户不存在: %s" % username)
-        password = password or _ask_password()
-        accounts.validate_password(password)
-        accounts.reset_password(conn, row["id"], password)
+        accounts.reset_password(conn, row["id"], password or _ask_password())
     except ApiError as exc:
         sys.exit(exc.message)
     finally:
