@@ -58,7 +58,7 @@
 }
 .auth-hero {
   width: 100%;
-  max-width: 540px;
+  max-width: 620px;
   margin: 0 auto;
 }
 .auth-eyebrow {
@@ -96,7 +96,7 @@
   display: block;
   width: 100%;
   height: auto;
-  max-height: 40vh;
+  max-height: 58vh;
   margin-top: 28px;
   /* The viewBox hugs the phone and power bank so they line up with the text; the glows and shadows spill past it. */
   overflow: visible;
