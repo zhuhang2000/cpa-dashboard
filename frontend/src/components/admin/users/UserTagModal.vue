@@ -25,8 +25,8 @@
     </form>
     <template #footer>
       <button class="btn" :disabled="saving" @click="close">取消</button>
-      <button class="btn btn-primary" form="tag-form" :disabled="saving">
-        {{ tagName.trim() || manager ? '确认设置' : '清除标签' }}
+      <button class="btn btn-primary" form="tag-form" :disabled="saving || (manager && !tag)">
+        {{ tag || manager ? '确认设置' : '清除标签' }}
       </button>
     </template>
   </Modal>
@@ -49,24 +49,31 @@ const manager = ref(false)
 const tags = ref([])
 const saving = ref(false)
 
+// The server stores the tag as sent: spaces are tidied here, and a group already in use keeps
+// its spelling whatever the case typed.
+const tag = computed(() => {
+  const typed = tagName.value.replace(/\s+/g, ' ').trim()
+  return tags.value.find((t) => t.tag.toLowerCase() === typed.toLowerCase())?.tag || typed
+})
 const options = computed(() =>
   tags.value.map((t) => ({ value: t.tag, hint: `${t.users} 位用户 · ${t.managers} 位管理员` })),
 )
 const hint = computed(() => {
-  if (manager.value) return '只能进入用户管理，查看该标签下的普通用户，并为他们充值或扣款。'
-  const effect = tagName.value.trim() ? '加入该标签，由负责它的管理员查看和充值' : '留空将清除这些用户的标签'
+  if (manager.value) {
+    return tag.value ? '只能进入用户管理，查看该标签下的普通用户，并为他们充值或扣款。' : '请填写管理员负责的标签。'
+  }
+  const effect = tag.value ? '加入该标签，由负责它的管理员查看和充值' : '留空将清除这些用户的标签'
   return `${effect}；已是管理员的会改回普通用户。`
 })
 
 async function saveTags() {
   if (saving.value) return
-  const tag = tagName.value.trim()
-  if (manager.value && !tag) return toast.error('请填写管理员负责的标签')
   saving.value = true
   try {
-    const { updated } = await accountsApi.adminTagUsers({ ids: props.ids, tag, manager: manager.value })
-    if (manager.value) toast.success(`已将 ${updated} 位用户设为“${tag}”的管理员`)
-    else toast.success(tag ? `已为 ${updated} 位用户设置标签` : `已清除 ${updated} 位用户的标签`)
+    const body = { ids: props.ids, tag: tag.value || null, manager: manager.value }
+    const { updated } = await accountsApi.adminTagUsers(body)
+    if (manager.value) toast.success(`已将 ${updated} 位用户设为“${tag.value}”的管理员`)
+    else toast.success(tag.value ? `已为 ${updated} 位用户设置标签` : `已清除 ${updated} 位用户的标签`)
     emit('saved')
     emit('close')
   } catch (e) {

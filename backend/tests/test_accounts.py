@@ -178,27 +178,20 @@ def test_status_changes_are_validated_and_keep_the_role(account_db):
 def test_tags_make_users_members_or_managers_of_a_group(account_db):
     conn = account_db
     user = add_user(conn, "alice")
-    accounts.set_tags(conn, [user["id"]], "  Team   A ")
-    assert accounts.get(conn, user["id"])["tag"] == "Team A"
 
-    with pytest.raises(ApiError, match="负责的标签"):
-        accounts.set_tags(conn, [user["id"]], " ", manager=True)
-    with pytest.raises(ApiError, match="最多 20 个字符"):
-        accounts.set_tags(conn, [user["id"]], "x" * 21, manager=True)
-    with pytest.raises(ApiError, match="身份不正确"):
-        accounts.set_tags(conn, [user["id"]], "Team A", manager="yes")
-    assert accounts.get(conn, user["id"])["role"] == Role.USER
+    def state():
+        row = accounts.get(conn, user["id"])
+        return row["role"], row["tag"]
 
-    # The existing spelling of a group wins, for managers as for members.
-    accounts.set_tags(conn, [user["id"]], "team a", manager=True)
-    manager = accounts.get(conn, user["id"])
-    assert (manager["role"], manager["tag"]) == (Role.MANAGER, "Team A")
+    accounts.set_tags(conn, [user["id"]], "Team A")
+    assert state() == (Role.USER, "Team A")
+    accounts.set_tags(conn, [user["id"]], "Team A", manager=True)
+    assert state() == (Role.MANAGER, "Team A")
     # Back as a member, a former manager joins the group it is given, or none.
     accounts.set_tags(conn, [user["id"]], "Team B")
-    member = accounts.get(conn, user["id"])
-    assert (member["role"], member["tag"]) == (Role.USER, "Team B")
-    accounts.set_tags(conn, [user["id"]], "")
-    assert accounts.get(conn, user["id"])["tag"] is None
+    assert state() == (Role.USER, "Team B")
+    accounts.set_tags(conn, [user["id"]], None)
+    assert state() == (Role.USER, None)
 
 
 def test_managers_reach_only_the_regular_users_sharing_their_tag(account_db):
@@ -209,7 +202,7 @@ def test_managers_reach_only_the_regular_users_sharing_their_tag(account_db):
     carol = add_user(conn, "carol")
     keeper = add_user(conn, "keeper", role=Role.MANAGER, tag="VIP")
     peer = add_user(conn, "peer", role=Role.MANAGER, tag="VIP")
-    accounts.set_tags(conn, [alice["id"], carol["id"]], "vip")
+    accounts.set_tags(conn, [alice["id"], carol["id"]], "VIP")
     accounts.set_tags(conn, [bob["id"]], "Other")
     accounts.set_archived(conn, [carol["id"]], True)
 
@@ -235,19 +228,18 @@ def test_managers_reach_only_the_regular_users_sharing_their_tag(account_db):
         accounts.get_managed(conn, member, alice["id"])
 
 
-def test_batch_tags_refuse_the_system_administrator_and_are_counted(account_db):
+def test_batch_tags_skip_the_system_administrator_and_are_counted(account_db):
     conn = account_db
     admin = add_user(conn, "root", role=Role.ADMIN)
     ids = [add_user(conn, name)["id"] for name in ("alice", "bob")]
     keeper = add_user(conn, "keeper", role=Role.MANAGER, tag="VIP")
 
-    with pytest.raises(ApiError, match="请选择"):
-        accounts.set_tags(conn, [], "VIP")
-    with pytest.raises(ApiError, match="超级管理员不能设置标签"):
-        accounts.set_tags(conn, ids + [admin["id"]], "VIP")
-    assert [accounts.get(conn, user_id)["tag"] for user_id in ids] == [None, None]
+    # The system administrator is passed over like an unknown id and keeps its role.
+    assert accounts.set_tags(conn, ids + [admin["id"], 9999], "VIP", manager=True) == 2
+    untouched = accounts.get(conn, admin["id"])
+    assert (untouched["role"], untouched["tag"]) == (Role.ADMIN, None)
 
-    assert accounts.set_tags(conn, ids + [9999], "vip") == 2
+    assert accounts.set_tags(conn, ids, "VIP") == 2
     assert [dict(row) for row in accounts.list_tags(conn)] == [
         {"tag": "VIP", "users": 2, "managers": 1}
     ]
@@ -256,7 +248,7 @@ def test_batch_tags_refuse_the_system_administrator_and_are_counted(account_db):
     assert [dict(row) for row in accounts.list_tags(conn)] == [
         {"tag": "VIP", "users": 1, "managers": 2}
     ]
-    assert accounts.set_tags(conn, ids[1:], "") == 1
+    assert accounts.set_tags(conn, ids[1:], None) == 1
     assert accounts.get(conn, ids[1])["tag"] is None
 
 
@@ -270,21 +262,20 @@ def test_aliases_name_managed_accounts_and_find_them(account_db):
     def listed(operator, q):
         return [row["username"] for row in accounts.search(conn, operator, q, 20, 0)[1]]
 
-    assert accounts.set_alias(conn, admin, alice["id"], "  张三   计科 ")["alias"] == "张三 计科"
-    assert accounts.set_alias(conn, admin, admin["id"], "站长")["alias"] == "站长"
-    with pytest.raises(ApiError, match="别名最多"):
-        accounts.set_alias(conn, admin, bob["id"], "x" * 21)
-    assert accounts.get(conn, bob["id"])["alias"] is None
+    accounts.set_alias(conn, admin, alice["id"], "张三 计科")
+    accounts.set_alias(conn, admin, admin["id"], "站长")
+    aliases = [accounts.get(conn, row["id"])["alias"] for row in (alice, admin, bob)]
+    assert aliases == ["张三 计科", "站长", None]
     assert listed(admin, "张三") == listed(keeper, "张三") == ["alice"]
 
     # A manager names only the users it serves, and the whole staff shares that name.
-    assert accounts.set_alias(conn, keeper, alice["id"], "小张")["alias"] == "小张"
+    accounts.set_alias(conn, keeper, alice["id"], "小张")
     for other in (bob, admin, keeper):
         with pytest.raises(ApiError) as exc:
             accounts.set_alias(conn, keeper, other["id"], "x")
         assert exc.value.status == 404
     assert listed(admin, "小张") == ["alice"]
-    assert accounts.set_alias(conn, admin, alice["id"], " ")["alias"] is None
+    accounts.set_alias(conn, admin, alice["id"], None)
     assert listed(admin, "小张") == []
 
 

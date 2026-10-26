@@ -152,7 +152,7 @@ def admin_archive_users(
 def admin_tag_users(
     admin=Depends(require_admin), data: dict = Depends(json_body), conn=Depends(get_connection)
 ):
-    updated = accounts.set_tags(conn, data.get("ids"), data.get("tag"), data.get("manager", False))
+    updated = accounts.set_tags(conn, data.get("ids"), data.get("tag"), data.get("manager"))
     return {"updated": updated}
 
 
@@ -187,8 +187,8 @@ def admin_set_user_alias(
     data: dict = Depends(json_body),
     conn=Depends(get_connection),
 ):
-    row = accounts.set_alias(conn, staff, user_id, data.get("alias"))
-    return {"alias": row["alias"] or ""}
+    accounts.set_alias(conn, staff, user_id, data.get("alias"))
+    return {"ok": True}
 
 
 @router.post("/api/admin/users/{user_id:int}/password")

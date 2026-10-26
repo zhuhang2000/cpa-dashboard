@@ -40,7 +40,7 @@
     <template #footer>
       <button class="btn" :disabled="saving" @click="close">取消</button>
       <button class="btn btn-primary" :form="`${uid}-form`" :disabled="saving || unchanged">
-        {{ alias.trim() || !user.alias ? '确认设置' : '清除别名' }}
+        {{ cleaned || !user.alias ? '确认设置' : '清除别名' }}
       </button>
     </template>
   </Modal>
@@ -61,7 +61,9 @@ const uid = useId() // every row has one, so the form needs its own ids
 const editing = ref(false)
 const alias = ref('')
 const saving = ref(false)
-const unchanged = computed(() => alias.value.trim() === props.user.alias)
+// Spaces are tidied here; the server stores the alias as sent.
+const cleaned = computed(() => alias.value.replace(/\s+/g, ' ').trim())
+const unchanged = computed(() => cleaned.value === props.user.alias)
 
 // Each opening starts from the alias as listed, not from what was typed last time.
 function open() {
@@ -73,9 +75,12 @@ async function save() {
   if (saving.value || unchanged.value) return
   saving.value = true
   try {
-    // The server tidies the spacing, so the message shows the alias as saved.
-    const saved = (await accountsApi.adminSetUserAlias(props.user.id, { alias: alias.value })).alias
-    toast.success(saved ? `已将 ${props.user.username} 的别名设为“${saved}”` : `已清除 ${props.user.username} 的别名`)
+    await accountsApi.adminSetUserAlias(props.user.id, { alias: cleaned.value || null })
+    toast.success(
+      cleaned.value
+        ? `已将 ${props.user.username} 的别名设为“${cleaned.value}”`
+        : `已清除 ${props.user.username} 的别名`,
+    )
     editing.value = false
     emit('saved')
   } catch (e) {

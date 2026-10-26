@@ -114,7 +114,7 @@ def test_manager_credits_its_members_but_cannot_gift(client, team):
 def test_manager_aliases_its_members_for_all_staff_but_not_the_user(client, team):
     login(client, "keeper")
     path = f"/api/admin/users/{team['alice']}/alias"
-    assert client.put(path, json={"alias": " 张三 "}).json() == {"alias": "张三"}
+    assert client.put(path, json={"alias": "张三"}).json() == {"ok": True}
     for other in ("keeper", "peer", "root", "bob"):
         response = client.put(f"/api/admin/users/{team[other]}/alias", json={"alias": "x"})
         assert response.status_code == 404, other
@@ -124,7 +124,9 @@ def test_manager_aliases_its_members_for_all_staff_but_not_the_user(client, team
     login(client, "root")
     listed = client.get("/api/admin/users", params={"q": "张三"}).json()["items"]
     assert [(item["username"], item["alias"]) for item in listed] == [("alice", "张三")]
-    assert client.put(path, json={"alias": ""}).json() == {"alias": ""}
+    assert client.put(path, json={"alias": None}).json() == {"ok": True}
+    cleared = client.get("/api/admin/users", params={"q": "alice"}).json()["items"]
+    assert cleared[0]["alias"] == ""
 
     me = login(client, "alice")
     assert "alias" not in me and "alias" not in client.get("/api/user/me").json()["user"]
@@ -134,14 +136,8 @@ def test_manager_aliases_its_members_for_all_staff_but_not_the_user(client, team
 def test_scope_follows_the_tags_the_administrator_sets(client, team):
     login(client, "root")
     path = "/api/admin/users/tag"
-    for body, error in (
-        ({"ids": [team["bob"]], "tag": "", "manager": True}, "请填写管理员负责的标签"),
-        ({"ids": [team["root"]], "tag": "VIP"}, "超级管理员不能设置标签"),
-    ):
-        response = client.post(path, json=body)
-        assert response.status_code == 400
-        assert response.json() == {"error": error}
-    promoted = client.post(path, json={"ids": [team["bob"]], "tag": "vip", "manager": True})
+    assert client.post(path, json={"ids": [team["root"]], "tag": "VIP"}).json() == {"updated": 0}
+    promoted = client.post(path, json={"ids": [team["bob"]], "tag": "VIP", "manager": True})
     assert promoted.json() == {"updated": 1}
     listed = client.get("/api/admin/users", params={"q": "bob"}).json()["items"]
     assert (listed[0]["role"], listed[0]["tag"]) == (Role.MANAGER, "VIP")
@@ -150,7 +146,7 @@ def test_scope_follows_the_tags_the_administrator_sets(client, team):
     }
     moved = client.post(path, json={"ids": [team["alice"]], "tag": "Other"})
     assert moved.json() == {"updated": 1}
-    client.post(path, json={"ids": [team["peer"]], "tag": ""})
+    client.post(path, json={"ids": [team["peer"]], "tag": None})
 
     login(client, "keeper")
     assert client.get("/api/admin/users").json()["items"] == []

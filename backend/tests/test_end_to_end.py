@@ -217,7 +217,7 @@ def run_portal_scenario(admin, user, bootstrap_admin, append_usage, payment_key=
         route="/api/admin/users/{user_id}/alias",
         json={"alias": "场景用户"},
     )
-    assert aliased == {"alias": "场景用户"}
+    assert aliased == {"ok": True}
     users, _ = call(admin, "GET", "/api/admin/users", params={"q": "场景"})
     assert [item["id"] for item in users["items"]] == [user_id]
     extra, _ = call(user, "POST", "/api/keys", json={"name": "unused-admin-cleanup"})

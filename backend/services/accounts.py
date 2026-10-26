@@ -10,8 +10,6 @@ from core.security import hash_password, new_session_token, sha256_hex, verify_p
 
 DAY_MS = 86400000
 MAX_BATCH_USERS = 100  # the largest user list page
-TAG_MAX_LENGTH = 20
-ALIAS_MAX_LENGTH = 20
 USER_SORTS = {
     "created": "u.id",
     "last_used": "last_used_at",
@@ -272,40 +270,18 @@ def set_archived(conn, user_ids, archived):
     ).rowcount
 
 
-def _clean_tag(conn, tag):
-    """Collapse spaces and reuse an existing spelling so a group shows one name; '' is None."""
-    text = " ".join(str(tag or "").split())
-    if len(text) > TAG_MAX_LENGTH:
-        raise ApiError(400, "标签最多 %d 个字符" % TAG_MAX_LENGTH)
-    if not text:
-        return None
-    row = conn.execute("SELECT tag FROM users WHERE tag = ? LIMIT 1", (text,)).fetchone()
-    return row["tag"] if row else text
-
-
 def set_tags(conn, user_ids, tag, manager=False):
-    """Put users into a tag group as members, or as managers serving it.
+    """Put users into a tag group as members, or as managers serving it; a None tag takes
+    members out of any group. The values come tidied by the admin page.
 
-    An empty tag takes members out of any group, while a manager always needs the group it
-    serves. The system administrator belongs to no group, so naming it refuses the whole
-    batch. Owns its transaction and returns how many users were updated.
+    The system administrator belongs to no group and is skipped, like unknown ids; returns how
+    many users were updated.
     """
-    if not isinstance(manager, bool):
-        raise ApiError(400, "身份不正确")
-    _check_batch(user_ids)
-    tag = _clean_tag(conn, tag)
-    if manager and tag is None:
-        raise ApiError(400, "请填写管理员负责的标签")
-    marks = ", ".join("?" * len(user_ids))
-    with transaction(conn):
-        if conn.execute(
-            "SELECT 1 FROM users WHERE role = ? AND id IN (%s)" % marks, [Role.ADMIN] + user_ids
-        ).fetchone():
-            raise ApiError(400, "超级管理员不能设置标签")
-        return conn.execute(
-            "UPDATE users SET role = ?, tag = ? WHERE id IN (%s)" % marks,
-            [Role.MANAGER if manager else Role.USER, tag] + user_ids,
-        ).rowcount
+    return conn.execute(
+        "UPDATE users SET role = ?, tag = ? WHERE role != ? AND id IN (%s)"
+        % ", ".join("?" * len(user_ids)),
+        [Role.MANAGER if manager else Role.USER, tag, Role.ADMIN] + user_ids,
+    ).rowcount
 
 
 def list_tags(conn):
@@ -332,16 +308,12 @@ def set_status(conn, user_id, status, operator_id):
 
 
 def set_alias(conn, operator, user_id, alias):
-    """Name an account operator administers so staff can recognize it; '' clears the name.
+    """Name an account operator administers so staff can recognize it; None clears the name.
 
     All staff share one alias per account, and its owner never sees it.
     """
     row = get_managed(conn, operator, user_id)
-    text = " ".join(str(alias or "").split())
-    if len(text) > ALIAS_MAX_LENGTH:
-        raise ApiError(400, "别名最多 %d 个字符" % ALIAS_MAX_LENGTH)
-    conn.execute("UPDATE users SET alias = ? WHERE id = ?", (text or None, row["id"]))
-    return get(conn, row["id"])
+    conn.execute("UPDATE users SET alias = ? WHERE id = ?", (alias, row["id"]))
 
 
 def admin_reset_password(conn, user_id, data, operator_id):
