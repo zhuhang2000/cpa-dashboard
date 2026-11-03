@@ -47,7 +47,7 @@
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Icon from '@/components/base/Icon.vue'
-import { store } from '@/stores'
+import { siteStore, sessionStore } from '@/stores'
 
 // The guide opens by itself on the overview page until this browser has seen it once. Closing it flies it
 // into this top-bar button, and from then on only the button opens it.
@@ -68,7 +68,7 @@ const router = useRouter()
 // and puts the bubble on its preferred `side` when there is room, else the first side that has it.
 const steps = computed(() => [
   {
-    title: `欢迎来到 ${store.status?.site_name || 'API 控制台'} 👋`,
+    title: `欢迎来到 ${siteStore.siteName} 👋`,
     body: '只需三步即可开始调用：充值、创建密钥、配置 Codex。花 30 秒带你认识一下控制台。',
   },
   {
@@ -76,14 +76,14 @@ const steps = computed(() => [
     title: '第一步：充值',
     body:
       '调用按实际用量从余额扣费，余额为 0 时密钥无法调用。本站价格与官方一致，充 1 元当 1 美元花。' +
-      (store.status?.payment?.online ? '点「充值」可用兑换码或在线支付。' : '点「充值」可用兑换码充值。'),
+      (siteStore.status?.payment?.online ? '点「充值」可用兑换码或在线支付。' : '点「充值」可用兑换码充值。'),
   },
   {
     target: 'key',
     title: '第二步：创建 API 密钥',
     body:
       '密钥是你调用接口的凭证，等同于账户余额，请勿泄露或提交到公开仓库。' +
-      (store.keyCount ? '你已经有密钥了，点「管理密钥」可以查看和复制。' : '点「创建密钥」生成第一个。'),
+      (sessionStore.keyCount ? '你已经有密钥了，点「管理密钥」可以查看和复制。' : '点「创建密钥」生成第一个。'),
   },
   {
     target: 'connect',

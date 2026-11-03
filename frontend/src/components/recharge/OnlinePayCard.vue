@@ -75,7 +75,7 @@ import { PAY_CHANNELS } from '@/constants'
 import { currency, money } from '@/utils/format'
 import { toast } from '@/toast'
 
-// store.status.payment: online, channels, presets, min_amount, max_amount, credit_ratio.
+// siteStore.status.payment: online, channels, presets, min_amount, max_amount, credit_ratio.
 const props = defineProps({
   payment: { type: Object, required: true },
 })

@@ -13,22 +13,22 @@
         <div class="card-body">
           <dl class="kv" style="margin: 0 0 20px">
             <dt>用户名</dt>
-            <dd>{{ store.user?.username }}</dd>
+            <dd>{{ sessionStore.user?.username }}</dd>
             <dt>账号类型</dt>
             <dd>
-              <StatusBadge class="plain" :map="ROLES" :value="store.user?.role" />
+              <StatusBadge class="plain" :map="ROLES" :value="sessionStore.role" />
             </dd>
             <dt>注册时间</dt>
-            <dd>{{ dateTime(store.user?.created_at) }}</dd>
+            <dd>{{ dateTime(sessionStore.user?.created_at) }}</dd>
             <dt>账户余额</dt>
-            <dd class="num">{{ money(store.user?.balance || 0) }}</dd>
+            <dd class="num">{{ money(sessionStore.user?.balance || 0) }}</dd>
           </dl>
           <form @submit.prevent="saveProfile">
             <div class="field">
               <label for="email">邮箱</label>
               <input id="email" v-model.trim="email" class="input" type="email" placeholder="用于登录，可留空" />
             </div>
-            <button class="btn btn-primary" :disabled="savingProfile || email === (store.user?.email || '')">
+            <button class="btn btn-primary" :disabled="savingProfile || email === (sessionStore.user?.email || '')">
               保存资料
             </button>
           </form>
@@ -82,12 +82,12 @@ import Icon from '@/components/base/Icon.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import { accountsApi } from '@/api/accounts'
 import { ROLES } from '@/constants'
-import { logout, setUser, store } from '@/stores'
+import { logout, setUser, sessionStore } from '@/stores'
 import { dateTime, money } from '@/utils/format'
 import { toast } from '@/toast'
 
 const router = useRouter()
-const email = ref(store.user?.email || '')
+const email = ref(sessionStore.user?.email || '')
 const savingProfile = ref(false)
 const savingPassword = ref(false)
 const pw = reactive({ old: '', next: '', confirm: '' })

@@ -13,7 +13,7 @@
       </div>
     </div>
 
-    <div v-if="(store.user?.balance ?? 1) <= 0" class="alert alert-warning">
+    <div v-if="(sessionStore.user?.balance ?? 1) <= 0" class="alert alert-warning">
       <Icon name="alert" :size="16" />
       <div class="alert-body">
         账户余额不足，所有密钥已暂停调用。<RouterLink to="/recharge">立即充值</RouterLink> 后会在几秒内自动恢复。
@@ -184,14 +184,14 @@ import Modal from '@/components/base/Modal.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import { keysApi } from '@/api/api_keys'
 import { KEY_STATES, KeyStatus } from '@/constants'
-import { refreshUser, store } from '@/stores'
+import { refreshUser, siteStore, sessionStore } from '@/stores'
 import { currency, date, dateTime, fromInputDate, money, num, relative, toInputDate } from '@/utils/format'
 import { toast } from '@/toast'
 
 const route = useRoute()
 const router = useRouter()
 const items = ref([])
-const maxKeys = ref(store.status.max_keys_per_user)
+const maxKeys = ref(siteStore.status.max_keys_per_user)
 const loading = ref(false)
 const saving = ref(false)
 const formOpen = ref(false)
@@ -214,7 +214,7 @@ async function load() {
     const data = await keysApi.listKeys()
     items.value = data.items
     maxKeys.value = data.max_keys
-    store.keyCount = data.items.length
+    sessionStore.keyCount = data.items.length
   } catch (e) {
     toast.error(e.message)
   } finally {

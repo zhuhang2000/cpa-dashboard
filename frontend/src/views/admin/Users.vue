@@ -3,7 +3,7 @@
     <div class="page-header">
       <div>
         <h1 class="page-title">用户管理</h1>
-        <p v-if="isAdmin" class="page-desc">
+        <p v-if="sessionStore.isAdmin" class="page-desc">
           点击用户名查看密钥、余额流水和调用记录，点铅笔可设置用户别名；按最近调用排序可找出长期不用的账号，勾选后可批量移到不活跃，或设置标签、任命标签管理员。
         </p>
         <p v-else class="page-desc">
@@ -14,7 +14,7 @@
 
     <div class="card">
       <div class="card-header">
-        <div v-if="isAdmin" class="tabs">
+        <div v-if="sessionStore.isAdmin" class="tabs">
           <button class="tab" :class="{ active: !archived }" @click="setArchived(false)">用户列表</button>
           <button class="tab" :class="{ active: archived }" @click="setArchived(true)">不活跃用户</button>
         </div>
@@ -31,7 +31,9 @@
           </div>
           <SearchInput
             v-model="q"
-            :placeholder="isAdmin ? '搜索用户名、别名、邮箱或标签，回车确认' : '搜索用户名、别名或邮箱，回车确认'"
+            :placeholder="
+              sessionStore.isAdmin ? '搜索用户名、别名、邮箱或标签，回车确认' : '搜索用户名、别名或邮箱，回车确认'
+            "
             label="搜索用户"
             style="width: 300px"
             @search="users.load(1)"
@@ -51,7 +53,7 @@
         <table class="table">
           <thead>
             <tr>
-              <th v-if="isAdmin" class="select-col">
+              <th v-if="sessionStore.isAdmin" class="select-col">
                 <input
                   type="checkbox"
                   :checked="allSelected"
@@ -77,7 +79,7 @@
           </thead>
           <tbody>
             <tr v-for="u in users.items" :key="u.id">
-              <td v-if="isAdmin" class="select-col">
+              <td v-if="sessionStore.isAdmin" class="select-col">
                 <input
                   v-if="u.role !== Role.ADMIN"
                   v-model="selected"
@@ -100,7 +102,7 @@
                     <RoleIcon v-if="u.role !== Role.USER" :role="u.role" />
                     <UserAlias :user="u" @saved="users.load()" />
                     <span
-                      v-if="isAdmin && u.tag"
+                      v-if="sessionStore.isAdmin && u.tag"
                       class="badge plain"
                       :title="u.role === Role.MANAGER ? '负责的标签' : '所属标签'"
                     >
@@ -134,7 +136,11 @@
               </td>
               <td class="actions">
                 <button class="link-btn" @click="adjusting = u">调整余额</button>
-                <button v-if="isAdmin && u.id !== store.user?.id" class="link-btn more" @click="openMenu($event, u)">
+                <button
+                  v-if="sessionStore.isAdmin && u.id !== sessionStore.user?.id"
+                  class="link-btn more"
+                  @click="openMenu($event, u)"
+                >
                   更多<Icon name="chevron-down" :size="13" />
                 </button>
               </td>
@@ -192,13 +198,12 @@ import { accountsApi } from '@/api/accounts'
 import { usePagedList } from '@/composables/usePagedList'
 import { usePopover } from '@/composables/usePopover'
 import { Role, USER_STATUSES, UserStatus } from '@/constants'
-import { store } from '@/stores'
+import { sessionStore } from '@/stores'
 import { date, dateTime, money, relative } from '@/utils/format'
 import { toast } from '@/toast'
 
 // Tag managers share this page: the API lists only their users and never names their tag, and only the
 // system administrator gets the selection, the inactive tab and the row menu (gifts: UserBalanceModal).
-const isAdmin = computed(() => store.user?.role === Role.ADMIN)
 const q = ref('')
 const archived = ref(false)
 const sort = reactive({ key: 'created', desc: true })
@@ -210,7 +215,7 @@ const users = usePagedList(accountsApi.adminListUsers, () => ({
 }))
 const emptyDesc = computed(() => {
   if (archived.value) return '在用户列表中勾选用户后点击“移到不活跃”即可移入'
-  if (!isAdmin.value && !q.value) return '超级管理员把用户分配给你后，他们会显示在这里'
+  if (!sessionStore.isAdmin && !q.value) return '超级管理员把用户分配给你后，他们会显示在这里'
   return ''
 })
 const selected = ref([])

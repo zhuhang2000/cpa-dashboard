@@ -27,7 +27,7 @@
     </button>
   </form>
   <p class="auth-foot">
-    <template v-if="store.status?.allow_register">
+    <template v-if="siteStore.status?.allow_register">
       还没有账号？<RouterLink to="/register">立即注册</RouterLink>
     </template>
     <template v-else>暂未开放注册，请联系管理员</template>
@@ -40,7 +40,7 @@ import { useRoute, useRouter } from 'vue-router'
 import Icon from '@/components/base/Icon.vue'
 import PasswordInput from '@/components/base/PasswordInput.vue'
 import { accountsApi } from '@/api/accounts'
-import { setUser, store } from '@/stores'
+import { setUser, siteStore } from '@/stores'
 
 const router = useRouter()
 const route = useRoute()

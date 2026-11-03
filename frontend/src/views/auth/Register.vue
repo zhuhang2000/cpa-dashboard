@@ -2,7 +2,7 @@
   <h1 class="auth-title">创建账号</h1>
   <p class="auth-sub">注册后按新手指引接入Codex</p>
 
-  <div v-if="!store.status?.allow_register" class="alert alert-warning">
+  <div v-if="!siteStore.status?.allow_register" class="alert alert-warning">
     <Icon name="lock" :size="16" />
     <div class="alert-body">当前未开放注册，请联系管理员开通账号。</div>
   </div>
@@ -72,7 +72,7 @@ import { useRouter } from 'vue-router'
 import Icon from '@/components/base/Icon.vue'
 import PasswordInput from '@/components/base/PasswordInput.vue'
 import { accountsApi } from '@/api/accounts'
-import { setUser, store } from '@/stores'
+import { setUser, siteStore } from '@/stores'
 import { toast } from '@/toast'
 
 const router = useRouter()

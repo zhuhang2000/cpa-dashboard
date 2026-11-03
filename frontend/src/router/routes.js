@@ -4,8 +4,6 @@ import Login from '@/views/auth/Login.vue'
 import Register from '@/views/auth/Register.vue'
 import Dashboard from '@/views/Dashboard.vue'
 
-// Pages inside the app layout, one list per sidebar section. AppLayout builds the menu from
-// these routes, so a page with an `icon` only needs its entry here to appear in the sidebar.
 const consolePages = [
   { path: '', component: Dashboard, meta: { title: '概览', icon: 'grid' } },
   { path: 'keys', component: () => import('@/views/Keys.vue'), meta: { title: 'API 密钥', icon: 'key' } },
@@ -18,7 +16,7 @@ const consolePages = [
   { path: 'pricing', component: () => import('@/views/Pricing.vue'), meta: { title: '模型价格', icon: 'tag' } },
   { path: 'settings', component: () => import('@/views/Settings.vue'), meta: { title: '个人设置', icon: 'settings' } },
 ]
-// `staff: true` opens a page to tag managers as well (see canOpen in stores/index.js).
+
 const adminPages = [
   { path: '', component: () => import('@/views/admin/Overview.vue'), meta: { title: '运营概况', icon: 'trend' } },
   {
@@ -40,14 +38,11 @@ export const routes = [
     path: '/',
     component: AppLayout,
     meta: { auth: true },
-    // One component-less group per sidebar section. Route meta is merged from parent to child,
-    // so `admin: true` here covers every admin page in the guard below.
     children: [
       { path: '', meta: { section: '控制台' }, children: consolePages },
       { path: 'admin', meta: { section: '管理后台', admin: true }, children: adminPages },
     ],
   },
-  // Keep the console's root route first; this layout only hosts /login and /register.
   {
     path: '/',
     component: AuthLayout,

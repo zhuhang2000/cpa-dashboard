@@ -16,7 +16,7 @@
           </button>
         </div>
       </div>
-      <div v-if="form.mode === 'add' && canGift" class="field">
+      <div v-if="form.mode === 'add' && sessionStore.isAdmin" class="field">
         <label for="adj-type">类型</label>
         <SelectMenu id="adj-type" v-model="form.type" :options="TYPE_OPTIONS" placeholder="请选择类型" />
       </div>
@@ -47,8 +47,8 @@ import { computed, reactive, ref } from 'vue'
 import Modal from '@/components/base/Modal.vue'
 import SelectMenu from '@/components/base/SelectMenu.vue'
 import { billingApi } from '@/api/billing'
-import { REDEEM_TYPES, RedeemType, Role } from '@/constants'
-import { store } from '@/stores'
+import { REDEEM_TYPES, RedeemType } from '@/constants'
+import { sessionStore } from '@/stores'
 import { currency, money } from '@/utils/format'
 import { toast } from '@/toast'
 
@@ -58,8 +58,7 @@ const props = defineProps({ user: { type: Object, required: true } })
 // `saved` asks the list to reload; `close` follows it, or comes from cancelling.
 const emit = defineEmits(['close', 'saved'])
 // Gifts create balance without payment: a tag manager only recharges, so it has no type to choose.
-const canGift = store.user?.role === Role.ADMIN
-const form = reactive({ mode: 'add', type: canGift ? '' : RedeemType.RECHARGE, amount: '', note: '' })
+const form = reactive({ mode: 'add', type: sessionStore.isAdmin ? '' : RedeemType.RECHARGE, amount: '', note: '' })
 const saving = ref(false)
 
 const hint = computed(() => {

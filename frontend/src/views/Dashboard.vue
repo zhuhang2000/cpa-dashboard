@@ -8,7 +8,7 @@
       </button>
     </div>
 
-    <div v-if="store.keyCount === 0" class="card onboarding">
+    <div v-if="sessionStore.keyCount === 0" class="card onboarding">
       <div>
         <div class="card-title">开始使用</div>
         <p class="muted" style="margin-top: 4px">创建第一个 API 密钥，然后把它填进你的客户端即可开始调用。</p>
@@ -21,8 +21,8 @@
         data-tour="balance"
         label="账户余额"
         icon="wallet"
-        :value="money(store.user?.balance || 0)"
-        :value-class="(store.user?.balance ?? 1) <= 0 ? 'text-danger' : ''"
+        :value="money(sessionStore.user?.balance || 0)"
+        :value-class="(sessionStore.user?.balance ?? 1) <= 0 ? 'text-danger' : ''"
         :sub="balanceSub"
       >
         <template #action>
@@ -126,14 +126,18 @@
             <span class="step-num">2</span>
             <div class="step-label">API 密钥<span>API Key</span></div>
             <div class="step-value muted">
-              {{ store.keyCount === 0 ? '还没有密钥，先创建一个' : `已有 ${store.keyCount} 个，在密钥页查看并复制` }}
+              {{
+                sessionStore.keyCount === 0
+                  ? '还没有密钥，先创建一个'
+                  : `已有 ${sessionStore.keyCount} 个，在密钥页查看并复制`
+              }}
             </div>
             <RouterLink
-              :to="store.keyCount === 0 ? '/keys?create=1' : '/keys'"
+              :to="sessionStore.keyCount === 0 ? '/keys?create=1' : '/keys'"
               class="btn btn-sm step-action"
-              :class="store.keyCount === 0 ? 'btn-primary' : 'btn-ghost'"
+              :class="sessionStore.keyCount === 0 ? 'btn-primary' : 'btn-ghost'"
             >
-              {{ store.keyCount === 0 ? '创建密钥' : '管理密钥' }}<Icon name="chevron-right" :size="14" />
+              {{ sessionStore.keyCount === 0 ? '创建密钥' : '管理密钥' }}<Icon name="chevron-right" :size="14" />
             </RouterLink>
           </li>
           <li class="step">
@@ -198,7 +202,7 @@ import Icon from '@/components/base/Icon.vue'
 import StatCard from '@/components/base/StatCard.vue'
 import { useDismissUntilNextLogin } from '@/composables/useDismissUntilNextLogin'
 import { usageApi } from '@/api/usage'
-import { refreshUser, store } from '@/stores'
+import { refreshUser, siteStore, sessionStore } from '@/stores'
 import { currency, dayLabel, money, num, tokens } from '@/utils/format'
 import { toast } from '@/toast'
 
@@ -206,8 +210,8 @@ const summary = ref(null)
 const days = ref(30)
 
 const balanceSub = computed(() => {
-  if ((store.user?.balance ?? 1) > 0) return `累计充值 ${money(store.user?.total_recharge || 0)}`
-  return store.keyCount > 0 ? '余额不足，密钥已暂停调用' : '充值后即可开始调用'
+  if ((sessionStore.user?.balance ?? 1) > 0) return `累计充值 ${money(sessionStore.user?.total_recharge || 0)}`
+  return sessionStore.keyCount > 0 ? '余额不足，密钥已暂停调用' : '充值后即可开始调用'
 })
 const metric = ref('cost')
 
@@ -227,7 +231,7 @@ function share(cost) {
   return max > 0 ? Math.max(2, (cost / max) * 100) : 0
 }
 
-const announcement = computed(() => (store.status?.announcement || '').trim())
+const announcement = computed(() => (siteStore.status?.announcement || '').trim())
 // Closing hides the announcement until the next sign-in; a new announcement gets a new key and shows.
 const announcementBanner = useDismissUntilNextLogin(() => `portal-ann-${hash(announcement.value)}`)
 function hash(s) {
@@ -236,7 +240,7 @@ function hash(s) {
   return h
 }
 
-const baseUrl = computed(() => (store.status?.public_api_base || '').replace(/\/+$/, ''))
+const baseUrl = computed(() => (siteStore.status?.public_api_base || '').replace(/\/+$/, ''))
 
 async function load() {
   try {

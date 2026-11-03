@@ -115,8 +115,8 @@ import { keysApi } from '@/api/api_keys'
 import { billingApi } from '@/api/billing'
 import { usageApi } from '@/api/usage'
 import { usePagedList } from '@/composables/usePagedList'
-import { KEY_STATES, KeyState, Role, UserStatus } from '@/constants'
-import { store } from '@/stores'
+import { KEY_STATES, KeyState, UserStatus } from '@/constants'
+import { sessionStore } from '@/stores'
 import { date, dateTime, money, num, relative } from '@/utils/format'
 import { toast } from '@/toast'
 
@@ -129,7 +129,7 @@ const TABS = [
 const props = defineProps({ user: { type: Object, required: true } })
 const emit = defineEmits(['close', 'deleted'])
 // A key would let a tag manager spend the user's balance, so only the system administrator sees keys.
-const tabs = store.user?.role === Role.ADMIN ? TABS : TABS.filter((t) => t.key !== 'keys')
+const tabs = sessionStore.isAdmin ? TABS : TABS.filter((t) => t.key !== 'keys')
 const tab = ref(tabs[0].key)
 const items = ref([])
 const loading = ref(false)

@@ -1,7 +1,7 @@
-import { store } from '@/stores'
+import { siteStore } from '@/stores'
 
 export function currency() {
-  return store.status?.currency_symbol || '$'
+  return siteStore.status?.currency_symbol || '$'
 }
 
 function fixed(value, min, max) {

@@ -16,18 +16,18 @@
     <div class="balance-hero card">
       <div>
         <div class="muted">当前余额</div>
-        <div class="balance-value num" :class="{ 'text-danger': (store.user?.balance ?? 0) <= 0 }">
-          {{ money(store.user?.balance || 0) }}
+        <div class="balance-value num" :class="{ 'text-danger': (sessionStore.user?.balance ?? 0) <= 0 }">
+          {{ money(sessionStore.user?.balance || 0) }}
         </div>
       </div>
       <div class="balance-meta">
         <div>
           <div class="muted">累计充值</div>
-          <b class="num">{{ money(store.user?.total_recharge || 0) }}</b>
+          <b class="num">{{ money(sessionStore.user?.total_recharge || 0) }}</b>
         </div>
         <div>
           <div class="muted">累计消费</div>
-          <b class="num">{{ money(store.user?.total_spent || 0) }}</b>
+          <b class="num">{{ money(sessionStore.user?.total_spent || 0) }}</b>
         </div>
       </div>
     </div>
@@ -63,12 +63,12 @@ import OrderTable from '@/components/recharge/OrderTable.vue'
 import RedeemCard from '@/components/recharge/RedeemCard.vue'
 import { billingApi } from '@/api/billing'
 import { usePagedList } from '@/composables/usePagedList'
-import { refreshUser, store } from '@/stores'
+import { refreshUser, siteStore, sessionStore } from '@/stores'
 import { money } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()
-const payment = computed(() => store.status?.payment || { online: false, channels: [], presets: [] })
+const payment = computed(() => siteStore.status?.payment || { online: false, channels: [], presets: [] })
 const online = computed(() => payment.value.online)
 const tab = ref('tx')
 const tx = usePagedList(billingApi.listTransactions)

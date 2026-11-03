@@ -21,7 +21,7 @@
           <span v-if="tab.count" class="notice-tab-count">{{ tab.count }}</span>
         </button>
       </div>
-      <button v-if="isAdmin && !composing" class="btn notice-new" @click="startCompose">
+      <button v-if="sessionStore.isAdmin && !composing" class="btn notice-new" @click="startCompose">
         <Icon name="plus" :size="16" />发布公告
       </button>
     </div>
@@ -68,7 +68,7 @@
               :key="notice.id"
               :notice="notice"
               :unread="notice.created_at > notices.seenBefore"
-              :is-admin="isAdmin"
+              :is-admin="sessionStore.isAdmin"
               :saving="notices.saving"
               :editing="editingId === notice.id"
               :active="activeItemId === notice.id"
@@ -100,8 +100,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import Icon from '@/components/base/Icon.vue'
 import Modal from '@/components/base/Modal.vue'
-import { Role } from '@/constants'
-import { store } from '@/stores'
+import { sessionStore } from '@/stores'
 import { date } from '@/utils/format'
 import NoticeDatePicker from './NoticeDatePicker.vue'
 import NoticeEditor from './NoticeEditor.vue'
@@ -120,7 +119,6 @@ const composeDraft = ref('')
 const editingId = ref(null)
 const activeItemId = ref(null)
 const datePicker = ref(null)
-const isAdmin = computed(() => store.user?.role === Role.ADMIN)
 
 // Notices arrive newest first. Each day also carries the labels used by the picker.
 const days = computed(() => {

@@ -1,11 +1,11 @@
 import { computed, reactive, ref, toValue } from 'vue'
-import { store } from '@/stores'
+import { sessionStore } from '@/stores'
 
 // "Close" for a banner that lasts until the next sign-in: every login bumps last_login_at, so the
 // stored session stops matching and the banner shows again. A new `key` (say, for new content) also
 // shows it again. `key` may be a string, ref or getter.
 export function useDismissUntilNextLogin(key) {
-  const session = computed(() => `${store.user?.id}:${store.user?.last_login_at}`)
+  const session = computed(() => `${sessionStore.user?.id}:${sessionStore.user?.last_login_at}`)
   // Kept in memory too, so closing still works when storage is unavailable.
   const closed = ref({})
   const dismissed = computed(() => {

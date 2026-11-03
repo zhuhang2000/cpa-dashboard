@@ -1,11 +1,11 @@
 import { computed, reactive, ref } from 'vue'
 import { noticesApi } from '@/api/notices'
-import { store } from '@/stores'
+import { siteStore, sessionStore } from '@/stores'
 import { toast } from '@/toast'
 
 // One controller per bell. Dialogs can unmount without losing this user's read state.
 export function useNotices() {
-  const readKey = `portal-notice-read-${store.user?.id}`
+  const readKey = `portal-notice-read-${sessionStore.user?.id}`
   const readAt = ref(readStored())
   const notices = reactive({
     items: [],
@@ -13,7 +13,7 @@ export function useNotices() {
     saving: false,
     // Snapshot from before opening, used to highlight newly received notices.
     seenBefore: 0,
-    unread: computed(() => (store.status?.notice_latest_at || 0) > readAt.value),
+    unread: computed(() => (siteStore.status?.notice_latest_at || 0) > readAt.value),
     load,
     create,
     update,
@@ -22,7 +22,7 @@ export function useNotices() {
 
   async function load() {
     notices.seenBefore = readAt.value
-    markRead(store.status?.notice_latest_at)
+    markRead(siteStore.status?.notice_latest_at)
     notices.loading = true
     try {
       notices.items = (await noticesApi.listNotices()).items
