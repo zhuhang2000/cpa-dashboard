@@ -1,10 +1,10 @@
 <template>
   <div class="layout" :class="{ 'nav-open': navOpen }">
     <aside class="sidebar">
-      <RouterLink to="/" class="brand">
+      <div class="brand">
         <span class="brand-logo"><Icon name="logo" :size="19" :stroke="2.4" /></span>
-        <span class="truncate">{{ siteName }}</span>
-      </RouterLink>
+        <span class="truncate">{{ siteStore.siteName }}</span>
+      </div>
       <nav class="nav" @click="navOpen = false">
         <template v-for="section in sections" :key="section.label">
           <div class="nav-section">{{ section.label }}</div>
@@ -14,10 +14,6 @@
           </RouterLink>
         </template>
       </nav>
-      <div class="sidebar-foot">
-        <span>{{ store.user?.username }}</span>
-        <span>v{{ store.status?.version || '1.0' }}</span>
-      </div>
     </aside>
     <div class="backdrop" @click="navOpen = false" />
 
@@ -30,12 +26,12 @@
         <div class="topbar-right">
           <RouterLink to="/recharge" class="balance-pill num" :class="{ low: lowBalance }" title="账户余额，点击充值">
             <Icon name="wallet" :size="16" />
-            {{ money(store.user?.balance || 0) }}
+            {{ money(sessionStore.user?.balance || 0) }}
           </RouterLink>
           <GuideTour />
           <NoticeBell />
           <button class="btn btn-ghost btn-icon" :title="themeLabel" :aria-label="themeLabel" @click="toggleTheme">
-            <Icon :name="isDark ? 'sun' : 'moon'" />
+            <Icon :name="isDark ? 'moon' : 'sun'" />
           </button>
           <div class="dropdown">
             <button
@@ -46,14 +42,14 @@
               @click="userMenu.toggle"
             >
               <span class="avatar">{{ initial }}</span>
-              <span class="hide-sm">{{ store.user?.username }}</span>
+              <span class="hide-sm">{{ sessionStore.user?.username }}</span>
               <Icon name="chevron-down" :size="16" class="hide-sm" />
             </button>
             <div v-if="userMenu.open" ref="userMenuPanel" class="dropdown-menu" role="menu" @click="userMenu.close()">
               <div class="dropdown-head">
-                <div style="font-weight: 600">{{ store.user?.username }}</div>
+                <div style="font-weight: 600">{{ sessionStore.user?.username }}</div>
                 <div class="muted" style="font-size: 12.5px">
-                  {{ store.user?.email || ROLES[store.user?.role]?.label }}
+                  {{ sessionStore.user?.email || ROLES[sessionStore.role]?.label }}
                 </div>
               </div>
               <RouterLink to="/settings" class="dropdown-item"><Icon name="user" :size="16" />个人设置</RouterLink>
@@ -80,7 +76,7 @@ import Icon from '@/components/base/Icon.vue'
 import NoticeBell from '@/components/notices/NoticeBell.vue'
 import { usePopover } from '@/composables/usePopover'
 import { ROLES } from '@/constants'
-import { canOpen, effectiveTheme, logout, refreshUser, store, toggleTheme } from '@/stores'
+import { canOpen, themeStore, logout, refreshUser, siteStore, sessionStore, toggleTheme } from '@/stores'
 import { money } from '@/utils/format'
 
 const route = useRoute()
@@ -89,10 +85,7 @@ const navOpen = ref(false)
 const userMenuPanel = ref(null)
 const userMenu = usePopover({ panel: userMenuPanel })
 
-const siteName = computed(() => store.status?.site_name || 'API 控制台')
-
-// The sidebar mirrors the route table in router/routes.js: each child group of this layout's route is a
-// section listing the pages with an icon that the user may open. Sections left empty are hidden.
+// 加载当前用户可见的侧边栏组件
 const sections = computed(() =>
   route.matched[0].children
     .map((group) => ({
@@ -107,12 +100,11 @@ const sections = computed(() =>
     }))
     .filter((section) => section.items.length),
 )
-const initial = computed(() => (store.user?.username || '?').slice(0, 1).toUpperCase())
-const lowBalance = computed(() => (store.user?.balance ?? 1) <= 0)
-const isDark = computed(() => (store.theme, effectiveTheme() === 'dark'))
+const initial = computed(() => (sessionStore.user?.username || '?').slice(0, 1).toUpperCase())
+const lowBalance = computed(() => (sessionStore.user?.balance ?? 1) <= 0)
+const isDark = computed(() => themeStore.theme === 'dark')
 const themeLabel = computed(() => (isDark.value ? '切换到浅色模式' : '切换到深色模式'))
 
-// Keep the balance pill fresh while navigating.
 watch(
   () => route.fullPath,
   () => {

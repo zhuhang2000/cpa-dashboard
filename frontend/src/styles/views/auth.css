@@ -9,7 +9,8 @@
  *   以及专属按钮/输入框尺寸微调。
  *
  * 使用该样式的组件 / 页面:
- *   - src/layouts/AuthLayout.vue (.auth, .auth-brand, .auth-hero, .auth-eyebrow, .auth-highlight, .auth-art, .auth-points, .auth-point-icon, .auth-point-title, .auth-point-desc, .auth-copy, .auth-panel, .auth-card, .auth-mobile-logo)
+ *   - src/layouts/AuthLayout.vue (.auth, .auth-brand, .auth-copy, .auth-panel, .auth-card, .auth-mobile-logo)
+ *   - src/components/auth/AuthHero.vue (.auth-hero, .auth-eyebrow, .auth-highlight, .auth-art, .auth-points, .auth-point-icon, .auth-point-title, .auth-point-desc)
  *   - src/views/auth/Login.vue (.auth-title, .auth-sub, .auth-foot)
  *   - src/views/auth/Register.vue (.auth-title, .auth-sub, .auth-foot)
  * ==============================================================================
