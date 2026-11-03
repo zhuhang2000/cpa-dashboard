@@ -13,11 +13,11 @@
  *   - src/components/onboarding/GuideTour.vue (.btn, .btn-primary, .btn-ghost, .btn-sm, .btn-icon)
  *   - src/views/auth/Login.vue (.btn, .btn-primary, .btn-lg, .btn-block)
  *   - src/views/auth/Register.vue (.btn, .btn-primary, .btn-lg, .btn-block)
- *   - src/views/Dashboard.vue (.btn, .btn-primary, .btn-ghost, .btn-sm)
- *   - src/views/Keys.vue (.btn, .btn-primary, .btn-danger, .link-btn)
- *   - src/views/Pricing.vue (.btn, .btn-primary, .btn-sm)
- *   - src/views/Settings.vue (.btn, .btn-primary)
- *   - src/views/Usage.vue (.btn, .btn-primary)
+ *   - src/views/user/Dashboard.vue (.btn, .btn-primary, .btn-ghost, .btn-sm)
+ *   - src/views/user/Keys.vue (.btn, .btn-primary, .btn-danger, .link-btn)
+ *   - src/views/user/Pricing.vue (.btn, .btn-primary, .btn-sm)
+ *   - src/views/user/Settings.vue (.btn, .btn-primary)
+ *   - src/views/user/Usage.vue (.btn, .btn-primary)
  *   - src/views/NotFound.vue (.btn, .btn-primary)
  *   - src/views/admin/Overview.vue (.btn, .btn-sm)
  *   - src/components/admin/overview/RechargeRecordsModal.vue (.btn)
@@ -29,8 +29,8 @@
  *   - src/views/admin/Codes.vue (.btn, .btn-primary, .link-btn)
  *   - src/views/admin/Prices.vue (.btn, .btn-primary, .link-btn)
  *   - src/views/admin/Settings.vue (.btn, .btn-primary)
- *   - src/components/recharge/OnlinePayCard.vue (.btn, .btn-primary, .btn-lg, .btn-block)
- *   - src/components/recharge/RedeemCard.vue (.btn, .btn-primary, .btn-block)
+ *   - src/components/billing/OnlinePayCard.vue (.btn, .btn-primary, .btn-lg, .btn-block)
+ *   - src/components/billing/RedeemCard.vue (.btn, .btn-primary, .btn-block)
  * ==============================================================================
  */
 

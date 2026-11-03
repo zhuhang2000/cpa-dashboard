@@ -11,16 +11,16 @@
  * 使用该样式的组件 / 页面:
  *   - src/components/base/EmptyState.vue (.empty, .empty-icon, .empty-title)
  *   - src/components/base/StatCard.vue (.skeleton)
- *   - src/views/Dashboard.vue (.key-box, .progress, .skeleton)
- *   - src/views/Keys.vue (.key-box, .progress, .skeleton)
- *   - src/views/Settings.vue (.kv)
- *   - src/views/Usage.vue (.skeleton)
- *   - src/views/Pricing.vue (.skeleton)
+ *   - src/views/user/Dashboard.vue (.key-box, .progress, .skeleton)
+ *   - src/views/user/Keys.vue (.key-box, .progress, .skeleton)
+ *   - src/views/user/Settings.vue (.kv)
+ *   - src/views/user/Usage.vue (.skeleton)
+ *   - src/views/user/Pricing.vue (.skeleton)
  *   - src/views/admin/Overview.vue (.kv, .divider, .skeleton)
  *   - src/views/admin/Users.vue (.skeleton)
  *   - src/views/admin/Codes.vue (.skeleton)
  *   - src/views/admin/Settings.vue (.skeleton)
- *   - src/components/recharge/OrderTable.vue (.skeleton)
+ *   - src/components/billing/OrderTable.vue (.skeleton)
  *   - src/components/shared/TransactionTable.vue (.skeleton)
  * ==============================================================================
  */

@@ -9,16 +9,16 @@
  *
  * 使用该样式的组件 / 页面:
  *   - src/layouts/AppLayout.vue (.table)
- *   - src/views/Dashboard.vue (.table, .cell-sub)
- *   - src/views/Keys.vue (.table-wrap, .table, .cell-main, .cell-sub, .actions)
- *   - src/views/Pricing.vue (.table-wrap, .table, .cell-main, .cell-sub, .right)
- *   - src/views/Usage.vue (.table-wrap, .table, .cell-sub, .right)
+ *   - src/views/user/Dashboard.vue (.table, .cell-sub)
+ *   - src/views/user/Keys.vue (.table-wrap, .table, .cell-main, .cell-sub, .actions)
+ *   - src/views/user/Pricing.vue (.table-wrap, .table, .cell-main, .cell-sub, .right)
+ *   - src/views/user/Usage.vue (.table-wrap, .table, .cell-sub, .right)
  *   - src/views/admin/Overview.vue (.table-wrap, .table, .cell-main, .right)
  *   - src/views/admin/Users.vue (.table-wrap, .table, .cell-main, .cell-sub, .actions, .right)
  *   - src/views/admin/Codes.vue (.table-wrap, .table, .cell-sub, .actions, .right)
  *   - src/views/admin/Prices.vue (.table-wrap, .table, .cell-main, .cell-sub, .actions, .right)
- *   - src/components/recharge/OnlinePayCard.vue (.cell-sub)
- *   - src/components/recharge/OrderTable.vue (.table-wrap, .table, .right)
+ *   - src/components/billing/OnlinePayCard.vue (.cell-sub)
+ *   - src/components/billing/OrderTable.vue (.table-wrap, .table, .right)
  *   - src/components/shared/TransactionTable.vue (.table-wrap, .table, .cell-sub, .right)
  * ==============================================================================
  */

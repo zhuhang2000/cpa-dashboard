@@ -6,14 +6,14 @@
  *   定义胶囊式轻量选项卡容器 (.tabs) 与选项按钮 (.tab, .tab.active)。
  *
  * 使用该样式的组件 / 页面:
- *   - src/views/Dashboard.vue (.tabs, .tab)
- *   - src/views/Pricing.vue (.tabs, .tab)
- *   - src/views/Usage.vue (.tabs, .tab)
+ *   - src/views/user/Dashboard.vue (.tabs, .tab)
+ *   - src/views/user/Pricing.vue (.tabs, .tab)
+ *   - src/views/user/Usage.vue (.tabs, .tab)
  *   - src/views/admin/Users.vue (.tabs, .tab)
  *   - src/components/admin/users/UserBalanceModal.vue (.tabs, .tab)
  *   - src/components/admin/users/UserTagModal.vue (.tabs, .tab)
  *   - src/views/admin/Codes.vue (.tabs, .tab)
- *   - src/views/recharge/index.vue (.tabs, .tab)
+ *   - src/views/user/billing.vue (.tabs, .tab)
  * ==============================================================================
  */
 
