@@ -16,7 +16,7 @@
     <div v-if="(sessionStore.user?.balance ?? 1) <= 0" class="alert alert-warning">
       <Icon name="alert" :size="16" />
       <div class="alert-body">
-        账户余额不足，所有密钥已暂停调用。<RouterLink to="/recharge">立即充值</RouterLink> 后会在几秒内自动恢复。
+        账户余额不足，所有密钥已暂停调用。<RouterLink to="/billing">立即充值</RouterLink> 后会在几秒内自动恢复。
       </div>
     </div>
 

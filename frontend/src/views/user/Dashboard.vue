@@ -26,7 +26,7 @@
         :sub="balanceSub"
       >
         <template #action>
-          <RouterLink to="/recharge" class="btn btn-sm btn-primary">充值</RouterLink>
+          <RouterLink to="/billing" class="btn btn-sm btn-primary">充值</RouterLink>
         </template>
       </StatCard>
       <StatCard

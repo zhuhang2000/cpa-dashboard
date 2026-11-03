@@ -2,19 +2,19 @@ import AppLayout from '@/layouts/AppLayout.vue'
 import AuthLayout from '@/layouts/AuthLayout.vue'
 import Login from '@/views/auth/Login.vue'
 import Register from '@/views/auth/Register.vue'
-import Dashboard from '@/views/Dashboard.vue'
+import Dashboard from '@/views/user/Dashboard.vue'
 
 const consolePages = [
   { path: '', component: Dashboard, meta: { title: '概览', icon: 'grid' } },
-  { path: 'keys', component: () => import('@/views/Keys.vue'), meta: { title: 'API 密钥', icon: 'key' } },
-  { path: 'usage', component: () => import('@/views/Usage.vue'), meta: { title: '用量明细', icon: 'activity' } },
+  { path: 'keys', component: () => import('@/views/user/Keys.vue'), meta: { title: 'API 密钥', icon: 'key' } },
+  { path: 'usage', component: () => import('@/views/user/Usage.vue'), meta: { title: '用量明细', icon: 'activity' } },
   {
-    path: 'recharge',
-    component: () => import('@/views/recharge/index.vue'),
+    path: 'billing',
+    component: () => import('@/views/user/billing.vue'),
     meta: { title: '充值中心', icon: 'wallet' },
   },
-  { path: 'pricing', component: () => import('@/views/Pricing.vue'), meta: { title: '模型价格', icon: 'tag' } },
-  { path: 'settings', component: () => import('@/views/Settings.vue'), meta: { title: '个人设置', icon: 'settings' } },
+  { path: 'pricing', component: () => import('@/views/user/Pricing.vue'), meta: { title: '模型价格', icon: 'tag' } },
+  { path: 'settings', component: () => import('@/views/user/Settings.vue'), meta: { title: '个人设置', icon: 'settings' } },
 ]
 
 const adminPages = [

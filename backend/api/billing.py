@@ -100,7 +100,7 @@ async def epay_notify(request: Request, conn=Depends(get_connection), runtime=De
 async def epay_return(request: Request, conn=Depends(get_connection), runtime=Depends(get_runtime)):
     ok, order_no = await _settle_callback(request, conn, runtime)
     query = urllib.parse.urlencode({"order": order_no, "result": "success" if ok else "pending"})
-    return RedirectResponse("/recharge?" + query, status_code=302)
+    return RedirectResponse("/billing?" + query, status_code=302)
 
 
 # ---- Administrator endpoints ----

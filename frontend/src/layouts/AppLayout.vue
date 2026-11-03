@@ -24,7 +24,7 @@
         </button>
         <div class="topbar-title truncate">{{ route.meta.title }}</div>
         <div class="topbar-right">
-          <RouterLink to="/recharge" class="balance-pill num" :class="{ low: lowBalance }" title="账户余额，点击充值">
+          <RouterLink to="/billing" class="balance-pill num" :class="{ low: lowBalance }" title="账户余额，点击充值">
             <Icon name="wallet" :size="16" />
             {{ money(sessionStore.user?.balance || 0) }}
           </RouterLink>
@@ -53,7 +53,7 @@
                 </div>
               </div>
               <RouterLink to="/settings" class="dropdown-item"><Icon name="user" :size="16" />个人设置</RouterLink>
-              <RouterLink to="/recharge" class="dropdown-item"><Icon name="wallet" :size="16" />充值中心</RouterLink>
+              <RouterLink to="/billing" class="dropdown-item"><Icon name="wallet" :size="16" />充值中心</RouterLink>
               <button class="dropdown-item danger" @click="doLogout"><Icon name="logout" :size="16" />退出登录</button>
             </div>
           </div>
