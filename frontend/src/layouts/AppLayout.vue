@@ -74,13 +74,13 @@
 <script setup>
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import ContactAdmin from './ContactAdmin.vue'
-import GuideTour from './GuideTour.vue'
+import ContactAdmin from '@/components/support/ContactAdmin.vue'
+import GuideTour from '@/components/onboarding/GuideTour.vue'
 import Icon from '@/components/base/Icon.vue'
 import NoticeBell from '@/components/notices/NoticeBell.vue'
 import { usePopover } from '@/composables/usePopover'
 import { ROLES } from '@/constants'
-import { canOpen, effectiveTheme, logout, refreshUser, store, toggleTheme } from '@/store'
+import { canOpen, effectiveTheme, logout, refreshUser, store, toggleTheme } from '@/stores'
 import { money } from '@/utils/format'
 
 const route = useRoute()
@@ -91,7 +91,7 @@ const userMenu = usePopover({ panel: userMenuPanel })
 
 const siteName = computed(() => store.status?.site_name || 'API 控制台')
 
-// The sidebar mirrors the route table in router.js: each child group of this layout's route is a
+// The sidebar mirrors the route table in router/routes.js: each child group of this layout's route is a
 // section listing the pages with an icon that the user may open. Sections left empty are hidden.
 const sections = computed(() =>
   route.matched[0].children

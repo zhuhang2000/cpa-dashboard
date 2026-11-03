@@ -47,7 +47,7 @@
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Icon from '@/components/base/Icon.vue'
-import { store } from '@/store'
+import { store } from '@/stores'
 
 // The guide opens by itself on the overview page until this browser has seen it once. Closing it flies it
 // into this top-bar button, and from then on only the button opens it.
