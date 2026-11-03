@@ -1,5 +1,5 @@
 import { computed, reactive, ref, toValue } from 'vue'
-import { store } from '@/store'
+import { store } from '@/stores'
 
 // "Close" for a banner that lasts until the next sign-in: every login bumps last_login_at, so the
 // stored session stops matching and the banner shows again. A new `key` (say, for new content) also

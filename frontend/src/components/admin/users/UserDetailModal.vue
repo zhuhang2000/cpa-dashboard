@@ -116,7 +116,7 @@ import { billingApi } from '@/api/billing'
 import { usageApi } from '@/api/usage'
 import { usePagedList } from '@/composables/usePagedList'
 import { KEY_STATES, KeyState, Role, UserStatus } from '@/constants'
-import { store } from '@/store'
+import { store } from '@/stores'
 import { date, dateTime, money, num, relative } from '@/utils/format'
 import { toast } from '@/toast'
 

@@ -1,4 +1,4 @@
-import { store } from '@/store'
+import { store } from '@/stores'
 
 export function currency() {
   return store.status?.currency_symbol || '$'

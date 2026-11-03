@@ -48,7 +48,7 @@ import Modal from '@/components/base/Modal.vue'
 import SelectMenu from '@/components/base/SelectMenu.vue'
 import { billingApi } from '@/api/billing'
 import { REDEEM_TYPES, RedeemType, Role } from '@/constants'
-import { store } from '@/store'
+import { store } from '@/stores'
 import { currency, money } from '@/utils/format'
 import { toast } from '@/toast'
 

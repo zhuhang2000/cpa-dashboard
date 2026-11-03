@@ -184,7 +184,7 @@ import Modal from '@/components/base/Modal.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import { keysApi } from '@/api/api_keys'
 import { KEY_STATES, KeyStatus } from '@/constants'
-import { refreshUser, store } from '@/store'
+import { refreshUser, store } from '@/stores'
 import { currency, date, dateTime, fromInputDate, money, num, relative, toInputDate } from '@/utils/format'
 import { toast } from '@/toast'
 

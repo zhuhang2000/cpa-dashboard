@@ -198,7 +198,7 @@ import Icon from '@/components/base/Icon.vue'
 import StatCard from '@/components/base/StatCard.vue'
 import { useDismissUntilNextLogin } from '@/composables/useDismissUntilNextLogin'
 import { usageApi } from '@/api/usage'
-import { refreshUser, store } from '@/store'
+import { refreshUser, store } from '@/stores'
 import { currency, dayLabel, money, num, tokens } from '@/utils/format'
 import { toast } from '@/toast'
 

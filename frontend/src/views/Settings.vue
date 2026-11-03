@@ -82,7 +82,7 @@ import Icon from '@/components/base/Icon.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import { accountsApi } from '@/api/accounts'
 import { ROLES } from '@/constants'
-import { logout, setUser, store } from '@/store'
+import { logout, setUser, store } from '@/stores'
 import { dateTime, money } from '@/utils/format'
 import { toast } from '@/toast'
 

@@ -5,7 +5,7 @@
 <script setup>
 import { computed } from 'vue'
 
-// `map` is one of the label maps in constants.js; unknown values show as-is in the neutral tone.
+// `map` is one of the label maps in constants/index.js; unknown values show as-is in the neutral tone.
 const props = defineProps({
   map: { type: Object, required: true },
   value: { type: String, default: '' },

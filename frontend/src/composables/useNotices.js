@@ -1,6 +1,6 @@
 import { computed, reactive, ref } from 'vue'
 import { noticesApi } from '@/api/notices'
-import { store } from '@/store'
+import { store } from '@/stores'
 import { toast } from '@/toast'
 
 // One controller per bell. Dialogs can unmount without losing this user's read state.

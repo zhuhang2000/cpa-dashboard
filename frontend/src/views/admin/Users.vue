@@ -192,7 +192,7 @@ import { accountsApi } from '@/api/accounts'
 import { usePagedList } from '@/composables/usePagedList'
 import { usePopover } from '@/composables/usePopover'
 import { Role, USER_STATUSES, UserStatus } from '@/constants'
-import { store } from '@/store'
+import { store } from '@/stores'
 import { date, dateTime, money, relative } from '@/utils/format'
 import { toast } from '@/toast'
 
