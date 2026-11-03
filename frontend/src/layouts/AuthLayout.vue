@@ -28,7 +28,7 @@
           <span class="brand-logo"><Icon name="logo" :size="20" :stroke="2.4" /></span>
           {{ siteName }}
         </div>
-        <slot />
+        <RouterView />
       </div>
     </section>
   </div>
@@ -36,9 +36,9 @@
 
 <script setup>
 import { computed } from 'vue'
-import AuthArt from './AuthArt.vue'
+import AuthArt from '@/components/auth/AuthArt.vue'
 import Icon from '@/components/base/Icon.vue'
-import { store } from '@/store'
+import { store } from '@/stores'
 
 const siteName = computed(() => store.status?.site_name || 'API 控制台')
 const year = new Date().getFullYear()

@@ -1,10 +1,7 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import { setUnauthorizedHandler } from '@/api/http'
-import { Role } from './constants'
-import { canOpen, ensureStatus, ensureUser, store } from './store'
 import AppLayout from '@/layouts/AppLayout.vue'
-import Login from '@/views/Login.vue'
-import Register from '@/views/Register.vue'
+import AuthLayout from '@/layouts/AuthLayout.vue'
+import Login from '@/views/auth/Login.vue'
+import Register from '@/views/auth/Register.vue'
 import Dashboard from '@/views/Dashboard.vue'
 
 // Pages inside the app layout, one list per sidebar section. AppLayout builds the menu from
@@ -21,7 +18,7 @@ const consolePages = [
   { path: 'pricing', component: () => import('@/views/Pricing.vue'), meta: { title: '模型价格', icon: 'tag' } },
   { path: 'settings', component: () => import('@/views/Settings.vue'), meta: { title: '个人设置', icon: 'settings' } },
 ]
-// `staff: true` opens a page to tag managers as well (see canOpen in store.js).
+// `staff: true` opens a page to tag managers as well (see canOpen in stores/index.js).
 const adminPages = [
   { path: '', component: () => import('@/views/admin/Overview.vue'), meta: { title: '运营概况', icon: 'trend' } },
   {
@@ -38,9 +35,7 @@ const adminPages = [
   },
 ]
 
-const routes = [
-  { path: '/login', component: Login, meta: { title: '登录', guest: true } },
-  { path: '/register', component: Register, meta: { title: '注册', guest: true } },
+export const routes = [
   {
     path: '/',
     component: AppLayout,
@@ -52,38 +47,15 @@ const routes = [
       { path: 'admin', meta: { section: '管理后台', admin: true }, children: adminPages },
     ],
   },
+  // Keep the console's root route first; this layout only hosts /login and /register.
+  {
+    path: '/',
+    component: AuthLayout,
+    meta: { guest: true },
+    children: [
+      { path: 'login', component: Login, meta: { title: '登录' } },
+      { path: 'register', component: Register, meta: { title: '注册' } },
+    ],
+  },
   { path: '/:pathMatch(.*)*', component: () => import('@/views/NotFound.vue'), meta: { title: '页面不存在' } },
 ]
-
-const router = createRouter({
-  history: createWebHistory(),
-  routes,
-  scrollBehavior: () => ({ top: 0 }),
-})
-
-router.beforeEach(async (to) => {
-  await ensureStatus()
-  const needsAuth = to.matched.some((r) => r.meta.auth)
-  if (needsAuth || to.meta.guest) await ensureUser()
-  if (needsAuth && !store.user) {
-    return { path: '/login', query: to.fullPath !== '/' ? { redirect: to.fullPath } : {} }
-  }
-  if (to.meta.guest && store.user) return { path: '/' }
-  if (!canOpen(to.meta)) return { path: store.user?.role === Role.MANAGER ? '/admin/users' : '/' }
-  return true
-})
-
-router.afterEach((to) => {
-  const site = store.status?.site_name || 'API 控制台'
-  document.title = to.meta.title ? `${to.meta.title} · ${site}` : site
-})
-
-// Session expired mid-use: drop the user and go to the login page.
-setUnauthorizedHandler(() => {
-  if (!store.user) return
-  store.user = null
-  const current = router.currentRoute.value
-  if (!current.meta.guest) router.replace({ path: '/login', query: { redirect: current.fullPath } })
-})
-
-export default router
