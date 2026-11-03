@@ -10,8 +10,8 @@
  *
  * 使用该样式的组件 / 页面:
  *   - src/layouts/AppLayout.vue (主框架整体布局结构及所有布局类名)
- *   - src/layouts/AuthShell.vue (.brand-logo 品牌图标)
- *   - src/layouts/AuthArt.vue (.brand 品牌展示)
+ *   - src/layouts/AuthLayout.vue (.brand-logo 品牌图标)
+ *   - src/components/auth/AuthArt.vue (.brand 品牌展示)
  *   - src/views/admin/Users.vue (.dropdown-menu, .dropdown-item 更多操作菜单)
  *   - src/components/base/SuggestInput.vue (.dropdown-menu.floating, .dropdown-item, .dropdown-check 输入建议列表)
  *   - src/components/base/SelectMenu.vue (.dropdown-menu.floating, .dropdown-item, .dropdown-check 下拉选择列表)

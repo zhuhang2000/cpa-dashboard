@@ -10,8 +10,8 @@
  * 使用该样式的组件 / 页面:
  *   - src/views/Dashboard.vue (.alert, .alert-info, .alert-body, .alert-close)
  *   - src/views/Keys.vue (.alert, .alert-warning, .alert-body)
- *   - src/views/Login.vue (.alert, .alert-danger, .alert-body)
- *   - src/views/Register.vue (.alert, .alert-danger, .alert-warning, .alert-body)
+ *   - src/views/auth/Login.vue (.alert, .alert-danger, .alert-body)
+ *   - src/views/auth/Register.vue (.alert, .alert-danger, .alert-warning, .alert-body)
  *   - src/views/admin/Overview.vue (.alert, .alert-warning, .alert-danger, .alert-body)
  *   - src/views/admin/Prices.vue (.alert, .alert-info, .alert-body)
  *   - src/views/admin/Settings.vue (.alert, .alert-warning, .alert-body)

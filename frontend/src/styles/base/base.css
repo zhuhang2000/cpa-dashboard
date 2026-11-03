@@ -18,7 +18,7 @@
  *     - src/views/Settings.vue (.muted, .num)
  *     - src/views/Usage.vue (.muted, .num, .nowrap, .mono)
  *     - src/views/Pricing.vue (.muted, .num, .nowrap, .mono)
- *     - src/views/Register.vue (.faint, .text-success)
+ *     - src/views/auth/Register.vue (.faint, .text-success)
  *     - src/views/NotFound.vue (.muted)
  *     - src/views/admin/Overview.vue (.num, .mono)
  *     - src/views/admin/Users.vue (.muted, .text-success, .num, .text-danger, .nowrap)
@@ -29,9 +29,9 @@
  *     - src/views/admin/Prices.vue (.muted, .faint, .num, .nowrap, .mono)
  *     - src/views/admin/Settings.vue (.mono)
  *     - src/views/recharge/index.vue (.muted, .num, .text-danger)
- *     - src/views/recharge/OnlinePayCard.vue (.num)
- *     - src/views/recharge/RedeemCard.vue (.muted, .mono)
- *     - src/views/recharge/OrderTable.vue (.num, .nowrap, .mono)
+ *     - src/components/recharge/OnlinePayCard.vue (.num)
+ *     - src/components/recharge/RedeemCard.vue (.muted, .mono)
+ *     - src/components/recharge/OrderTable.vue (.num, .nowrap, .mono)
  *     - src/components/shared/TransactionTable.vue (.text-success, .num, .text-danger, .nowrap, .mono)
  * ==============================================================================
  */

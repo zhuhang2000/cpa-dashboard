@@ -17,8 +17,8 @@
  *   - src/views/admin/Users.vue (.table-wrap, .table, .cell-main, .cell-sub, .actions, .right)
  *   - src/views/admin/Codes.vue (.table-wrap, .table, .cell-sub, .actions, .right)
  *   - src/views/admin/Prices.vue (.table-wrap, .table, .cell-main, .cell-sub, .actions, .right)
- *   - src/views/recharge/OnlinePayCard.vue (.cell-sub)
- *   - src/views/recharge/OrderTable.vue (.table-wrap, .table, .right)
+ *   - src/components/recharge/OnlinePayCard.vue (.cell-sub)
+ *   - src/components/recharge/OrderTable.vue (.table-wrap, .table, .right)
  *   - src/components/shared/TransactionTable.vue (.table-wrap, .table, .cell-sub, .right)
  * ==============================================================================
  */
