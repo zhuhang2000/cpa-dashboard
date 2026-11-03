@@ -1,5 +1,6 @@
 // Applies the saved theme before first paint (kept external to satisfy the CSP).
+var theme = 'light'
 try {
-  var t = localStorage.getItem('portal-theme')
-  if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t)
+  if (localStorage.getItem('portal-theme') === 'dark') theme = 'dark'
 } catch (e) {}
+document.documentElement.setAttribute('data-theme', theme)
