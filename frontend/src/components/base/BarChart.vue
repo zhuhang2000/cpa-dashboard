@@ -161,6 +161,8 @@ const tipStyle = computed(() => {
   max-width: 22px;
   border-radius: 3px 3px 0 0;
   transition: height 0.35s ease;
+}
+:root[data-theme='dark'] .chart-bar {
   -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.15) 100%);
   mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.85) 0%, rgba(0, 0, 0, 0.15) 100%);
 }
