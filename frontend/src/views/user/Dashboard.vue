@@ -145,7 +145,7 @@
             <div class="step-label">配置 Codex<span>Setup</span></div>
             <div class="step-value muted">推荐用 Cockpit Tools 填入以上两项</div>
             <a
-              href="https://help.tromino.wiki/guidance/api-guide#tool-intro"
+              href="https://apiguide.tomtromino.workers.dev/guidance/api-guide#tool-intro"
               target="_blank"
               rel="noopener"
               class="btn btn-sm btn-ghost step-action ext-link"
