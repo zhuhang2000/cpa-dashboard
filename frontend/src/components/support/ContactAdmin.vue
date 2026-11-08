@@ -1,12 +1,12 @@
 <template>
   <div class="contact">
-    <div v-if="contact.open" ref="panel" class="contact-panel card" role="dialog" aria-label="联系管理员">
+    <div v-if="contactAdmin.open" ref="contactPanel" class="contact-panel card" role="dialog" aria-label="联系管理员">
       <div class="contact-head">
         <div>
           <div class="card-title">联系管理员</div>
-          <div class="contact-sub">充值、兑换码或使用中遇到问题，都可以找我们</div>
+          <div class="contact-sub">充值或使用中遇到问题，都可以找我们</div>
         </div>
-        <button class="btn btn-ghost btn-icon btn-sm" aria-label="关闭" @click="contact.close()">
+        <button class="btn btn-ghost btn-icon btn-sm" aria-label="关闭" @click="contactAdmin.close()">
           <Icon name="x" :size="16" />
         </button>
       </div>
@@ -15,21 +15,26 @@
         <figcaption>打开微信「扫一扫」添加管理员</figcaption>
       </figure>
     </div>
-    <button class="contact-tab" data-tour="contact" :aria-expanded="contact.open" @click="contact.toggle">
+    <button class="contact-tab" data-tour="contact" :aria-expanded="contactAdmin.open" @click="contactAdmin.toggle">
       <Icon name="message" :size="18" />
       <span>联系管理员</span>
     </button>
   </div>
 </template>
 
-<script setup>
+<script>
 import { ref } from 'vue'
-import wechatQr from '@/assets/wechat-qr.jpg'
-import Icon from '@/components/base/Icon.vue'
 import { usePopover } from '@/composables/usePopover'
 
-const panel = ref(null)
-const contact = usePopover({ panel })
+// One contact panel for the whole app (AppLayout mounts a single ContactAdmin). Besides the side tab, other
+// screens open it from their own trigger with `@click="contactAdmin.toggle"`, e.g. the redeem card's bubble.
+const contactPanel = ref(null)
+export const contactAdmin = usePopover({ panel: contactPanel })
+</script>
+
+<script setup>
+import wechatQr from '@/assets/wechat-qr.jpg'
+import Icon from '@/components/base/Icon.vue'
 </script>
 
 <style scoped>
@@ -49,7 +54,8 @@ const contact = usePopover({ panel })
   align-items: center;
   gap: 6px;
   padding: 12px 8px;
-  border: 0;
+  border: 1px solid transparent;
+  border-right: 0;
   border-radius: 10px 0 0 10px;
   background: var(--accent);
   color: var(--on-accent);
@@ -57,9 +63,21 @@ const contact = usePopover({ panel })
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 .contact-tab:hover {
   background: var(--accent-hover);
+}
+:root[data-theme='dark'] .contact-tab {
+  background: #262420;
+  border-color: #3a3630;
+  color: #d6d0c4;
+  box-shadow: var(--shadow);
+}
+:root[data-theme='dark'] .contact-tab:hover {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
 }
 .contact-tab span {
   writing-mode: vertical-rl;

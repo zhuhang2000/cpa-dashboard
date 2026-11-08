@@ -86,7 +86,7 @@
   margin: 16px 0;
 }
 .progress {
-  height: 6px;
+  height: 5px;
   border-radius: 999px;
   background: var(--chart-track);
   overflow: hidden;
@@ -94,7 +94,7 @@
 .progress > div {
   height: 100%;
   border-radius: 999px;
-  background: var(--accent);
+  background: var(--chart-1);
 }
 .progress.warn > div {
   background: var(--warning);

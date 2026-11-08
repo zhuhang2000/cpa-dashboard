@@ -28,7 +28,7 @@
   width: var(--sidebar-w);
   display: flex;
   flex-direction: column;
-  background: var(--surface);
+  background: var(--sidebar-bg, var(--surface));
   border-right: 1px solid var(--border);
   z-index: 40;
 }
@@ -55,9 +55,15 @@
   width: 30px;
   height: 30px;
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--accent), #8b5cf6);
+  background: linear-gradient(135deg, #4f5bd5, #8b5cf6);
   color: #fff;
   flex: none;
+  transition: background 0.25s ease, color 0.25s ease;
+}
+
+:root[data-theme='dark'] .brand-logo {
+  background: linear-gradient(135deg, #ffe0c4, #e09f67);
+  color: #1c140d;
 }
 
 .nav {
