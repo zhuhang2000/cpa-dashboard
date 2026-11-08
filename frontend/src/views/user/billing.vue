@@ -3,7 +3,7 @@
     <div class="page-header">
       <div>
         <h1 class="page-title">充值中心</h1>
-        <p class="page-desc">余额按实际调用扣费，充值后已暂停的密钥会在几秒内自动恢复。</p>
+        <p class="page-desc">为你的 AI 续航，随时接着用。</p>
       </div>
     </div>
 
@@ -13,38 +13,37 @@
       <button class="alert-close" aria-label="关闭" @click="resultMessage = ''"><Icon name="x" :size="16" /></button>
     </div>
 
-    <div class="balance-hero card">
-      <div>
-        <div class="muted">当前余额</div>
-        <div class="balance-value num" :class="{ 'text-danger': (sessionStore.user?.balance ?? 0) <= 0 }">
-          {{ money(sessionStore.user?.balance || 0) }}
+    <div class="wallet" :class="{ 'has-online': online }">
+      <section class="card balance-card" aria-label="账户额度">
+        <div class="balance-main">
+          <div class="balance-head">
+            <div class="balance-label">当前可用额度</div>
+            <div class="balance-value num" :class="{ 'text-danger': balance <= 0 }">
+              {{ money(balance) }}
+            </div>
+            <span class="badge plain balance-tag"><Icon name="zap" :size="13" />按量扣费 · 余额不过期</span>
+          </div>
+          <SpendTrend class="balance-trend" />
+          <div class="balance-stats">
+            <div>
+              <span>累计充值</span><b class="num">{{ money(user.total_recharge || 0) }}</b>
+            </div>
+            <div>
+              <span>累计消费</span><b class="num">{{ money(user.total_spent || 0) }}</b>
+            </div>
+          </div>
         </div>
-      </div>
-      <div class="balance-meta">
-        <div>
-          <div class="muted">累计充值</div>
-          <b class="num">{{ money(sessionStore.user?.total_recharge || 0) }}</b>
-        </div>
-        <div>
-          <div class="muted">累计消费</div>
-          <b class="num">{{ money(sessionStore.user?.total_spent || 0) }}</b>
-        </div>
-      </div>
-    </div>
-
-    <div class="grid grid-2">
-      <RedeemCard @redeemed="onRedeemed" />
-      <OnlinePayCard :payment="payment" />
+      </section>
+      <RedeemCard class="wallet-redeem" @redeemed="onRedeemed" />
+      <OnlinePayCard v-if="online" class="wallet-online" :payment="payment" />
     </div>
 
     <div class="card">
       <div class="card-header">
         <div class="card-title">余额记录</div>
-        <div class="tabs">
+        <div v-if="online" class="tabs">
           <button class="tab" :class="{ active: tab === 'tx' }" @click="switchTab('tx')">余额流水</button>
-          <button v-if="online" class="tab" :class="{ active: tab === 'orders' }" @click="switchTab('orders')">
-            支付订单
-          </button>
+          <button class="tab" :class="{ active: tab === 'orders' }" @click="switchTab('orders')">支付订单</button>
         </div>
       </div>
       <TransactionTable v-if="tab === 'tx'" :list="tx" />
@@ -61,6 +60,7 @@ import TransactionTable from '@/components/shared/TransactionTable.vue'
 import OnlinePayCard from '@/components/billing/OnlinePayCard.vue'
 import OrderTable from '@/components/billing/OrderTable.vue'
 import RedeemCard from '@/components/billing/RedeemCard.vue'
+import SpendTrend from '@/components/billing/SpendTrend.vue'
 import { billingApi } from '@/api/billing'
 import { usePagedList } from '@/composables/usePagedList'
 import { refreshUser, siteStore, sessionStore } from '@/stores'
@@ -70,6 +70,8 @@ const route = useRoute()
 const router = useRouter()
 const payment = computed(() => siteStore.status?.payment || { online: false, channels: [], presets: [] })
 const online = computed(() => payment.value.online)
+const user = computed(() => sessionStore.user || {})
+const balance = computed(() => Number(user.value.balance) || 0)
 const tab = ref('tx')
 const tx = usePagedList(billingApi.listTransactions)
 const orders = usePagedList(billingApi.listOrders)
@@ -104,26 +106,115 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.balance-hero {
+/* Balance on the left, recharge on the right, stretched to one height so their tops and bottoms line up.
+   With online pay enabled it takes the right column and the redeem card moves under the balance. */
+.wallet {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.wallet.has-online {
+  grid-template-areas:
+    'balance online'
+    'redeem online';
+}
+.has-online .balance-card {
+  grid-area: balance;
+}
+.has-online .wallet-redeem {
+  grid-area: redeem;
+}
+.has-online .wallet-online {
+  grid-area: online;
+}
+
+.balance-card {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 24px;
-  flex-wrap: wrap;
-  padding: 22px 24px;
-  background: radial-gradient(600px 180px at 0% 0%, var(--accent-soft), transparent 70%), var(--surface);
+  flex-direction: column;
+  container-type: inline-size;
+}
+/* Amount and usage-rule tag top-left, totals pinned to the bottom-left; the 7-day spend curve fills the
+   full height on the right, so extra height from the row grows the chart. Stacked when the card is narrow. */
+.balance-main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    'head trend'
+    'stats trend';
+  gap: 30px 32px;
+  padding: 20px 24px;
+}
+.balance-head {
+  grid-area: head;
+}
+.balance-trend {
+  grid-area: trend;
+}
+@container (max-width: 460px) {
+  .balance-main {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-template-areas: 'head' 'trend' 'stats';
+  }
+}
+.balance-label {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 500;
 }
 .balance-value {
-  font-size: 34px;
+  margin-top: 8px;
+  font-size: 36px;
   font-weight: 700;
+  line-height: 1.1;
   letter-spacing: -0.02em;
-  margin-top: 2px;
+  overflow-wrap: anywhere;
 }
-.balance-meta {
+.balance-tag {
+  margin-left: -10px;
+  margin-top: 10px;
+}
+.balance-stats {
+  grid-area: stats;
+  align-self: end;
   display: flex;
-  gap: 40px;
+  flex-wrap: wrap;
+  row-gap: 8px;
 }
-.balance-meta b {
-  font-size: 17px;
+.balance-stats > div {
+  padding-right: 20px;
+}
+.balance-stats > div + div {
+  padding-left: 20px;
+  border-left: 1px solid var(--border);
+}
+.balance-stats span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+.balance-stats b {
+  display: block;
+  margin-top: 2px;
+  font-size: 15px;
+  font-weight: 600;
+}
+@media (max-width: 900px) {
+  .wallet {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .wallet.has-online {
+    grid-template-areas: 'balance' 'online' 'redeem';
+  }
+}
+@media (max-width: 560px) {
+  .balance-main {
+    padding: 18px 16px 16px;
+  }
+  .balance-value {
+    font-size: 30px;
+  }
 }
 </style>

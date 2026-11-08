@@ -9,8 +9,8 @@
         <tr>
           <th>订单号</th>
           <th>支付方式</th>
-          <th class="right">支付金额</th>
-          <th class="right">到账</th>
+          <th class="right">实付人民币</th>
+          <th class="right">到账额度</th>
           <th>状态</th>
           <th>创建时间</th>
         </tr>
@@ -19,7 +19,7 @@
         <tr v-for="o in list.items" :key="o.order_no">
           <td class="mono nowrap">{{ o.order_no }}</td>
           <td>{{ PAY_CHANNELS[o.channel] || o.channel }}</td>
-          <td class="right num">{{ currency() }}{{ o.pay_amount }}</td>
+          <td class="right num">¥{{ o.pay_amount }}</td>
           <td class="right num">{{ money(o.credit) }}</td>
           <td><StatusBadge :map="ORDER_STATUSES" :value="o.status" /></td>
           <td class="nowrap num">{{ dateTime(o.created_at) }}</td>
@@ -37,7 +37,7 @@ import EmptyState from '@/components/base/EmptyState.vue'
 import Pagination from '@/components/base/Pagination.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import { ORDER_STATUSES, PAY_CHANNELS } from '@/constants'
-import { currency, dateTime, money } from '@/utils/format'
+import { dateTime, money } from '@/utils/format'
 
 // Online payment orders: a usePagedList() of billingApi.listOrders.
 defineProps({

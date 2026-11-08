@@ -3,16 +3,13 @@
     <div class="card-header">
       <div>
         <div class="card-title">在线充值</div>
-        <div class="card-sub">{{ payment.online ? '选择金额与支付方式，支付完成后自动到账' : '暂未开放' }}</div>
+        <div class="card-sub">选择金额与支付方式，支付完成后自动到账</div>
       </div>
       <span class="stat-icon blue"><Icon name="card" :size="16" /></span>
     </div>
-    <div v-if="!payment.online" class="card-body">
-      <EmptyState icon="card" title="在线支付暂未开放" desc="请使用兑换码充值，或联系管理员获取兑换码" />
-    </div>
-    <form v-else class="card-body" @submit.prevent="pay">
+    <form class="card-body" @submit.prevent="pay">
       <div class="field">
-        <span class="field-label">充值金额</span>
+        <span class="field-label">实付金额 · 人民币</span>
         <div class="amounts">
           <button
             v-for="p in presets"
@@ -20,17 +17,18 @@
             type="button"
             class="amount"
             :class="{ active: !customAmount && amount === p }"
+            :aria-pressed="!customAmount && amount === p"
             @click="pick(p)"
           >
-            <b class="num">{{ currency() }}{{ p }}</b>
-            <span v-if="ratio !== 1" class="cell-sub">到账 {{ money(p * ratio) }}</span>
+            <b class="num">¥{{ p }}</b>
+            <span class="amount-credit">到账 {{ money(p * ratio) }} 额度</span>
           </button>
         </div>
       </div>
       <div class="field">
         <label for="custom-amount">自定义金额</label>
         <div class="input-group has-prefix">
-          <span class="input-prefix">{{ currency() }}</span>
+          <span class="input-prefix">¥</span>
           <input
             id="custom-amount"
             v-model="customAmount"
@@ -58,9 +56,13 @@
           </button>
         </div>
       </div>
+      <div class="payment-summary" aria-live="polite">
+        <span>预计到账额度</span>
+        <strong class="num">{{ money(finalAmount * ratio) }}</strong>
+      </div>
       <button class="btn btn-primary btn-block btn-lg" :disabled="paying || !finalAmount">
         <Icon v-if="paying" name="loader" :size="16" />
-        {{ paying ? '正在跳转…' : `支付 ${currency()}${finalAmount || 0}` }}
+        {{ paying ? '正在跳转…' : `支付 ¥${finalAmount.toFixed(2)}，立即充值` }}
       </button>
     </form>
   </div>
@@ -68,14 +70,14 @@
 
 <script setup>
 import { computed, ref } from 'vue'
-import EmptyState from '@/components/base/EmptyState.vue'
 import Icon from '@/components/base/Icon.vue'
 import { billingApi } from '@/api/billing'
 import { PAY_CHANNELS } from '@/constants'
-import { currency, money } from '@/utils/format'
+import { money } from '@/utils/format'
 import { toast } from '@/toast'
 
 // siteStore.status.payment: online, channels, presets, min_amount, max_amount, credit_ratio.
+// Mounted by the billing page only while online payment is enabled.
 const props = defineProps({
   payment: { type: Object, required: true },
 })
@@ -126,14 +128,37 @@ async function pay() {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  height: 56px;
+  gap: 6px;
+  min-height: 76px;
+  padding: 10px 4px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--text);
   cursor: pointer;
   font-size: 15px;
+}
+.amount-credit {
+  color: var(--muted);
+  font-size: 12px;
+}
+.amount.active .amount-credit {
+  color: var(--accent-text);
+}
+.payment-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  font-size: 13px;
+}
+.payment-summary strong {
+  font-size: 22px;
 }
 .amount:hover {
   border-color: var(--accent);
@@ -175,5 +200,10 @@ async function pay() {
 }
 .dot.qqpay {
   background: #12b7f5;
+}
+@media (max-width: 420px) {
+  .amounts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 </style>
