@@ -4,7 +4,9 @@
  * 文件路径: styles/components/buttons.css
  * 职责描述:
  *   定义系统通用按钮样式体系 (.btn, .btn-primary, .btn-danger, .btn-ghost,
- *   .btn-sm, .btn-lg, .btn-block, .btn-icon, .link-btn)，支持禁用与悬浮过渡动效。
+ *   .btn-sm, .btn-lg, .btn-block, .btn-icon, .link-btn)，统一提供悬浮 (:hover)、
+ *   按下 (:active) 与禁用 (:disabled) 三种交互状态及过渡动效。配色通过 --btn-* 变量实现，
+ *   新增变体的写法见下方「变量约定」。
  *
  * 使用该样式的组件 / 页面:
  *   - src/components/base/CopyButton.vue (.btn, .btn-ghost, .btn-sm, .btn-icon)
@@ -34,17 +36,54 @@
  * ==============================================================================
  */
 
+/* ------------------------------------------------------------------------------
+ * 变量约定 (参考 Bootstrap 5.3 按钮的写法)
+ *   1. .btn 声明全部 --btn-* 变量并给出默认值；状态规则 (hover / active) 只读变量，
+ *      不写死颜色。
+ *   2. 变体类 (.btn-primary 等) 只给变量重新赋值，不写 :hover / :active 选择器；
+ *      没有改的变量沿用 .btn 的默认值。
+ *   3. 变体类必须写在 .btn 之后：两者优先级相同，靠先后顺序覆盖变量。
+ *   4. hover / active 都带 :not(:disabled)，禁用按钮不响应悬浮与点击。
+ *   5. 按下的通用反馈 (下沉 1px + 去掉阴影) 所有按钮共用，只写在 .btn:active 上。
+ *   6. 在其他地方微调按钮外观时也改变量，例如 auth.css 里的
+ *      .auth .btn-primary { --btn-shadow: ... }。
+ *
+ * 新增变体示例 (用法: class="btn btn-success"):
+ *   .btn-success {
+ *     --btn-color: #fff;
+ *     --btn-bg: var(--success);
+ *     --btn-border: var(--success);
+ *     --btn-hover-bg: var(--success-hover);      (颜色需先在 tokens.css 中定义)
+ *     --btn-hover-border: var(--success-hover);
+ *     --btn-active-bg: var(--success-active);
+ *     --btn-active-border: var(--success-active);
+ *   }
+ * ------------------------------------------------------------------------------ */
 .btn {
+  /* 常态 */
+  --btn-color: var(--text);
+  --btn-bg: var(--surface);
+  --btn-border: var(--border-strong);
+  --btn-shadow: var(--shadow-sm);
+  /* 悬浮: 默认只换背景，文字与边框沿用常态 */
+  --btn-hover-color: var(--btn-color);
+  --btn-hover-bg: var(--surface-2);
+  --btn-hover-border: var(--btn-border);
+  /* 按下: 默认只换背景，文字与边框沿用悬浮 */
+  --btn-active-color: var(--btn-hover-color);
+  --btn-active-bg: var(--surface-3);
+  --btn-active-border: var(--btn-hover-border);
+
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   height: 36px;
   padding: 0 14px;
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--btn-border);
   border-radius: var(--radius-sm);
-  background: var(--surface);
-  color: var(--text);
+  background: var(--btn-bg);
+  color: var(--btn-color);
   font-weight: 500;
   white-space: nowrap;
   cursor: pointer;
@@ -52,65 +91,90 @@
     background 0.15s,
     border-color 0.15s,
     color 0.15s,
-    box-shadow 0.15s;
-  box-shadow: var(--shadow-sm);
+    box-shadow 0.15s,
+    transform 0.08s;
+  box-shadow: var(--btn-shadow);
   text-decoration: none;
 }
-.btn:hover {
-  background: var(--surface-2);
+
+.btn:hover:not(:disabled) {
+  border-color: var(--btn-hover-border);
+  background: var(--btn-hover-bg);
+  color: var(--btn-hover-color);
   text-decoration: none;
 }
+
+.btn:active:not(:disabled) {
+  border-color: var(--btn-active-border);
+  background: var(--btn-active-bg);
+  color: var(--btn-active-color);
+  box-shadow: none;
+  transform: scale(0.97);
+  transition: transform 0.04s ease-out;
+}
+
 .btn:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+/* ---- 配色变体: 只改变量 ---- */
 .btn-primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
+  --btn-color: var(--on-accent);
+  --btn-bg: var(--accent);
+  --btn-border: var(--accent);
+  --btn-hover-bg: var(--accent-hover);
+  --btn-hover-border: var(--accent-hover);
+  --btn-active-bg: var(--accent-active);
+  --btn-active-border: var(--accent-active);
 }
-.btn-primary:hover {
-  background: var(--accent-hover);
-  border-color: var(--accent-hover);
-}
+
 .btn-danger {
-  background: var(--danger);
-  border-color: var(--danger);
-  color: #fff;
+  --btn-color: #fff;
+  --btn-bg: var(--danger);
+  --btn-border: var(--danger);
+  --btn-hover-bg: var(--danger-hover);
+  --btn-hover-border: var(--danger-hover);
+  --btn-active-bg: var(--danger-active);
+  --btn-active-border: var(--danger-active);
 }
-.btn-danger:hover {
-  filter: brightness(0.95);
-  background: var(--danger);
-}
+
 .btn-ghost {
-  background: transparent;
-  border-color: transparent;
-  box-shadow: none;
-  color: var(--text-2);
+  --btn-color: var(--text-2);
+  --btn-bg: transparent;
+  --btn-border: transparent;
+  --btn-shadow: none;
+  --btn-hover-bg: var(--surface-3);
+  --btn-active-bg: var(--border-strong);
 }
-.btn-ghost:hover {
-  background: var(--surface-3);
-}
+
+/* ---- 尺寸与形状: 与交互状态无关，直接写属性 ---- */
 .btn-sm {
   height: 30px;
   padding: 0 10px;
   font-size: 13px;
 }
+
 .btn-lg {
   height: 42px;
   padding: 0 20px;
   font-size: 15px;
 }
+
 .btn-block {
   width: 100%;
 }
+
 .btn-icon {
   width: 36px;
   padding: 0;
 }
+
 .btn-icon.btn-sm {
   width: 30px;
 }
+
+/* ---- 文字按钮: 状态只改下划线 / 透明度，变体只改文字色，两者不会互相覆盖，无需变量 ---- */
 .link-btn {
   border: 0;
   background: none;
@@ -118,9 +182,20 @@
   color: var(--accent-text);
   cursor: pointer;
 }
-.link-btn:hover {
+
+.link-btn:hover:not(:disabled) {
   text-decoration: underline;
 }
+
+.link-btn:active:not(:disabled) {
+  opacity: 0.7;
+}
+
+.link-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .link-btn.danger {
   color: var(--danger);
 }

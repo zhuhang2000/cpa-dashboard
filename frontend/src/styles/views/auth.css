@@ -175,8 +175,8 @@
   height: 42px;
 }
 .auth .btn-primary {
+  --btn-shadow: 0 8px 20px -10px rgba(79, 91, 213, 0.7);
   margin-top: 8px;
-  box-shadow: 0 8px 20px -10px rgba(79, 91, 213, 0.7);
 }
 .auth-foot {
   margin-top: 24px;
