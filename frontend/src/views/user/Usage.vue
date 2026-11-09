@@ -12,37 +12,7 @@
     </div>
 
     <div class="card">
-      <div class="card-body filters">
-        <div class="tabs">
-          <button
-            v-for="p in presets"
-            :key="p.key"
-            class="tab"
-            :class="{ active: range === p.key }"
-            @click="setRange(p.key)"
-          >
-            {{ p.label }}
-          </button>
-        </div>
-        <template v-if="range === 'custom'">
-          <input v-model="customStart" class="input input-sm" type="date" aria-label="开始日期" @change="apply" />
-          <span class="muted">至</span>
-          <input v-model="customEnd" class="input input-sm" type="date" aria-label="结束日期" @change="apply" />
-        </template>
-        <select v-model="keyId" class="select input-sm" aria-label="密钥" @change="apply">
-          <option value="">全部密钥</option>
-          <option v-for="k in keys" :key="k.id" :value="String(k.id)">{{ k.name }}</option>
-        </select>
-        <select v-model="model" class="select input-sm" aria-label="模型" @change="apply">
-          <option value="">全部模型</option>
-          <option v-for="m in models" :key="m" :value="m">{{ m }}</option>
-        </select>
-        <select v-model="status" class="select input-sm" aria-label="状态" @change="apply">
-          <option value="">全部状态</option>
-          <option value="success">成功</option>
-          <option value="failed">失败</option>
-        </select>
-      </div>
+      <UsageFilters v-model="filters" :keys="keys" :models="data.models" @change="apply" />
       <div class="summary-bar">
         <span
           >请求 <b class="num">{{ num(data.total) }}</b> 次</span
@@ -76,47 +46,29 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import Icon from '@/components/base/Icon.vue'
 import Pagination from '@/components/base/Pagination.vue'
+import UsageFilters, { usageFilters, usageQuery } from '@/components/shared/UsageFilters.vue'
 import UsageLogTable from '@/components/shared/UsageLogTable.vue'
 import { keysApi } from '@/api/api_keys'
 import { usageApi } from '@/api/usage'
-import { money, num, rangeBounds, toInputDate, tokens } from '@/utils/format'
+import { money, num, tokens } from '@/utils/format'
 import { toast } from '@/toast'
 
-const presets = [
-  { key: 'today', label: '今天' },
-  { key: '7d', label: '近 7 天' },
-  { key: '30d', label: '近 30 天' },
-  { key: 'all', label: '全部' },
-  { key: 'custom', label: '自定义' },
-]
-const range = ref('7d')
-const customStart = ref(toInputDate(Date.now() - 6 * 86400000))
-const customEnd = ref(toInputDate(Date.now()))
-const keyId = ref('')
-const model = ref('')
-const status = ref('')
+const filters = ref(usageFilters())
 const page = ref(1)
 const pageSize = 20
 const loading = ref(false)
 const keys = ref([])
-const models = ref([])
-const data = reactive({ items: [], total: 0, sum_cost: 0, sum_tokens: 0 })
+const data = reactive({ items: [], total: 0, sum_cost: 0, sum_tokens: 0, models: [] })
 
-const filters = computed(() => ({
-  ...rangeBounds(range.value, customStart.value, customEnd.value),
-  key_id: keyId.value,
-  model: model.value,
-  status: status.value,
-}))
-
-const exportHref = computed(() => usageApi.usageExportUrl(filters.value))
+const exportHref = computed(() => usageApi.usageExportUrl(usageQuery(filters.value)))
 
 async function load() {
   loading.value = true
   try {
-    const res = await usageApi.usageLogs({ ...filters.value, page: page.value, page_size: pageSize })
-    Object.assign(data, res)
-    models.value = res.models
+    Object.assign(
+      data,
+      await usageApi.usageLogs({ ...usageQuery(filters.value), page: page.value, page_size: pageSize }),
+    )
   } catch (e) {
     toast.error(e.message)
   } finally {
@@ -127,10 +79,6 @@ async function load() {
 function apply() {
   page.value = 1
   load()
-}
-function setRange(key) {
-  range.value = key
-  apply()
 }
 function go(p) {
   page.value = p
@@ -146,18 +94,3 @@ onMounted(async () => {
   }
 })
 </script>
-
-<style scoped>
-.filters {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  padding-bottom: 14px;
-}
-.filters .input,
-.filters .select {
-  width: auto;
-  min-width: 140px;
-}
-</style>

@@ -8,7 +8,7 @@
  * 使用该样式的组件 / 页面:
  *   - src/views/user/Dashboard.vue (.tabs, .tab)
  *   - src/views/user/Pricing.vue (.tabs, .tab)
- *   - src/views/user/Usage.vue (.tabs, .tab)
+ *   - src/components/shared/UsageFilters.vue (.tabs, .tab)
  *   - src/views/admin/Users.vue (.tabs, .tab)
  *   - src/components/admin/users/UserBalanceModal.vue (.tabs, .tab)
  *   - src/components/admin/users/UserTagModal.vue (.tabs, .tab)

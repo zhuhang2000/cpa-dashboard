@@ -12,7 +12,7 @@
  *   - src/views/auth/Register.vue (.field, .input)
  *   - src/views/user/Keys.vue (.field, .field-hint, .input, .input-group, .input-prefix)
  *   - src/views/user/Settings.vue (.field, .input)
- *   - src/views/user/Usage.vue (.select, .input-sm)
+ *   - src/components/shared/UsageFilters.vue (.input, .input-sm, .select)
  *   - src/views/user/Dashboard.vue (.field-label)
  *   - src/components/base/CopyButton.vue (.check)
  *   - src/components/base/PasswordInput.vue (.input, .input-group, .input-addon)
