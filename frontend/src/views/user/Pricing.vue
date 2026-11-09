@@ -3,13 +3,10 @@
     <div class="page-header">
       <div>
         <h1 class="page-title">模型价格</h1>
-        <p class="page-desc">按实际消耗的 tokens 计费，失败的请求不收费。</p>
+        <p class="page-desc">按实际消耗的 tokens 计费，价格单位为每百万 tokens，失败的请求不收费。</p>
       </div>
       <div class="page-actions">
-        <div class="tabs">
-          <button class="tab" :class="{ active: unit === 'M' }" @click="unit = 'M'">每百万 tokens</button>
-          <button class="tab" :class="{ active: unit === 'K' }" @click="unit = 'K'">每千 tokens</button>
-        </div>
+        <PriceTiers :tier="tier" />
       </div>
     </div>
 
@@ -49,26 +46,28 @@
                       <CopyButton :text="m.model" />
                     </div>
                     <div v-if="m.note" class="cell-sub">{{ m.note }}</div>
+                    <div v-if="tier.note(m)" class="cell-sub">{{ tier.note(m) }}</div>
                   </div>
                 </div>
               </td>
               <td v-for="part in ['input', 'output']" :key="part" class="right num nowrap">
                 <div v-if="saved && m.official" class="deal">
-                  <s class="was" title="官方价">{{ show(m.official[part]) }}</s>
+                  <s class="was" title="官方价">{{ price(tier.rates(m.official)[part]) }}</s>
                   <span class="badge badge-accent plain save">省 {{ saved }}%</span>
                 </div>
-                <div class="now">{{ show(m[part]) }}</div>
+                <div class="now">{{ price(tier.rates(m)[part]) }}</div>
               </td>
-              <td class="right num muted">{{ show(m.cache_read) }}</td>
-              <td class="right num muted">{{ show(m.cache_write) }}</td>
+              <td class="right num muted">{{ price(tier.rates(m).cache_read) }}</td>
+              <td class="right num muted">{{ price(tier.rates(m).cache_write) }}</td>
             </tr>
           </tbody>
         </table>
       </div>
       <div class="card-footer muted" style="font-size: 12.5px">
         <span
-          >费用 = 输入 tokens × 输入单价 + 输出 tokens × 输出单价（命中缓存的输入按缓存价格计算），推理 tokens
-          计入输出。<template v-if="saved">划线价为官方价，缓存价格同样打折。</template></span
+          >费用 = 输入 tokens × 输入价 + 输出 tokens × 输出价（命中缓存按缓存计，推理计入输出）。<template v-if="saved"
+            >划线价为官方价，同享折扣。</template
+          ></span
         >
       </div>
     </div>
@@ -81,6 +80,7 @@ import CopyButton from '@/components/base/CopyButton.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import SearchInput from '@/components/base/SearchInput.vue'
 import ModelLogo from '@/components/shared/ModelLogo.vue'
+import PriceTiers, { usePriceTiers } from '@/components/shared/PriceTiers.vue'
 import { pricingApi } from '@/api/pricing'
 import { price } from '@/utils/format'
 import { toast } from '@/toast'
@@ -89,7 +89,7 @@ const items = ref([])
 const discount = ref(1)
 const loading = ref(true)
 const q = ref('')
-const unit = ref('M')
+const tier = usePriceTiers(() => items.value)
 
 const filtered = computed(() => {
   const term = q.value.toLowerCase()
@@ -97,11 +97,6 @@ const filtered = computed(() => {
 })
 // Percent of the official price the discount saves (0.8 → 20); 0 when there is no discount.
 const saved = computed(() => Number(((1 - discount.value) * 100).toFixed(1)))
-
-function show(v) {
-  if (v === null || v === undefined) return '—'
-  return price(unit.value === 'K' ? v / 1000 : v)
-}
 
 onMounted(async () => {
   try {

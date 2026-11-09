@@ -3,13 +3,10 @@
     <div class="page-header">
       <div>
         <h1 class="page-title">模型定价</h1>
-        <p class="page-desc">
-          售价单位：{{ currency() }} / 百万 tokens。未单独定价的模型按 CPA Manager Plus 同步的官方价打折计费，当前
-          <b>{{ settings ? discount(settings.cpamp_price_discount) : '—' }}</b
-          >，可在<RouterLink to="/admin/settings">系统设置</RouterLink>中调整。
-        </p>
+        <p class="page-desc">售价单位：{{ currency() }} / 百万 tokens。</p>
       </div>
       <div class="page-actions">
+        <PriceTiers :tier="tier" />
         <button class="btn btn-primary" @click="openEdit(null)"><Icon name="plus" :size="16" />添加模型价格</button>
       </div>
     </div>
@@ -47,20 +44,24 @@
                       <template v-if="m.override?.note">{{ m.override.note }} · </template>
                       {{ m.calls ? `调用 ${num(m.calls)} 次 · ${relative(m.last_seen_ms)}` : '暂无调用' }}
                     </div>
+                    <div v-if="tier.note(m.price)" class="cell-sub">{{ tier.note(m.price) }}</div>
                   </div>
                 </div>
               </td>
               <td class="nowrap">
                 <StatusBadge :map="PRICE_SOURCES" :value="m.source" />
                 <div v-if="m.cpamp" class="cell-sub num" title="CPA Manager Plus 官方价（美元 / 百万 tokens）">
-                  官方 {{ usd(m.cpamp.input) }} / {{ usd(m.cpamp.output) }}
+                  官方 {{ usd(tier.rates(m.cpamp).input) }} / {{ usd(tier.rates(m.cpamp).output) }}
                 </div>
               </td>
               <td class="right num nowrap">
-                <b>{{ m.price ? `${price(m.price.input)} / ${price(m.price.output)}` : '—' }}</b>
-                <div v-if="m.price" class="cell-sub">
-                  缓存 {{ price(m.price.cache_read) }} / {{ price(m.price.cache_write) }}
-                </div>
+                <template v-if="m.price">
+                  <b>{{ price(tier.rates(m.price).input) }} / {{ price(tier.rates(m.price).output) }}</b>
+                  <div class="cell-sub">
+                    缓存 {{ price(tier.rates(m.price).cache_read) }} / {{ price(tier.rates(m.price).cache_write) }}
+                  </div>
+                </template>
+                <b v-else>—</b>
               </td>
               <td>
                 <label class="toggle">
@@ -168,6 +169,9 @@
             <button type="button" class="link-btn" style="margin-left: 6px" @click="fillReference">
               按 {{ discount(settings.cpamp_price_discount) }}填入
             </button>
+            <div v-if="editingRow.cpamp.tiers.length">
+              官方价另有长上下文分档，自定义价格为统一价，不区分上下文长度。
+            </div>
           </div>
         </div>
       </form>
@@ -186,6 +190,7 @@ import Icon from '@/components/base/Icon.vue'
 import Modal from '@/components/base/Modal.vue'
 import SearchInput from '@/components/base/SearchInput.vue'
 import ModelLogo from '@/components/shared/ModelLogo.vue'
+import PriceTiers, { usePriceTiers } from '@/components/shared/PriceTiers.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import { pricingApi } from '@/api/pricing'
 import { settingsApi } from '@/api/settings'
@@ -199,6 +204,7 @@ const settings = ref(null)
 const loading = ref(false)
 const saving = ref(false)
 const q = ref('')
+const tier = usePriceTiers(() => items.value.map((m) => m.price))
 const formOpen = ref(false)
 const editingModel = ref('')
 const form = reactive({ model: '', input: '', output: '', cache_read: '', cache_write: '', note: '' })
