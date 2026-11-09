@@ -1,15 +1,17 @@
 <template>
   <button
     ref="trigger"
-    class="btn btn-ghost btn-icon guide-btn"
-    :class="{ pulse }"
-    title="新手引导"
+    class="btn guide-btn"
+    :class="nudge ? 'nudge' : 'btn-ghost btn-icon'"
     aria-label="新手引导"
     aria-haspopup="dialog"
     @click="start"
-    @animationend="pulse = false"
   >
     <Icon name="help" />
+    <template v-if="nudge">
+      <span class="guide-label">新手引导</span>
+      <span class="guide-dot" />
+    </template>
   </button>
 
   <Teleport to="body">
@@ -49,9 +51,8 @@ import { useRoute, useRouter } from 'vue-router'
 import Icon from '@/components/base/Icon.vue'
 import { siteStore, sessionStore } from '@/stores'
 
-// The guide opens by itself on the overview page until this browser has seen it once. Closing it flies it
-// into this top-bar button, and from then on only the button opens it.
-const STORAGE_KEY = 'portal-guide-done'
+// The guide only opens from this top-bar button, never by itself. While the user has no API keys the button is a
+// labelled badge with a red dot, so it is hard to miss. Closing the guide flies it back into the button.
 // Space around the highlighted element, between it and the bubble, and between the bubble and the window edges.
 const PAD = 6
 const GAP = 12
@@ -81,14 +82,12 @@ const steps = computed(() => [
   {
     target: 'key',
     title: '第二步：创建 API 密钥',
-    body:
-      '密钥是你调用接口的凭证，等同于账户余额，请勿泄露或提交到公开仓库。' +
-      (sessionStore.keyCount ? '你已经有密钥了，点「管理密钥」可以查看和复制。' : '点「创建密钥」生成第一个。'),
+    body: '密钥是你调用接口的凭证，等同于账户余额，请勿泄露或提交到公开仓库。',
   },
   {
     target: 'connect',
     title: '第三步：配置 Codex',
-    body: '把「接入地址」和「API 密钥」填进 Codex 就能用了。推荐用 Cockpit Tools 统一管理这两项；第一次接触 Codex 可以先看「Codex 介绍」。',
+    body: '推荐用「Cockpit Tools」配置 Codex「接入地址」和「API 密钥」；第一次接触 Codex 可以先看「Codex 介绍」。',
   },
   {
     target: 'usage',
@@ -112,7 +111,7 @@ const trigger = ref(null)
 const spotEl = ref(null)
 const bubble = ref(null)
 const nextBtn = ref(null)
-const pulse = ref(false)
+const nudge = computed(() => sessionStore.keyCount === 0)
 // Where the spotlight and the bubble are drawn, in window coordinates.
 const spot = reactive({ x: 0, y: 0, w: 0, h: 0 })
 const pos = reactive({ left: 0, top: 0 })
@@ -121,8 +120,6 @@ const gliding = ref(false)
 let glide = null
 let frame = 0
 let leaving = false
-// Kept in memory too, so a closed guide stays closed when storage is unavailable.
-let seen = readSeen()
 
 watch(open, (isOpen, _, onCleanup) => {
   if (!isOpen) return
@@ -135,14 +132,12 @@ watch(open, (isOpen, _, onCleanup) => {
   })
 })
 
-// It only explains the overview page, so it opens there and closes when the page is left.
+// It only explains the overview page, so it closes when the page is left.
 watch(
   () => route.path,
   (path) => {
     if (path !== '/') close()
-    else if (!seen) start()
   },
-  { immediate: true },
 )
 
 function start() {
@@ -169,17 +164,10 @@ function go(i) {
   }
 }
 
-// Finishing, skipping or leaving the page marks the guide as seen and flies it into the top-bar button,
-// which then pulses to show where it can be opened again.
+// Finishing, skipping or leaving the page flies the guide into the top-bar button.
 async function close() {
   if (!open.value || leaving) return
   leaving = true
-  seen = true
-  try {
-    localStorage.setItem(STORAGE_KEY, '1')
-  } catch {
-    /* Storage may be unavailable; `seen` still keeps it closed until the page is reloaded. */
-  }
   cancelAnimationFrame(frame)
   const from = bubble.value.getBoundingClientRect()
   const to = trigger.value.getBoundingClientRect()
@@ -197,7 +185,6 @@ async function close() {
   leaving = false
   open.value = false
   trigger.value?.focus()
-  pulse.value = !reduceMotion
 }
 
 // While open, measure again every frame. This follows smooth scrolling, resizing and content that loads late
@@ -262,27 +249,49 @@ function onKey(e) {
   else if (e.key === 'ArrowRight' && !isLast.value) go(index.value + 1)
   else if (e.key === 'ArrowLeft' && index.value > 0) go(index.value - 1)
 }
-
-function readSeen() {
-  try {
-    return !!localStorage.getItem(STORAGE_KEY)
-  } catch {
-    return false
-  }
-}
 </script>
 
 <style scoped>
-.guide-btn.pulse {
-  background: var(--accent-soft);
-  color: var(--accent-text);
-  animation: guide-pulse 0.9s ease-out 3;
+/* The badge for users without keys: an accent pill the height of the balance pill beside it. */
+.guide-btn.nudge {
+  --btn-color: var(--accent-text);
+  --btn-bg: var(--accent-soft);
+  --btn-border: color-mix(in srgb, var(--accent) 45%, transparent);
+  --btn-shadow: none;
+  --btn-hover-bg: color-mix(in srgb, var(--accent) 20%, var(--surface));
+  --btn-hover-border: var(--accent);
+  --btn-active-bg: color-mix(in srgb, var(--accent) 28%, var(--surface));
+  position: relative;
+  height: 34px;
+  padding: 0 12px 0 10px;
+  border-radius: 999px;
+  font-weight: 600;
+}
+/* A dot on the corner with a ripple, like an unread notice. */
+.guide-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--danger);
+  box-shadow: 0 0 0 2px var(--bg);
+}
+/* On a narrow top bar only the icon and the dot are left. */
+@media (max-width: 860px) {
+  .guide-btn.nudge {
+    width: 34px;
+    padding: 0;
+  }
+  .guide-label {
+    display: none;
+  }
 }
 .guide {
   position: fixed;
   inset: 0;
   z-index: 100;
-  animation: fade-in 0.2s ease-out;
 }
 /* A hole over the highlighted element: its shadow dims everything else and rings the edge. The radius
    follows a card's corners, PAD outside them. */
@@ -298,7 +307,6 @@ function readSeen() {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  animation: guide-pulse 1.6s ease-out infinite;
 }
 .guide-spot.empty {
   box-shadow: 0 0 0 9999px rgba(10, 12, 18, 0.55);
@@ -320,7 +328,7 @@ function readSeen() {
 .guide-bubble.shown {
   opacity: 1;
   pointer-events: auto;
-  animation: pop-in 0.2s ease-out;
+  animation: pop-in 0.23s ease-out;
 }
 .guide-count {
   color: var(--faint);
@@ -357,18 +365,5 @@ function readSeen() {
 /* Skip stays on the left, apart from back and next. */
 .guide-skip {
   margin-right: auto;
-}
-@keyframes guide-pulse {
-  from {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 50%, transparent);
-  }
-  to {
-    box-shadow: 0 0 0 12px transparent;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .guide-spot::after {
-    animation: none;
-  }
 }
 </style>

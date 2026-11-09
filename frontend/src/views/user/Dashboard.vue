@@ -11,9 +11,14 @@
     <div v-if="sessionStore.keyCount === 0" class="card onboarding">
       <div>
         <div class="card-title">开始使用</div>
-        <p class="muted" style="margin-top: 4px">创建第一个 API 密钥，然后把它填进你的客户端即可开始调用。</p>
+        <p class="muted" style="margin-top: 4px">创建 API 密钥并配置到 Codex，即可开始使用。</p>
       </div>
-      <RouterLink to="/keys?create=1" class="btn btn-primary"><Icon name="plus" :size="16" />创建 API 密钥</RouterLink>
+      <div class="onboarding-cta">
+        <ClaudeGuide class="onboarding-guide" />
+        <RouterLink to="/keys?create=1" class="btn btn-primary"
+          ><Icon name="plus" :size="16" />创建 API 密钥</RouterLink
+        >
+      </div>
     </div>
 
     <div class="grid grid-4">
@@ -200,6 +205,7 @@ import CopyButton from '@/components/base/CopyButton.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import Icon from '@/components/base/Icon.vue'
 import StatCard from '@/components/base/StatCard.vue'
+import ClaudeGuide from '@/components/onboarding/ClaudeGuide.vue'
 import { useDismissUntilNextLogin } from '@/composables/useDismissUntilNextLogin'
 import { usageApi } from '@/api/usage'
 import { refreshUser, siteStore, sessionStore } from '@/stores'
@@ -358,6 +364,17 @@ onMounted(() => {
   padding: 18px 20px;
   flex-wrap: wrap;
   background: linear-gradient(120deg, var(--accent-soft), var(--surface) 70%);
+}
+/* The pixel Claude flies beside the button holding a key out to it, for as long as this card is shown (no keys
+   yet). When the card wraps, the two move to the next line together. */
+.onboarding-cta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+/* Taller than the button: drawn into the card's padding so the card keeps its height. */
+.onboarding-guide {
+  margin: -12px 0;
 }
 .rank {
   display: flex;
