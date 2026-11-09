@@ -3,10 +3,11 @@
  * 样式模块: 弹窗与对话框 (Modals & Overlays)
  * 文件路径: styles/components/modal.css
  * 职责描述:
- *   定义固定蒙层背景 (.modal-overlay, 淡入动画 fade-in)、
- *   模态对话框容器 (.modal, .modal.wide, .modal.xwide, 缩放滑入动画 pop-in)、
+ *   定义固定蒙层背景 (.modal-overlay)、
+ *   模态对话框容器 (.modal, .modal.wide, .modal.xwide)、
  *   对话框头部 (.modal-header)、标题 (.modal-title)、
- *   滚动主体 (.modal-body)、底部按钮操作区 (.modal-footer)。
+ *   滚动主体 (.modal-body)、底部按钮操作区 (.modal-footer)、
+ *   打开 / 关闭过渡 (.dialog-enter-* / .dialog-leave-*，从触发按钮放大、缩回触发按钮)，
  *
  * 使用该样式的组件 / 页面:
  *   - src/components/base/Modal.vue (统一对话框组件封装，所有页面弹窗均基于此组件)
@@ -21,8 +22,12 @@
   place-items: center;
   padding: 16px;
   background: rgba(10, 12, 18, 0.48);
-  animation: fade-in 0.15s ease-out;
+  backdrop-filter: blur(4px);
+  /* 现代浏览器高斯模糊 */
+  -webkit-backdrop-filter: blur(4px);
+  /* 兼容 Safari */
 }
+
 .modal {
   width: 100%;
   max-width: 460px;
@@ -33,14 +38,16 @@
   border: 1px solid var(--border);
   border-radius: 14px;
   box-shadow: var(--shadow-lg);
-  animation: pop-in 0.16s ease-out;
 }
+
 .modal.wide {
   max-width: 620px;
 }
+
 .modal.xwide {
   max-width: 960px;
 }
+
 .modal-header {
   display: flex;
   align-items: center;
@@ -48,28 +55,78 @@
   gap: 12px;
   padding: 18px 20px 0;
 }
+
 .modal-title {
   font-size: 16px;
   font-weight: 600;
 }
+
 .modal-body {
   padding: 16px 20px 4px;
   overflow-y: auto;
 }
+
 .modal-footer {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
   padding: 12px 20px 18px;
+  align-items: center;
 }
-@keyframes fade-in {
-  from {
-    opacity: 0;
-  }
+
+/* ------------------------------------------------------------------------------
+ * 打开 / 关闭过渡
+ *   由 Modal.vue 的 <Transition name="dialog"> 驱动，dialog-* 类名加在 .modal-overlay 上。
+ *   打开时面板从触发按钮的位置放大到正中，关闭时缩回该按钮。--from-x / --from-y / --from-s
+ *   由 Modal.vue 计算；找不到触发按钮时用下方 var() 的缺省值，从正中轻微放大。
+ *   修改面板的过渡时长时，要同步修改 Modal.vue 中 <Transition> 的 :duration。
+ *   这些规则必须写在 .modal-overlay / .modal 之后，靠先后顺序覆盖。
+ * ------------------------------------------------------------------------------ */
+
+/* 蒙层: 面板是蒙层的子元素，不能渐变 opacity (会连面板一起变透明)，改为渐变背景色与模糊 */
+.dialog-enter-active,
+.dialog-leave-active {
+  transition:
+    background-color 300ms ease,
+    backdrop-filter 300ms ease,
+    -webkit-backdrop-filter 300ms ease;
 }
-@keyframes pop-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px) scale(0.98);
+
+.dialog-leave-active {
+  /* 收回过程中不挡住页面点击 */
+  pointer-events: none;
+}
+
+.dialog-enter-from,
+.dialog-leave-to {
+  background-color: transparent;
+  backdrop-filter: blur(0);
+  -webkit-backdrop-filter: blur(0);
+}
+
+/* 面板: 打开用 easeOutQuint (起步快、慢慢停稳)，关闭用标准曲线；透明度比位移更早完成 */
+.dialog-enter-active .modal {
+  transition:
+    transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 120ms ease-out;
+}
+
+.dialog-leave-active .modal {
+  transition:
+    transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 180ms ease;
+}
+
+.dialog-enter-from .modal,
+.dialog-leave-to .modal {
+  opacity: 0;
+  transform: translate(var(--from-x, 0), var(--from-y, 8px)) scale(var(--from-s, 0.95));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* 只保留淡入淡出，不做位移与缩放 */
+  .dialog-enter-from .modal,
+  .dialog-leave-to .modal {
+    transform: none;
   }
 }

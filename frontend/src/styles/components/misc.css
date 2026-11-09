@@ -7,6 +7,7 @@
  *   空状态占位图文 (.empty, .empty-icon, .empty-title)、
  *   骨架屏微光动效 (.skeleton, shimmer 动画)、水平分割线 (.divider)、
  *   进度条 (.progress, .warn, .full)、键值对排版 (.kv)、旋转动画 (.spin)。
+ *   组件共用的关键帧 pop-in
  *
  * 使用该样式的组件 / 页面:
  *   - src/components/base/EmptyState.vue (.empty, .empty-icon, .empty-title)
@@ -22,6 +23,7 @@
  *   - src/views/admin/Settings.vue (.skeleton)
  *   - src/components/billing/OrderTable.vue (.skeleton)
  *   - src/components/shared/TransactionTable.vue (.skeleton)
+ *   - src/styles/components/toast.css、src/components/onboarding/GuideTour.vue (pop-in)
  * ==============================================================================
  */
 
@@ -37,6 +39,7 @@
   font-size: 13px;
   word-break: break-all;
 }
+
 .key-box span {
   flex: 1;
 }
@@ -51,6 +54,7 @@
   color: var(--muted);
   text-align: center;
 }
+
 .empty-icon {
   display: grid;
   place-items: center;
@@ -61,66 +65,87 @@
   color: var(--faint);
   margin-bottom: 6px;
 }
+
 .empty-title {
   color: var(--text);
   font-weight: 600;
   font-size: 15px;
 }
+
 .skeleton {
   border-radius: 6px;
   background: linear-gradient(90deg, var(--surface-3) 25%, var(--surface-2) 50%, var(--surface-3) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.3s infinite;
 }
+
 @keyframes shimmer {
   from {
     background-position: 200% 0;
   }
+
   to {
     background-position: -200% 0;
   }
 }
+
 .divider {
   height: 1px;
   background: var(--border);
   margin: 16px 0;
 }
+
 .progress {
   height: 5px;
   border-radius: 999px;
   background: var(--chart-track);
   overflow: hidden;
 }
+
 .progress > div {
   height: 100%;
   border-radius: 999px;
   background: var(--chart-1);
 }
+
 .progress.warn > div {
   background: var(--warning);
 }
+
 .progress.full > div {
   background: var(--danger);
 }
+
 .kv {
   display: grid;
   grid-template-columns: 110px minmax(0, 1fr);
   gap: 10px 16px;
   font-size: 13.5px;
 }
+
 .kv dt {
   color: var(--muted);
 }
+
 .kv dd {
   margin: 0;
   min-width: 0;
   word-break: break-all;
 }
+
 .spin {
   animation: spin 0.9s linear infinite;
 }
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
   }
 }
