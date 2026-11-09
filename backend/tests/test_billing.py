@@ -253,7 +253,13 @@ def test_pricing_precedence_aliases_and_public_visibility(billing_conn):
     assert overridden.cost_micro(1000000, 0, 0, 0) == 3000000
     alias, source = book.resolve("vendor/demo")
     assert source == "cpamp"
-    assert alias.as_dict() == {"input": 1, "output": 2, "cache_read": 0.1, "cache_write": 1.25}
+    assert alias.as_dict() == {
+        "input": 1,
+        "output": 2,
+        "cache_read": 0.1,
+        "cache_write": 1.25,
+        "tiers": [],
+    }
     fallback, source = book.resolve("unknown-model")
     assert source == "default"
     assert fallback.output == 14
@@ -263,6 +269,48 @@ def test_pricing_precedence_aliases_and_public_visibility(billing_conn):
         pricing.admin_list_prices(billing_conn, external, settings.get)["items"][0]["hidden"]
         is True
     )
+
+
+def test_long_context_tier_prices_the_whole_request_and_takes_the_discount(billing_conn):
+    settings = {
+        "default_input_price": 0,
+        "default_output_price": 0,
+        "cpamp_price_discount": 0.8,
+        "use_cpamp_prices": True,
+    }
+    tier = {"threshold": 272000, "input": 8, "output": 30, "cache_read": 0.8, "cache_write": 10}
+    base = {"input": 4, "output": 20, "cache_read": 0.4, "cache_write": 5, "tiers": [tier]}
+    external = pricing.prices_from_external({"Long": base, "Flat": base})
+    pricing.upsert_price(billing_conn, {"model": "Flat", "input": 3, "output": 6})
+    book = pricing.build_price_book(billing_conn, external, settings.get)
+    price, source = book.resolve("Long")
+    assert source == "cpamp"
+    # Input exactly at the threshold stays on the base price; one token more moves every token.
+    assert price.cost_micro(72000, 200000, 0, 10000) == 454400
+    assert price.cost_micro(100000, 200000, 0, 10000) == 1008000
+    # An administrator override is one flat price however long the request.
+    override, source = book.resolve("Flat")
+    assert source == "override"
+    assert override.cost_micro(100000, 200000, 0, 10000) == 420000
+    # Both price pages list the discounted tier with the selling price; an override lists none.
+    selling = {
+        "threshold": 272000,
+        "input": 6.4,
+        "output": 24,
+        "cache_read": 0.64,
+        "cache_write": 8,
+    }
+    listed = {
+        m["model"]: m
+        for m in pricing.list_prices(billing_conn, external, settings.get, "$")["items"]
+    }
+    assert (listed["Long"]["tiers"], listed["Flat"]["tiers"]) == ([selling], [])
+    admin = {
+        m["model"]: m
+        for m in pricing.admin_list_prices(billing_conn, external, settings.get)["items"]
+    }
+    assert (admin["Long"]["price"]["tiers"], admin["Flat"]["price"]["tiers"]) == ([selling], [])
+    assert admin["Flat"]["cpamp"]["tiers"] == [tier]
 
 
 def test_public_prices_carry_the_discount_and_official_prices(billing_conn):
@@ -279,4 +327,8 @@ def test_public_prices_carry_the_discount_and_official_prices(billing_conn):
     custom, listed = listing["items"]
     assert listing["discount"] == 0.8
     assert (custom["input"], custom["official"]) == (3, None)
-    assert (listed["input"], listed["output"], listed["official"]) == (8, 16, official)
+    assert (listed["input"], listed["output"], listed["official"]) == (
+        8,
+        16,
+        {**official, "tiers": []},
+    )

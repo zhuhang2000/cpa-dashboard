@@ -15,13 +15,18 @@ DAY_MS = 86400000
 
 
 class Price:
-    __slots__ = ("input", "output", "cache_read", "cache_write")
+    """Per-million-token prices. `tiers` holds (threshold, Price) long-context prices from CPA
+    Manager Plus: a request whose input, cache included, exceeds a threshold is priced wholly at
+    the highest such tier. Administrator overrides and the default price have none."""
 
-    def __init__(self, input_price, output_price, cache_read=None, cache_write=None):
+    __slots__ = ("input", "output", "cache_read", "cache_write", "tiers")
+
+    def __init__(self, input_price, output_price, cache_read=None, cache_write=None, tiers=()):
         self.input = input_price
         self.output = output_price
         self.cache_read = input_price * CACHE_READ_RATIO if cache_read is None else cache_read
         self.cache_write = input_price * CACHE_WRITE_RATIO if cache_write is None else cache_write
+        self.tiers = tuple(sorted(tiers, key=lambda tier: tier[0]))
 
     def scaled(self, factor):
         return Price(
@@ -29,9 +34,16 @@ class Price:
             self.output * factor,
             self.cache_read * factor,
             self.cache_write * factor,
+            [(threshold, tier.scaled(factor)) for threshold, tier in self.tiers],
         )
 
     def as_dict(self):
+        return {
+            **self._rates(),
+            "tiers": [{"threshold": threshold, **tier._rates()} for threshold, tier in self.tiers],
+        }
+
+    def _rates(self):
         return {
             "input": round(self.input, 6),
             "output": round(self.output, 6),
@@ -40,11 +52,15 @@ class Price:
         }
 
     def cost_micro(self, uncached_input, cache_read, cache_write, output):
+        price = self
+        for threshold, tier in self.tiers:
+            if uncached_input + cache_read + cache_write > threshold:
+                price = tier
         cost = (
-            uncached_input * self.input
-            + cache_read * self.cache_read
-            + cache_write * self.cache_write
-            + output * self.output
+            uncached_input * price.input
+            + cache_read * price.cache_read
+            + cache_write * price.cache_write
+            + output * price.output
         ) / PER_MILLION
         return int(round(cost * MICRO))
 
@@ -237,10 +253,17 @@ def set_visibility(conn, data):
 
 def prices_from_external(raw):
     """Convert adapter records into prices without opening the external database."""
-    return {
-        model: Price(value["input"], value["output"], value["cache_read"], value["cache_write"])
-        for model, value in raw.items()
-    }
+    return {model: _external_price(value) for model, value in raw.items()}
+
+
+def _external_price(value):
+    return Price(
+        value["input"],
+        value["output"],
+        value["cache_read"],
+        value["cache_write"],
+        [(tier["threshold"], _external_price(tier)) for tier in value.get("tiers", ())],
+    )
 
 
 def touch_model(conn, model, last_ms, calls):

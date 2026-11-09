@@ -130,6 +130,39 @@ class SyncTests(unittest.TestCase):
         finally:
             src.close()
 
+    def test_long_context_tier_loads_from_cpamp_and_bills_long_requests(self):
+        src = sqlite3.connect(self.source_path)
+        try:
+            src.executescript("""
+                CREATE TABLE model_price_context_tiers (
+                    model TEXT, threshold_tokens INTEGER, prompt_per_1m REAL, completion_per_1m REAL
+                );
+                INSERT INTO model_price_context_tiers VALUES ('test-model', 1500, 4, 6);
+                INSERT INTO model_price_context_tiers VALUES ('unpriced-model', 1500, 4, 6);
+            """)
+            src.execute(
+                "INSERT INTO usage_events VALUES (?,?,?,?,?,?,?,?)",
+                (5, "long", self.timestamp + 3, "test-model", self.key_hash, 2000, 100, 0),
+            )
+            src.commit()
+        finally:
+            src.close()
+        src = cpamp.open_database(self.source_path)
+        try:
+            tier = {"threshold": 1500, "input": 4, "output": 6, "cache_read": 0.4, "cache_write": 5}
+            self.assertEqual(cpamp.load_prices(src)["test-model"]["tiers"], [tier])
+            self.assertNotIn("unpriced-model", cpamp.load_prices(src))
+        finally:
+            src.close()
+        self.worker.sync_usage()
+        conn = connect(self.path)
+        try:
+            costs = dict(conn.execute("SELECT event_hash, cost_micro FROM usage_logs").fetchall())
+        finally:
+            conn.close()
+        # 1000 input tokens stay on the base price (2, 4); 2000 cross the tier (4, 6).
+        self.assertEqual((costs["billed"], costs["long"]), (2400, 8600))
+
     def test_failed_batch_rolls_back_usage_balance_key_models_and_cursor(self):
         conn = connect(self.path)
         try:
