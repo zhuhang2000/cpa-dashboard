@@ -55,11 +55,11 @@ def test_manager_lists_and_reads_only_its_group(client, runtime, team):
         assert "tag" not in items[0]
     # The manager is never told its tag's name, not even by searching for it.
     assert client.get("/api/admin/users", params={"q": "VIP"}).json()["items"] == []
-    for detail in ("billing/transactions", "usage/logs"):
-        assert client.get(f"/api/admin/users/{team['alice']}/{detail}").status_code == 200
-        for other in ("bob", "root", "keeper", "peer"):
-            response = client.get(f"/api/admin/users/{team[other]}/{detail}")
-            assert response.status_code == 404, (detail, other)
+    ledger = "billing/transactions"
+    assert client.get(f"/api/admin/users/{team['alice']}/{ledger}").status_code == 200
+    for other in ("bob", "root", "keeper", "peer"):
+        response = client.get(f"/api/admin/users/{team[other]}/{ledger}")
+        assert response.status_code == 404, other
 
     # A member's tag stays internal and grants nothing.
     login(client, "alice")
@@ -79,6 +79,7 @@ def test_manager_is_refused_every_other_administrator_action(client, team):
         ("PUT", f"/api/admin/users/{alice}/status", {"status": "banned"}),
         ("POST", f"/api/admin/users/{alice}/password", {"password": "replacement"}),
         ("GET", f"/api/admin/users/{alice}/keys", None),
+        ("GET", f"/api/admin/users/{alice}/usage/logs", None),
         ("GET", "/api/admin/codes", None),
         ("GET", "/api/admin/settings", None),
     ):
@@ -150,7 +151,7 @@ def test_scope_follows_the_tags_the_administrator_sets(client, team):
 
     login(client, "keeper")
     assert client.get("/api/admin/users").json()["items"] == []
-    assert client.get(f"/api/admin/users/{team['alice']}/usage/logs").status_code == 404
+    assert client.get(f"/api/admin/users/{team['alice']}/billing/transactions").status_code == 404
     # The demoted manager loses access on its next request and joins no group.
     me = login(client, "peer")
     assert me["role"] == Role.USER and "tag" not in me

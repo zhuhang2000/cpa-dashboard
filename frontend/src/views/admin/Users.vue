@@ -7,7 +7,7 @@
           点击用户名查看密钥、余额流水和调用记录，点铅笔可设置用户别名；按最近调用排序可找出长期不用的账号，勾选后可批量移到不活跃，或设置标签、任命标签管理员。
         </p>
         <p v-else class="page-desc">
-          这里列出由你负责的用户，你可以为他们充值或扣款。点击用户名查看余额流水和调用记录，点铅笔可设置用户别名。
+          这里列出由你负责的用户，你可以为他们充值或扣款。点击用户名查看余额流水，点铅笔可设置用户别名。
         </p>
       </div>
     </div>
@@ -113,7 +113,6 @@
                   <div class="row cell-sub user-meta">
                     <span class="num">#{{ u.id }}</span>
                     <span>{{ u.email || '未填写邮箱' }}</span>
-                    <button type="button" class="link-btn" @click="openDetail(u)">{{ u.key_count }} 个密钥</button>
                   </div>
                 </div>
               </td>

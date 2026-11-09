@@ -27,7 +27,7 @@
     </div>
     <div v-else-if="tab === 'keys'" class="stack">
       <div class="row detail-toolbar">
-        <span class="muted">{{ items.length }} 个密钥 · 可复制到 CPA 中查找</span>
+        <span class="muted">{{ items.length }} 个密钥</span>
         <button type="button" class="btn btn-sm" :disabled="loading" @click="loadKeys">
           <Icon name="refresh" :size="15" />刷新
         </button>
@@ -62,7 +62,7 @@
     </div>
     <div v-else-if="tab === 'ledger'" class="stack">
       <div class="row detail-toolbar">
-        <span class="muted">{{ num(ledger.total) }} 条记录 · 调用扣费不计入流水，请在「调用记录」中查看</span>
+        <span class="muted">{{ num(ledger.total) }} 条记录</span>
         <button type="button" class="btn btn-sm" :disabled="ledger.loading" @click="ledger.load()">
           <Icon name="refresh" :size="15" />刷新
         </button>
@@ -79,10 +79,17 @@
         </button>
       </div>
       <div class="card">
+        <UsageFilters
+          v-model="callFilters"
+          class="calls-filters"
+          :keys="items"
+          :models="calls.models"
+          @change="calls.load(1)"
+        />
         <div v-if="calls.loading && !calls.items.length" class="card-body stack" style="gap: 10px">
           <div v-for="i in 6" :key="i" class="skeleton" style="height: 34px" />
         </div>
-        <EmptyState v-else-if="!calls.items.length" icon="activity" title="暂无调用记录" />
+        <EmptyState v-else-if="!calls.items.length" icon="activity" title="没有符合条件的调用记录" />
         <UsageLogTable v-else :items="calls.items" />
         <div v-if="calls.total" class="card-footer">
           <Pagination :page="calls.page" :total="calls.total" :page-size="calls.page_size" @change="calls.load" />
@@ -110,6 +117,7 @@ import Modal from '@/components/base/Modal.vue'
 import Pagination from '@/components/base/Pagination.vue'
 import StatusBadge from '@/components/base/StatusBadge.vue'
 import TransactionTable from '@/components/shared/TransactionTable.vue'
+import UsageFilters, { usageFilters, usageQuery } from '@/components/shared/UsageFilters.vue'
 import UsageLogTable from '@/components/shared/UsageLogTable.vue'
 import { keysApi } from '@/api/api_keys'
 import { billingApi } from '@/api/billing'
@@ -128,8 +136,8 @@ const TABS = [
 
 const props = defineProps({ user: { type: Object, required: true } })
 const emit = defineEmits(['close', 'deleted'])
-// A key would let a tag manager spend the user's balance, so only the system administrator sees keys.
-const tabs = sessionStore.isAdmin ? TABS : TABS.filter((t) => t.key !== 'keys')
+// 普通管理员只能查看余额流水
+const tabs = sessionStore.isAdmin ? TABS : TABS.filter((t) => t.key === 'ledger')
 const tab = ref(tabs[0].key)
 const items = ref([])
 const loading = ref(false)
@@ -138,12 +146,12 @@ const removing = ref(null)
 const error = ref('')
 let mounted = true
 
-// Each tab loads the first time it is opened.
 const ledger = usePagedList((query) => billingApi.adminListTransactions(props.user.id, query))
+const callFilters = ref(usageFilters('all'))
 const calls = usePagedList(
   (query) => usageApi.adminUsageLogs(props.user.id, query),
-  () => ({}),
-  { sum_cost: 0 },
+  () => usageQuery(callFilters.value),
+  { sum_cost: 0, models: [] },
 )
 const lists = { ledger, usage: calls }
 const opened = new Set()
@@ -232,6 +240,9 @@ onBeforeUnmount(() => {
 .detail-toolbar {
   justify-content: space-between;
   flex-wrap: wrap;
+}
+.calls-filters {
+  border-bottom: 1px solid var(--border);
 }
 .key-card {
   display: flex;
