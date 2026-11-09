@@ -14,7 +14,11 @@ const consolePages = [
     meta: { title: '充值中心', icon: 'wallet' },
   },
   { path: 'pricing', component: () => import('@/views/user/Pricing.vue'), meta: { title: '模型价格', icon: 'tag' } },
-  { path: 'settings', component: () => import('@/views/user/Settings.vue'), meta: { title: '个人设置', icon: 'settings' } },
+  {
+    path: 'settings',
+    component: () => import('@/views/user/Settings.vue'),
+    meta: { title: '个人设置', icon: 'settings' },
+  },
 ]
 
 const adminPages = [

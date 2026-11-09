@@ -26,4 +26,3 @@ const points = [
   { icon: 'wallet', title: '余额不过期', desc: '用多少扣多少' },
 ]
 </script>
-

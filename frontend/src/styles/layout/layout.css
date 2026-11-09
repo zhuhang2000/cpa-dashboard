@@ -58,7 +58,9 @@
   background: linear-gradient(135deg, #4f5bd5, #8b5cf6);
   color: #fff;
   flex: none;
-  transition: background 0.25s ease, color 0.25s ease;
+  transition:
+    background 0.25s ease,
+    color 0.25s ease;
 }
 
 :root[data-theme='dark'] .brand-logo {
