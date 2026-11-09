@@ -3,7 +3,8 @@
  * 样式模块: 全局消息轻提示 (Toast Notifications)
  * 文件路径: styles/components/toast.css
  * 职责描述:
- *   定义顶部居中悬浮容器 (.toast-host)、提示气泡卡片 (.toast, pop-in 动画)
+ *   定义顶部居中悬浮容器 (.toast-host)、提示气泡卡片 (.toast, pop-in 动画)、
+ *   离场淡出与补位过渡 (.toast-leave-*, .toast-move)
  *   以及成功/错误/信息状态图标色彩 (.toast.success, .toast.error, .toast.info)。
  *
  * 使用该样式的组件 / 页面:
@@ -13,7 +14,8 @@
 
 .toast-host {
   position: fixed;
-  top: 16px;
+  /* 放在顶栏下方并留 12px 间距，避免气泡压在顶栏底边的分割线上 */
+  top: calc(var(--topbar-h) + 12px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 200;
@@ -25,6 +27,7 @@
   width: max-content;
   max-width: calc(100vw - 32px);
 }
+
 .toast {
   display: flex;
   align-items: center;
@@ -36,14 +39,37 @@
   box-shadow: var(--shadow-lg);
   font-weight: 500;
   pointer-events: auto;
-  animation: pop-in 0.18s ease-out;
+  animation: pop-in 0.23s ease-out;
 }
+
+/* ---- 离场 (ToastHost.vue 的 <TransitionGroup name="toast">) ----
+ *   淡出并略微上移缩小，与进入时的 pop-in 方向一致；同时下方的提示平滑上移补位 (.toast-move)。
+ *   离开的提示要脱离布局 (position: absolute)，补位才能和淡出同时进行；它的位置和宽度已在
+ *   ToastHost.vue 的 pin() 里固定，否则会跳到最顶上或重新换行。 */
+.toast-leave-active {
+  position: absolute;
+  transition:
+    opacity 0.2s ease-in,
+    transform 0.25s ease-in;
+}
+
+.toast-leave-to {
+  opacity: 0;
+  transform: translateY(-6px) scale(0.96);
+}
+
+.toast-move {
+  transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
 .toast.success svg {
   color: var(--success);
 }
+
 .toast.error svg {
   color: var(--danger);
 }
+
 .toast.info svg {
   color: var(--info);
 }

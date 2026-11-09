@@ -153,7 +153,7 @@
       </div>
       <div class="key-box">
         <span>{{ createdKey }}</span>
-        <CopyButton :text="createdKey" variant="default" size="md" label="复制" />
+        <CopyButton :text="createdKey" label="复制" />
       </div>
       <template #footer>
         <button class="btn btn-primary" @click="createdKey = ''">我已保存</button>

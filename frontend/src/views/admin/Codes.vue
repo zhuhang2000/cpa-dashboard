@@ -170,8 +170,7 @@
       </p>
       <textarea class="textarea mono" readonly rows="10" :value="generated?.codes.join('\n')" style="font-size: 13px" />
       <template #footer>
-        <button class="btn" @click="download"><Icon name="download" :size="16" />下载 TXT</button>
-        <CopyButton :text="generated?.codes.join('\n') || ''" label="复制全部" variant="default" size="md" />
+        <button class="btn" @click="copyAll"><Icon name="copy" :size="16" />复制全部</button>
         <button class="btn btn-primary" @click="generated = null">完成</button>
       </template>
     </Modal>
@@ -190,6 +189,7 @@ import StatusBadge from '@/components/base/StatusBadge.vue'
 import { billingApi } from '@/api/billing'
 import { usePagedList } from '@/composables/usePagedList'
 import { REDEEM_STATES, REDEEM_TYPES, RedeemState, RedeemStatus, RedeemType } from '@/constants'
+import { copyText } from '@/utils/clipboard'
 import { currency, date, dateTime, money } from '@/utils/format'
 import { toast } from '@/toast'
 
@@ -254,13 +254,9 @@ async function remove(c) {
   }
 }
 
-function download() {
-  const blob = new Blob([generated.value.codes.join('\n') + '\n'], { type: 'text/plain;charset=utf-8' })
-  const a = document.createElement('a')
-  a.href = URL.createObjectURL(blob)
-  a.download = `redeem-codes-${generated.value.type}-${generated.value.batch || 'batch'}-${Date.now()}.txt`
-  a.click()
-  setTimeout(() => URL.revokeObjectURL(a.href), 1000)
+async function copyAll() {
+  if (await copyText(generated.value.codes.join('\n'))) toast.success('已复制到剪贴板')
+  else toast.error('复制失败，请手动选择复制')
 }
 
 onMounted(() => codes.load(1))
