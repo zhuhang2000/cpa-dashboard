@@ -4,7 +4,7 @@
       <div class="contact-head">
         <div>
           <div class="card-title">联系管理员</div>
-          <div class="contact-sub">充值或使用中遇到问题，都可以找我们</div>
+          <div class="card-sub">充值或使用中遇到问题，都可以找我们</div>
         </div>
         <button class="btn btn-ghost btn-icon btn-sm" aria-label="关闭" @click="contactAdmin.close()">
           <Icon name="x" :size="16" />
@@ -43,9 +43,6 @@ import Icon from '@/components/base/Icon.vue'
   top: 50%;
   right: 0;
   z-index: 32;
-  display: flex;
-  align-items: center;
-  gap: 12px;
   transform: translateY(-50%);
 }
 .contact-tab {
@@ -54,8 +51,7 @@ import Icon from '@/components/base/Icon.vue'
   align-items: center;
   gap: 6px;
   padding: 12px 8px;
-  border: 1px solid transparent;
-  border-right: 0;
+  border: 0;
   border-radius: 10px 0 0 10px;
   background: var(--accent);
   color: var(--on-accent);
@@ -63,27 +59,49 @@ import Icon from '@/components/base/Icon.vue'
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transform-origin: right center; /* 按下时朝屏幕边缘缩 */
+  /* 缩回稍慢，不显突兀 */
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    padding-right 0.28s cubic-bezier(0.25, 1, 0.5, 1),
+    transform 0.2s ease;
 }
-.contact-tab:hover {
-  background: var(--accent-hover);
+/* 悬停探出要快；面板打开期间也保持探出 + 高亮 */
+.contact-tab:hover,
+.contact-tab[aria-expanded='true'] {
+  background-color: var(--accent-hover);
+  padding-right: 24px;
+  transition:
+    background-color 0.15s ease-out,
+    color 0.15s ease-out,
+    padding-right 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); /* 松手回弹 */
+}
+/* 按下：瞬间压暗、缩小；须写在 :hover 之后才能覆盖 */
+.contact-tab:active {
+  background-color: var(--accent-active);
+  transform: scale(0.9);
 }
 :root[data-theme='dark'] .contact-tab {
-  background: #262420;
-  border-color: #3a3630;
-  color: #d6d0c4;
-  box-shadow: var(--shadow);
+  background: #24221e;
+  color: #c4beb5;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
-:root[data-theme='dark'] .contact-tab:hover {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
+:root[data-theme='dark'] .contact-tab:hover,
+:root[data-theme='dark'] .contact-tab[aria-expanded='true'] {
+  background: #1c1a17;
+  color: var(--text);
 }
 .contact-tab span {
   writing-mode: vertical-rl;
   letter-spacing: 2px;
 }
 .contact-panel {
+  position: absolute;
+  right: calc(100% + 12px); /* 靠在按钮左侧，保持 12px 间距 */
+  top: 50%; /* 垂直对齐按钮中心 */
+  transform: translateY(-50%);
   width: min(300px, calc(100vw - 72px));
   padding: 16px;
   box-shadow: var(--shadow-lg);
@@ -94,11 +112,6 @@ import Icon from '@/components/base/Icon.vue'
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 12px;
-}
-.contact-sub {
-  margin-top: 2px;
-  font-size: 12.5px;
-  color: var(--muted);
 }
 .contact-qr {
   margin: 0;
