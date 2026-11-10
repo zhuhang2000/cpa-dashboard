@@ -11,7 +11,7 @@
       maxlength="2000"
       :aria-label="label || '公告内容'"
       :disabled="saving"
-      placeholder="第一行填写公告标题，换行后填写详细内容"
+      placeholder="首行写标题，换行写正文&#10;图片链接如https://image.tromino.wiki/image.png"
     />
     <div class="notice-editor-foot">
       <span v-if="hint" class="field-hint">{{ hint }}</span>

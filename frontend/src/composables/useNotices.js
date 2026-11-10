@@ -1,5 +1,6 @@
-import { computed, reactive, ref } from 'vue'
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { noticesApi } from '@/api/notices'
+import { settingsApi } from '@/api/settings'
 import { siteStore, sessionStore } from '@/stores'
 import { toast } from '@/toast'
 
@@ -7,26 +8,47 @@ import { toast } from '@/toast'
 export function useNotices() {
   const readKey = `portal-notice-read-${sessionStore.user?.id}`
   const readAt = ref(readStored())
+  const latestAt = ref(siteStore.status?.notice_latest_at || 0)
+  let timer
   const notices = reactive({
     items: [],
     loading: false,
     saving: false,
     // Snapshot from before opening, used to highlight newly received notices.
     seenBefore: 0,
-    unread: computed(() => (siteStore.status?.notice_latest_at || 0) > readAt.value),
+    unread: computed(() => latestAt.value > readAt.value),
     load,
     create,
     update,
     remove,
   })
 
+  // Site settings are cached for the session. Check independently so users already
+  // on the page receive new notices without reloading or opening the dialog.
+  async function checkLatest() {
+    if (document.hidden) return
+    try {
+      latestAt.value = (await settingsApi.getStatus()).notice_latest_at || 0
+    } catch {
+      // A background failure keeps the current badge; retry on the next check.
+    }
+  }
+
+  onMounted(() => {
+    timer = setInterval(checkLatest, 30000)
+    document.addEventListener('visibilitychange', checkLatest)
+  })
+  onUnmounted(() => {
+    clearInterval(timer)
+    document.removeEventListener('visibilitychange', checkLatest)
+  })
+
   async function load() {
     notices.seenBefore = readAt.value
-    markRead(siteStore.status?.notice_latest_at)
     notices.loading = true
     try {
       notices.items = (await noticesApi.listNotices()).items
-      // The list may be newer than the status loaded with the page.
+      // Only mark notices actually returned by a successful request as read.
       markRead(notices.items[0]?.created_at)
     } catch (e) {
       toast.error(e.message)
@@ -42,6 +64,8 @@ export function useNotices() {
       const { notice } = await noticesApi.adminCreateNotice({ content })
       notices.items = [notice, ...notices.items]
       markRead(notice.created_at)
+      // The publisher has seen it, so it is not tagged 未读 in the open dialog either.
+      notices.seenBefore = notice.created_at
       toast.success('通知已发布')
       return notice
     } catch (e) {

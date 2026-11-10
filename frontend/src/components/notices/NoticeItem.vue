@@ -10,12 +10,12 @@
     />
     <template v-else>
       <div class="notice-item-head">
-        <h3 class="notice-title">{{ content.title }}</h3>
+        <h3 v-if="content.title" class="notice-title">{{ content.title }}</h3>
         <span v-if="unread" class="notice-new-tag">未读</span>
         <button
           v-if="isAdmin"
           class="btn btn-ghost btn-icon btn-sm notice-more"
-          :aria-label="`更多操作：${content.title}`"
+          :aria-label="`更多操作：${content.title || '图片公告'}`"
           :aria-expanded="actions.open"
           :aria-controls="actions.open ? menuId : undefined"
           title="更多操作"
@@ -28,7 +28,23 @@
           </svg>
         </button>
       </div>
-      <p v-if="content.body" class="notice-body">{{ content.body }}</p>
+      <div v-if="content.blocks.length" class="notice-body">
+        <template v-for="(block, i) in content.blocks" :key="i">
+          <template v-if="block.src">
+            <a
+              v-if="!broken.has(block.src)"
+              class="notice-image"
+              :href="block.src"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="查看原图"
+            >
+              <img :src="block.src" alt="公告图片" loading="lazy" @error="broken.add(block.src)" />
+            </a>
+          </template>
+          <p v-else>{{ block.text }}</p>
+        </template>
+      </div>
       <div class="notice-meta">
         <span class="num">{{ dateTime(notice.created_at).slice(11) }}</span>
         <span aria-hidden="true">·</span>
@@ -59,7 +75,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, ref, useId, watch } from 'vue'
+import { computed, nextTick, reactive, ref, useId, watch } from 'vue'
 import Icon from '@/components/base/Icon.vue'
 import { usePopover } from '@/composables/usePopover'
 import { dateTime } from '@/utils/format'
@@ -85,9 +101,22 @@ const actions = usePopover({
     top: `${rect.bottom + 100 > innerHeight ? rect.top - 94 : rect.bottom + 6}px`,
   }),
 })
+// A line holding only an https image link shows as that image; other lines stay text. The first
+// line is the title unless it is an image, so an image-only notice needs no title.
+const IMAGE_LINE = /^https:\/\/\S+\.(?:png|jpe?g|gif|webp)(?:[?#]\S*)?$/i
+const broken = reactive(new Set())
 const content = computed(() => {
-  const [title, ...body] = props.notice.content.trim().split(/\r?\n/)
-  return { title, body: body.join('\n').trim() }
+  const lines = props.notice.content.trim().split(/\r?\n/)
+  const title = IMAGE_LINE.test(lines[0].trim()) ? '' : lines.shift()
+  const blocks = []
+  for (const line of lines) {
+    const last = blocks.at(-1)
+    if (IMAGE_LINE.test(line.trim())) blocks.push({ src: line.trim() })
+    else if (last && !last.src) last.text += `\n${line}`
+    else blocks.push({ text: line })
+  }
+  for (const block of blocks) if (!block.src) block.text = block.text.trim()
+  return { title, blocks: blocks.filter((block) => block.src || block.text) }
 })
 
 watch(
@@ -168,12 +197,30 @@ function confirmRemove() {
   color: var(--accent-text);
 }
 .notice-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
   margin-top: 6px;
   color: var(--text-2);
   font-size: 14px;
   line-height: 1.8;
+}
+.notice-body p {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+.notice-image {
+  display: block;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.notice-image img {
+  display: block;
+  max-width: 100%;
+  height: auto;
 }
 .notice-meta {
   display: flex;
