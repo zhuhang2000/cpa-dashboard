@@ -109,7 +109,7 @@
   background: var(--btn-active-bg);
   color: var(--btn-active-color);
   box-shadow: none;
-  transform: scale(0.97);
+  transform: scale(0.93);
   transition: transform 0.04s ease-out;
 }
 
