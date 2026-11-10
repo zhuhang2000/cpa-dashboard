@@ -7,7 +7,7 @@ from starlette.responses import HTMLResponse, PlainTextResponse
 from starlette.staticfiles import StaticFiles
 
 CSP = (
-    "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; "
+    "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; "
     "script-src 'self'; connect-src 'self'; font-src 'self' data:; object-src 'none'; "
     "base-uri 'self'; frame-ancestors 'none'"
 )

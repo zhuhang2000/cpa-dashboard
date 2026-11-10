@@ -271,14 +271,17 @@ def run_portal_scenario(admin, user, bootstrap_admin, append_usage, payment_key=
         "/api/admin/settings",
         json={
             "site_name": "Scenario portal",
-            "announcement": "maintenance test",
+            "announcement_image": "https://images.example.test/promo.png",
+            "announcement_width": 600,
             "cpamp_price_discount": 0.8,
         },
     )
     assert settings["settings"]["site_name"] == "Scenario portal"
     assert settings["settings"]["cpamp_price_discount"] == 0.8
     status, _ = call(user, "GET", "/api/status")
-    assert status["site_name"] == "Scenario portal" and status["announcement"] == "maintenance test"
+    assert status["site_name"] == "Scenario portal"
+    assert status["announcement_image"] == "https://images.example.test/promo.png"
+    assert status["announcement_width"] == 600
     assert status["notice_latest_at"] is None
 
     call(user, "POST", "/api/admin/notices", expected=403, json={"content": "not an admin"})
