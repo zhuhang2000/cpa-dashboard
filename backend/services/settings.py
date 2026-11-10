@@ -8,8 +8,6 @@ from core.db import get_setting, set_setting
 EDITABLE_SETTINGS = {
     "site_name": (str, ("site_name",)),
     "public_api_base": (str, ("public_api_base",)),
-    "announcement_image": (str, None),
-    "announcement_width": (int, None),
     "allow_register": (bool, ("allow_register",)),
     "use_cpamp_prices": (bool, ("pricing", "use_cpamp_prices")),
     "cpamp_price_discount": (float, ("pricing", "cpamp_price_discount")),
@@ -41,8 +39,6 @@ class RuntimeSettings:
         if name in runtime:
             return runtime[name]
         kind, path = EDITABLE_SETTINGS[name]
-        if path is None:
-            return kind()
         value = self.cfg
         for part in path:
             value = value.get(part) if isinstance(value, dict) else None

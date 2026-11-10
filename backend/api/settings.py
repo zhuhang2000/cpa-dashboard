@@ -20,8 +20,6 @@ def get_status(runtime=Depends(get_runtime), conn=Depends(get_connection)):
     return {
         "site_name": settings.get("site_name"),
         "public_api_base": settings.get("public_api_base"),
-        "announcement_image": settings.get("announcement_image"),
-        "announcement_width": settings.get("announcement_width"),
         "notice_latest_at": latest_at(conn),
         "allow_register": settings.get("allow_register"),
         "currency_symbol": cfg["currency_symbol"],

@@ -32,7 +32,6 @@
             />
             <div class="field-hint">用户调用接口的地址（即 CLIProxyAPI 对外地址），显示在概览页的快速开始中</div>
           </div>
-          <AnnouncementImage v-model:url="form.announcement_image" v-model:width="form.announcement_width" />
           <div class="field" style="margin-bottom: 0">
             <label class="toggle">
               <input v-model="form.allow_register" type="checkbox" />
@@ -115,7 +114,6 @@
 
 <script setup>
 import { onMounted, ref } from 'vue'
-import AnnouncementImage from '@/components/admin/settings/AnnouncementImage.vue'
 import Icon from '@/components/base/Icon.vue'
 import { settingsApi } from '@/api/settings'
 import { refreshStatus } from '@/stores'

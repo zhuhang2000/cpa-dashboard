@@ -1,13 +1,5 @@
 <template>
   <div class="stack">
-    <AnnouncementBanner
-      v-if="announcement && !announcementBanner.dismissed"
-      :url="announcement"
-      :width="siteStore.status.announcement_width"
-      closable
-      @close="announcementBanner.dismiss()"
-    />
-
     <div v-if="sessionStore.keyCount === 0" class="card onboarding">
       <div>
         <div class="card-title">开始使用</div>
@@ -205,9 +197,7 @@ import CopyButton from '@/components/base/CopyButton.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import Icon from '@/components/base/Icon.vue'
 import StatCard from '@/components/base/StatCard.vue'
-import AnnouncementBanner from '@/components/shared/AnnouncementBanner.vue'
 import ClaudeGuide from '@/components/onboarding/ClaudeGuide.vue'
-import { useDismissUntilNextLogin } from '@/composables/useDismissUntilNextLogin'
 import { usageApi } from '@/api/usage'
 import { refreshUser, siteStore, sessionStore } from '@/stores'
 import { currency, dayLabel, money, num, tokens } from '@/utils/format'
@@ -237,10 +227,6 @@ function share(cost) {
   const max = Math.max(...summary.value.by_model.map((m) => m.cost), 0)
   return max > 0 ? Math.max(2, (cost / max) * 100) : 0
 }
-
-const announcement = computed(() => siteStore.status?.announcement_image || '')
-// Closing hides the picture until the next sign-in; a new picture has a new URL, so a new key, and shows.
-const announcementBanner = useDismissUntilNextLogin(() => `portal-ann-${announcement.value}`)
 
 const baseUrl = computed(() => (siteStore.status?.public_api_base || '').replace(/\/+$/, ''))
 
