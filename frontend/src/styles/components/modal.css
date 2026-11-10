@@ -26,6 +26,11 @@
   /* 现代浏览器高斯模糊 */
   -webkit-backdrop-filter: blur(4px);
   /* 兼容 Safari */
+
+  /* 弹窗开合速度: 调这两个值即可。蒙层与面板共用，淡入淡出按比例自动跟随；
+     Modal.vue 的 <Transition> 会从蒙层的 transition 自动读出时长，无需同步修改。 */
+  --dialog-enter-duration: 520ms;
+  --dialog-leave-duration: 360ms;
 }
 
 .modal {
@@ -79,17 +84,24 @@
  *   由 Modal.vue 的 <Transition name="dialog"> 驱动，dialog-* 类名加在 .modal-overlay 上。
  *   打开时面板从触发按钮的位置放大到正中，关闭时缩回该按钮。--from-x / --from-y / --from-s
  *   由 Modal.vue 计算；找不到触发按钮时用下方 var() 的缺省值，从正中轻微放大。
- *   修改面板的过渡时长时，要同步修改 Modal.vue 中 <Transition> 的 :duration。
+ *   开合时长统一由 .modal-overlay 上的 --dialog-enter-duration / --dialog-leave-duration 控制。
+ *   蒙层的过渡时长必须与面板位移一致: Vue 只读取蒙层 (Transition 的根元素) 的过渡时长来判断动画何时结束。
  *   这些规则必须写在 .modal-overlay / .modal 之后，靠先后顺序覆盖。
  * ------------------------------------------------------------------------------ */
 
 /* 蒙层: 面板是蒙层的子元素，不能渐变 opacity (会连面板一起变透明)，改为渐变背景色与模糊 */
-.dialog-enter-active,
+.dialog-enter-active {
+  transition:
+    background-color var(--dialog-enter-duration) ease,
+    backdrop-filter var(--dialog-enter-duration) ease,
+    -webkit-backdrop-filter var(--dialog-enter-duration) ease;
+}
+
 .dialog-leave-active {
   transition:
-    background-color 300ms ease,
-    backdrop-filter 300ms ease,
-    -webkit-backdrop-filter 300ms ease;
+    background-color var(--dialog-leave-duration) ease,
+    backdrop-filter var(--dialog-leave-duration) ease,
+    -webkit-backdrop-filter var(--dialog-leave-duration) ease;
 }
 
 .dialog-leave-active {
@@ -104,17 +116,19 @@
   -webkit-backdrop-filter: blur(0);
 }
 
-/* 面板: 打开用 easeOutQuint (起步快、慢慢停稳)，关闭用标准曲线；透明度比位移更早完成 */
+/* 面板: 打开用 easeOutQuint (起步快、慢慢停稳)，关闭用标准曲线。
+   透明度比位移更早完成: 打开淡入占 30% (一出现就不透明，像"飞出来")，
+   关闭淡出占 60% (缩到按钮大小前就已透明，不会留下小方块)。 */
 .dialog-enter-active .modal {
   transition:
-    transform 420ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 120ms ease-out;
+    transform var(--dialog-enter-duration) cubic-bezier(0.22, 1, 0.36, 1),
+    opacity calc(var(--dialog-enter-duration) * 0.3) ease-out;
 }
 
 .dialog-leave-active .modal {
   transition:
-    transform 300ms cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 180ms ease;
+    transform var(--dialog-leave-duration) cubic-bezier(0.4, 0, 0.2, 1),
+    opacity calc(var(--dialog-leave-duration) * 0.6) ease;
 }
 
 .dialog-enter-from .modal,

@@ -1,14 +1,8 @@
 <template>
   <Teleport to="body">
     <!-- 打开时从触发按钮的位置放大，关闭时缩回该按钮；过渡样式见 styles/components/modal.css 的 .dialog-*。
-         :duration 必须与 CSS 中面板的过渡时长一致: Vue 只监听蒙层自身的过渡，不写会提前结束、面板跳到终点。 -->
-    <Transition
-      name="dialog"
-      appear
-      :duration="{ enter: 420, leave: 300 }"
-      @enter="placeAtOrigin"
-      @leave="placeAtOrigin"
-    >
+         动画时长由 CSS 变量 --dialog-enter-duration / --dialog-leave-duration 控制，Vue 从蒙层的过渡自动读取。 -->
+    <Transition name="dialog" appear @enter="placeAtOrigin" @leave="placeAtOrigin">
       <div v-if="open" class="modal-overlay" @mousedown.self="onBackdrop">
         <div class="modal" :class="{ wide, xwide }" role="dialog" aria-modal="true" :aria-label="title">
           <div class="modal-header">
