@@ -1,12 +1,12 @@
 <template>
   <div class="stack">
-    <div v-if="announcement && !announcementBanner.dismissed" class="alert alert-info announcement">
-      <Icon name="megaphone" :size="16" />
-      <div class="alert-body" style="white-space: pre-line">{{ announcement }}</div>
-      <button class="alert-close" aria-label="关闭公告" @click="announcementBanner.dismiss()">
-        <Icon name="x" :size="16" />
-      </button>
-    </div>
+    <AnnouncementBanner
+      v-if="announcement && !announcementBanner.dismissed"
+      :url="announcement"
+      :width="siteStore.status.announcement_width"
+      closable
+      @close="announcementBanner.dismiss()"
+    />
 
     <div v-if="sessionStore.keyCount === 0" class="card onboarding">
       <div>
@@ -205,6 +205,7 @@ import CopyButton from '@/components/base/CopyButton.vue'
 import EmptyState from '@/components/base/EmptyState.vue'
 import Icon from '@/components/base/Icon.vue'
 import StatCard from '@/components/base/StatCard.vue'
+import AnnouncementBanner from '@/components/shared/AnnouncementBanner.vue'
 import ClaudeGuide from '@/components/onboarding/ClaudeGuide.vue'
 import { useDismissUntilNextLogin } from '@/composables/useDismissUntilNextLogin'
 import { usageApi } from '@/api/usage'
@@ -237,14 +238,9 @@ function share(cost) {
   return max > 0 ? Math.max(2, (cost / max) * 100) : 0
 }
 
-const announcement = computed(() => (siteStore.status?.announcement || '').trim())
-// Closing hides the announcement until the next sign-in; a new announcement gets a new key and shows.
-const announcementBanner = useDismissUntilNextLogin(() => `portal-ann-${hash(announcement.value)}`)
-function hash(s) {
-  let h = 0
-  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0
-  return h
-}
+const announcement = computed(() => siteStore.status?.announcement_image || '')
+// Closing hides the picture until the next sign-in; a new picture has a new URL, so a new key, and shows.
+const announcementBanner = useDismissUntilNextLogin(() => `portal-ann-${announcement.value}`)
 
 const baseUrl = computed(() => (siteStore.status?.public_api_base || '').replace(/\/+$/, ''))
 
@@ -352,10 +348,6 @@ onMounted(() => {
   }
 }
 
-/* As wide as its text rather than the full row. */
-.announcement {
-  align-self: flex-start;
-}
 .onboarding {
   display: flex;
   align-items: center;
