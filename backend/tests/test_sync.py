@@ -10,9 +10,10 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 from core.config import load_config
-from core.db import connect, get_setting, init_db, now_ms, set_setting
+from core.db import MIGRATIONS, connect, get_setting, init_db, now_ms, set_setting
 from integrations import cpamp
-from runtime.sync import SyncWorker
+from integrations.cpa import CPAError
+from runtime.sync import Node, SyncWorker
 from services import api_keys
 from services.settings import RuntimeSettings
 
@@ -36,6 +37,17 @@ class FakeCPA:
         self.keys.remove(key)
 
 
+class UnreachableCPA:
+    configured = True
+
+    def __init__(self):
+        self.calls = 0
+
+    def list_api_keys(self):
+        self.calls += 1
+        raise CPAError("无法连接 CPA 管理接口: timed out")
+
+
 class SyncTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -46,7 +58,10 @@ class SyncTests(unittest.TestCase):
         self.cfg = copy.deepcopy(load_config())
         self.cfg["cpamp"]["usage_db"] = self.source_path
         self.cfg["cpa"]["sync_keys"] = True
-        self.runtime = SimpleNamespace(cfg=self.cfg, db=lambda: connect(self.path), cpa=FakeCPA())
+        self.node = Node("node1", FakeCPA(), self.source_path)
+        self.runtime = SimpleNamespace(
+            cfg=self.cfg, db=lambda: connect(self.path), nodes=[self.node]
+        )
         self.runtime.settings = RuntimeSettings(self.cfg, self.runtime.db)
         self.worker = SyncWorker(self.runtime)
         self.addCleanup(self.worker.stop)
@@ -110,9 +125,9 @@ class SyncTests(unittest.TestCase):
             self.assertEqual(user["balance_micro"], 10000000 - 2400)
             self.assertEqual(user["total_spent_micro"], 2400)
             self.assertEqual((key["used_micro"], key["request_count"]), (2400, 2))
-            self.assertEqual(get_setting(conn, "cpamp_cursor"), 4)
+            self.assertEqual(get_setting(conn, "cpamp_cursor:node1"), 4)
             # Replaying already-seen source rows also cannot double charge.
-            set_setting(conn, "cpamp_cursor", 1)
+            set_setting(conn, "cpamp_cursor:node1", 1)
         finally:
             conn.close()
         self.worker.sync_usage()
@@ -166,16 +181,16 @@ class SyncTests(unittest.TestCase):
     def test_failed_batch_rolls_back_usage_balance_key_models_and_cursor(self):
         conn = connect(self.path)
         try:
-            set_setting(conn, "cpamp_cursor", 1)
+            set_setting(conn, "cpamp_cursor:node1", 1)
         finally:
             conn.close()
         # Fail at the final cursor write, after all other mutations have occurred.
         with patch("services.usage.set_setting", side_effect=RuntimeError("cursor write failed")):
             with self.assertRaisesRegex(RuntimeError, "cursor write failed"):
-                self.worker.sync_usage()
+                self.worker.sync_node_usage(self.node)
         conn = connect(self.path)
         try:
-            self.assertEqual(get_setting(conn, "cpamp_cursor"), 1)
+            self.assertEqual(get_setting(conn, "cpamp_cursor:node1"), 1)
             self.assertEqual(conn.execute("SELECT COUNT(*) FROM usage_logs").fetchone()[0], 0)
             self.assertEqual(conn.execute("SELECT COUNT(*) FROM seen_models").fetchone()[0], 0)
             user = conn.execute("SELECT balance_micro,total_spent_micro FROM users").fetchone()
@@ -184,7 +199,7 @@ class SyncTests(unittest.TestCase):
             ).fetchone()
             self.assertEqual(tuple(user), (10000000, 0))
             self.assertEqual(tuple(key), (0, 0, None))
-            self.assertIsNone(self.worker.state["cpamp"]["last_event_at"])
+            self.assertIsNone(self.worker.state["node1"]["cpamp"]["last_event_at"])
         finally:
             conn.close()
 
@@ -203,14 +218,95 @@ class SyncTests(unittest.TestCase):
                 finally:
                     conn.close()
                 self.worker.reconcile_keys()
-                self.assertEqual(set(self.runtime.cpa.keys), owned | {"unmanaged-external-key"})
+                self.assertEqual(set(self.node.cpa.keys), owned | {"unmanaged-external-key"})
                 conn = connect(self.path)
                 try:
                     conn.execute("UPDATE users SET status = 'banned'")
                 finally:
                     conn.close()
                 self.worker.reconcile_keys()
-                self.assertEqual(self.runtime.cpa.keys, ["unmanaged-external-key"])
+                self.assertEqual(self.node.cpa.keys, ["unmanaged-external-key"])
+
+    def add_node(self, node_id, events=None, cpa=None):
+        """Append a node; events create its CPAMP database, None leaves it missing."""
+        path = os.path.join(self.temp.name, node_id + ".sqlite")
+        if events is not None:
+            src = sqlite3.connect(path)
+            try:
+                src.execute(
+                    "CREATE TABLE usage_events (id INTEGER PRIMARY KEY, event_hash TEXT, "
+                    "timestamp_ms INTEGER, model TEXT, api_key_hash TEXT, input_tokens INTEGER, "
+                    "output_tokens INTEGER, failed INTEGER)"
+                )
+                src.executemany("INSERT INTO usage_events VALUES (?,?,?,?,?,?,?,?)", events)
+                src.commit()
+            finally:
+                src.close()
+        node = Node(node_id, cpa or FakeCPA(), path)
+        self.runtime.nodes.append(node)
+        return node
+
+    def new_worker(self):
+        worker = SyncWorker(self.runtime)
+        self.addCleanup(worker.stop)
+        return worker
+
+    def test_every_node_bills_the_same_user_with_its_own_cursor(self):
+        # Node 2 numbers its events from 1 as well and has no price table of its own.
+        self.add_node(
+            "node2",
+            [
+                (1, "node2-a", self.timestamp + 10, "test-model", self.key_hash, 1000, 100, 0),
+                (2, "node2-b", self.timestamp + 11, "test-model", self.key_hash, 1000, 100, 0),
+            ],
+        )
+        worker = self.new_worker()
+        worker.sync_usage()
+        worker.sync_usage()
+        conn = connect(self.path)
+        try:
+            hashes = {row[0] for row in conn.execute("SELECT event_hash FROM usage_logs")}
+            balance = conn.execute("SELECT balance_micro FROM users").fetchone()[0]
+            self.assertEqual(hashes, {"billed", "failed", "node2-a", "node2-b"})
+            self.assertEqual(balance, 10000000 - 3 * 2400)
+            self.assertEqual(get_setting(conn, "cpamp_cursor:node1"), 4)
+            self.assertEqual(get_setting(conn, "cpamp_cursor:node2"), 2)
+        finally:
+            conn.close()
+        self.assertEqual(worker.state["node2"]["cpamp"]["billed_events"], 2)
+
+    def test_an_unreadable_node_does_not_stop_the_nodes_after_it(self):
+        self.add_node("node2")
+        self.add_node(
+            "node3",
+            [(1, "node3-a", self.timestamp + 10, "test-model", self.key_hash, 1000, 100, 0)],
+        )
+        worker = self.new_worker()
+        worker.run_once()
+        self.assertIs(worker.state["node2"]["cpamp"]["ok"], False)
+        self.assertIn("node2.sqlite", worker.state["node2"]["cpamp"]["error"])
+        self.assertIs(worker.state["node3"]["cpamp"]["ok"], True)
+        conn = connect(self.path)
+        try:
+            hashes = {row[0] for row in conn.execute("SELECT event_hash FROM usage_logs")}
+        finally:
+            conn.close()
+        self.assertEqual(hashes, {"billed", "failed", "node3-a"})
+
+    def test_keys_reach_every_node_and_only_a_failing_node_backs_off(self):
+        down = self.add_node("node2", cpa=UnreachableCPA())
+        node3 = self.add_node("node3")
+        worker = self.new_worker()
+        worker.reconcile_keys()
+        worker.reconcile_keys()
+        for node in (self.node, node3):
+            self.assertEqual(set(node.cpa.keys), {self.key, "unmanaged-external-key"})
+            self.assertIs(worker.state[node.id]["cpa"]["ok"], True)
+        self.assertIs(worker.state["node2"]["cpa"]["ok"], False)
+        self.assertEqual(down.cpa.calls, 1)
+        worker.reset_backoff()
+        worker.reconcile_keys()
+        self.assertEqual(down.cpa.calls, 2)
 
     def test_lifecycle_joins_thread_and_can_restart(self):
         started = threading.Event()
@@ -237,3 +333,20 @@ class SyncTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def test_migration_moves_the_existing_cursor_to_node1(tmp_path):
+    path = str(tmp_path / "portal.sqlite")
+    conn = connect(path)
+    try:
+        conn.executescript("\n".join(MIGRATIONS[:6]) + "\nPRAGMA user_version = 6;")
+        set_setting(conn, "cpamp_cursor", 42)
+    finally:
+        conn.close()
+    init_db(path)
+    conn = connect(path)
+    try:
+        assert get_setting(conn, "cpamp_cursor") is None
+        assert get_setting(conn, "cpamp_cursor:node1") == 42
+    finally:
+        conn.close()

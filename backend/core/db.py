@@ -167,7 +167,21 @@ SCHEMA_V6 = """
 ALTER TABLE users ADD COLUMN alias TEXT;
 """
 
-MIGRATIONS = [SCHEMA_V1, SCHEMA_V2, SCHEMA_V3, SCHEMA_V4, SCHEMA_V5, SCHEMA_V6]
+# Usage now comes from several CPA nodes, each read with its own cursor; existing
+# progress belongs to node 1 (constants.PRIMARY_NODE).
+SCHEMA_V7 = """
+UPDATE settings SET key = 'cpamp_cursor:node1' WHERE key = 'cpamp_cursor';
+"""
+
+MIGRATIONS = [
+    SCHEMA_V1,
+    SCHEMA_V2,
+    SCHEMA_V3,
+    SCHEMA_V4,
+    SCHEMA_V5,
+    SCHEMA_V6,
+    SCHEMA_V7,
+]
 
 
 def now_ms():

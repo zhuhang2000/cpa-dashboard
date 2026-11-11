@@ -29,12 +29,14 @@ def cmd_serve(runtime):
     port = runtime.cfg["port"]
     log.info("API Portal %s listening on http://%s:%s", VERSION, host, port)
     log.info("frontend: %s", runtime.cfg["frontend_dir"])
-    log.info(
-        "CPA management: %s (%s)",
-        runtime.cpa.base or "-",
-        "key sync on" if runtime.cpa.configured else "not configured, key sync off",
-    )
-    log.info("CPAMP usage db: %s", runtime.cfg["cpamp"]["usage_db"] or "-")
+    for node in runtime.nodes:
+        log.info(
+            "%s CPA management: %s (%s), CPAMP usage db: %s",
+            node.id,
+            node.cpa.base or "-",
+            "key sync on" if node.cpa.configured else "not configured, key sync off",
+            node.usage_db or "-",
+        )
     # Exactly one process owns the embedded sync worker and in-memory limits.
     # Proxy headers are interpreted by our request dependency according to config.
     uvicorn.run(

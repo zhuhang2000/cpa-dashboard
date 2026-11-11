@@ -13,24 +13,28 @@
     </div>
 
     <template v-if="data">
-      <div v-if="data.sync.cpamp.ok === false" class="alert alert-danger">
-        <Icon name="alert" :size="16" />
-        <div class="alert-body">
-          <b>用量同步失败：</b>{{ data.sync.cpamp.error }}（数据库：<code>{{ data.config.cpamp_usage_db }}</code
-          >）
+      <template v-for="node in data.nodes" :key="node.id">
+        <div v-if="node.cpamp.ok === false" class="alert alert-danger">
+          <Icon name="alert" :size="16" />
+          <div class="alert-body">
+            <b>{{ node.id }} 用量同步失败：</b>{{ node.cpamp.error }}（数据库：<code>{{ node.usage_db }}</code
+            >）
+          </div>
         </div>
-      </div>
-      <div v-if="!data.config.cpa_configured" class="alert alert-warning">
-        <Icon name="alert" :size="16" />
-        <div class="alert-body">
-          未配置 CPA 管理密钥：用户创建的密钥不会写入 CPA，余额不足时也无法自动停用。请在 config.json 的
-          <code>cpa.management_key</code> 中填写。
+        <div v-if="!node.cpa_configured" class="alert alert-warning">
+          <Icon name="alert" :size="16" />
+          <div class="alert-body">
+            {{ node.id }} 未配置 CPA 管理密钥：用户创建的密钥不会写入该节点，余额不足时也无法自动停用。请在
+            <code>backend/core/.env</code> 中填写。
+          </div>
         </div>
-      </div>
-      <div v-else-if="data.sync.cpa.ok === false" class="alert alert-danger">
-        <Icon name="alert" :size="16" />
-        <div class="alert-body"><b>密钥同步失败：</b>{{ data.sync.cpa.error }}</div>
-      </div>
+        <div v-else-if="node.cpa.ok === false" class="alert alert-danger">
+          <Icon name="alert" :size="16" />
+          <div class="alert-body">
+            <b>{{ node.id }} 密钥同步失败：</b>{{ node.cpa.error }}
+          </div>
+        </div>
+      </template>
       <div v-if="data.unpriced_models.length" class="alert alert-warning">
         <Icon name="tag" :size="16" />
         <div class="alert-body">
@@ -136,41 +140,38 @@
       <div class="card">
         <div class="card-header"><div class="card-title">同步状态</div></div>
         <div v-if="data" class="card-body">
-          <div class="sync-block">
-            <div class="row-between">
-              <b><Icon name="database" :size="15" /> 用量采集（CPA Manager Plus）</b>
-              <span class="badge" :class="badge(data.sync.cpamp.ok)">{{ label(data.sync.cpamp.ok) }}</span>
+          <template v-for="(node, index) in data.nodes" :key="node.id">
+            <div v-if="index" class="divider" />
+            <div class="sync-block">
+              <div class="row-between">
+                <b><Icon name="box" :size="15" /> {{ node.id }}</b>
+                <span class="row">
+                  <span class="badge" :class="badge(node.cpamp.ok)">用量 {{ label(node.cpamp.ok) }}</span>
+                  <span class="badge" :class="node.cpa_configured ? badge(node.cpa.ok) : ''">
+                    密钥 {{ node.cpa_configured ? label(node.cpa.ok) : '未配置' }}
+                  </span>
+                </span>
+              </div>
+              <dl class="kv">
+                <dt>CPA 地址</dt>
+                <dd class="mono" style="font-size: 12px">{{ node.cpa_base_url || '—' }}</dd>
+                <dt>用量库</dt>
+                <dd class="mono" style="font-size: 12px">{{ node.usage_db }}</dd>
+                <dt>最新事件</dt>
+                <dd>{{ dateTime(node.cpamp.last_event_at, { seconds: true }) }}</dd>
+                <dt>已计费请求</dt>
+                <dd class="num">{{ num(node.cpamp.billed_events) }}（本次运行）</dd>
+                <dt>读取游标</dt>
+                <dd class="num">{{ node.cpamp.cursor ?? '—' }}</dd>
+                <dt>上次密钥同步</dt>
+                <dd>{{ dateTime(node.cpa.last_sync_at, { seconds: true }) }}</dd>
+                <dt>可用密钥</dt>
+                <dd class="num">{{ num(node.cpa.active_keys) }}</dd>
+                <dt>密钥增 / 删</dt>
+                <dd class="num">+{{ node.cpa.added }} / -{{ node.cpa.removed }}（本次运行）</dd>
+              </dl>
             </div>
-            <dl class="kv">
-              <dt>数据库</dt>
-              <dd class="mono" style="font-size: 12px">{{ data.config.cpamp_usage_db }}</dd>
-              <dt>最新事件</dt>
-              <dd>{{ dateTime(data.sync.cpamp.last_event_at, { seconds: true }) }}</dd>
-              <dt>已计费请求</dt>
-              <dd class="num">{{ num(data.sync.cpamp.billed_events) }}（本次运行）</dd>
-              <dt>读取游标</dt>
-              <dd class="num">{{ data.sync.cpamp.cursor ?? '—' }}</dd>
-            </dl>
-          </div>
-          <div class="divider" />
-          <div class="sync-block">
-            <div class="row-between">
-              <b><Icon name="key" :size="15" /> 密钥同步（CLIProxyAPI）</b>
-              <span class="badge" :class="data.config.cpa_configured ? badge(data.sync.cpa.ok) : ''">
-                {{ data.config.cpa_configured ? label(data.sync.cpa.ok) : '未配置' }}
-              </span>
-            </div>
-            <dl class="kv">
-              <dt>管理地址</dt>
-              <dd class="mono" style="font-size: 12px">{{ data.config.cpa_base_url || '—' }}</dd>
-              <dt>上次同步</dt>
-              <dd>{{ dateTime(data.sync.cpa.last_sync_at, { seconds: true }) }}</dd>
-              <dt>可用密钥</dt>
-              <dd class="num">{{ num(data.sync.cpa.active_keys) }}</dd>
-              <dt>增 / 删</dt>
-              <dd class="num">+{{ data.sync.cpa.added }} / -{{ data.sync.cpa.removed }}（本次运行）</dd>
-            </dl>
-          </div>
+          </template>
         </div>
       </div>
     </div>

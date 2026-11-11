@@ -73,3 +73,6 @@ class TxType:
 
 VERSION = "1.0.0"
 DAY_MS = 86400000
+
+# Node 1 is configured by CPA_BASE_URL / CPAMP_USAGE_DB; SCHEMA_V7 moved its usage cursor to this id.
+PRIMARY_NODE = "node1"

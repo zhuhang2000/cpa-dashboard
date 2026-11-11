@@ -321,7 +321,8 @@ def run_portal_scenario(admin, user, bootstrap_admin, append_usage, payment_key=
 
     append_usage(secret)
     synced, _ = call(admin, "POST", "/api/admin/sync", json={})
-    assert synced["sync"]["cpamp"]["ok"] is True and synced["sync"]["cpamp"]["billed_events"] == 2
+    assert synced["nodes"][0]["cpamp"]["ok"] is True
+    assert synced["nodes"][0]["cpamp"]["billed_events"] == 2
     call(admin, "POST", "/api/admin/sync", json={})
     summary, _ = call(user, "GET", "/api/usage/summary", params={"days": 7})
     assert summary["total"] == {"requests": 2, "cost": 3}
@@ -482,7 +483,7 @@ def test_all_business_endpoints_through_fastapi(tmp_path):
     """)
     source.close()
     runtime = Runtime(cfg)
-    runtime.cpa = FakeCPA()
+    runtime.nodes[0].cpa = FakeCPA()
 
     def bootstrap_admin(user_id):
         conn = runtime.db()
@@ -537,7 +538,7 @@ def test_all_business_endpoints_through_fastapi(tmp_path):
     assert covered == EXPECTED_ROUTES
     assert actual_routes == EXPECTED_ROUTES
     assert len(records) > 39
-    assert runtime.cpa.keys == ["foreign-key"]
+    assert runtime.nodes[0].cpa.keys == ["foreign-key"]
     conn = runtime.db()
     try:
         user = conn.execute("SELECT * FROM users WHERE username = 'scenario-user'").fetchone()

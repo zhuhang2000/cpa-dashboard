@@ -1,6 +1,7 @@
 """Directly load configuration from backend/core/.env."""
 
 import os
+import re
 from pathlib import Path
 
 CORE_DIR = Path(__file__).resolve().parent
@@ -25,6 +26,39 @@ def initialize_config(path: Path = CONFIG_PATH) -> bool:
     return True
 
 
+def _extra_nodes(env: dict[str, str], resolve) -> list[dict]:
+    """Nodes after the first, declared as NODE<N>_CPA_BASE_URL / _CPA_MANAGEMENT_KEY / _CPAMP_USAGE_DB.
+
+    CPA_BASE_URL, CPA_MANAGEMENT_KEY and CPAMP_USAGE_DB describe node 1, so numbering starts at 2.
+    """
+    numbers = sorted(
+        int(match.group(1))
+        for name in env
+        if (match := re.fullmatch(r"NODE([1-9][0-9]*)_CPA_BASE_URL", name))
+    )
+    nodes = []
+    for number in numbers:
+        prefix = "NODE%d_" % number
+        if number == 1:
+            raise ValueError("1 号节点使用 CPA_BASE_URL 等配置，额外节点从 NODE2 开始编号")
+        missing = [
+            prefix + suffix
+            for suffix in ("CPA_BASE_URL", "CPA_MANAGEMENT_KEY", "CPAMP_USAGE_DB")
+            if not env.get(prefix + suffix)
+        ]
+        if missing:
+            raise ValueError("节点 %d 缺少配置: %s" % (number, ", ".join(missing)))
+        nodes.append(
+            {
+                "id": "node%d" % number,
+                "cpa_base_url": env[prefix + "CPA_BASE_URL"],
+                "management_key": env[prefix + "CPA_MANAGEMENT_KEY"],
+                "usage_db": resolve(env[prefix + "CPAMP_USAGE_DB"]),
+            }
+        )
+    return nodes
+
+
 def load_config(config_path: Path | None = None) -> dict:
     path = Path(config_path) if config_path else CONFIG_PATH
     env = _read_env(path)
@@ -44,6 +78,10 @@ def load_config(config_path: Path | None = None) -> dict:
     epay_enabled = env["EPAY_ENABLED"].lower() == "true" and all(
         env[name] for name in ("EPAY_GATEWAY", "EPAY_PID", "EPAY_KEY")
     )
+    extra_nodes = _extra_nodes(env, resolve)
+    usage_dbs = [resolve(env["CPAMP_USAGE_DB"])] + [node["usage_db"] for node in extra_nodes]
+    if len(set(usage_dbs)) != len(usage_dbs):
+        raise ValueError("每个 CPA 节点必须使用各自的 CPAMP 用量库")
 
     return {
         "listen": env["LISTEN"],
@@ -72,6 +110,7 @@ def load_config(config_path: Path | None = None) -> dict:
             "sync_interval_seconds": interval,
             "batch_size": batch_size,
         },
+        "extra_nodes": extra_nodes,
         "pricing": {
             "use_cpamp_prices": env["USE_CPAMP_PRICES"].lower() == "true",
             "cpamp_price_discount": float(env["CPAMP_PRICE_DISCOUNT"]),

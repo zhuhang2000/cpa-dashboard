@@ -139,9 +139,9 @@ def test_admin_delete_preserves_history_and_triggers_removal(key_portal):
         def remove_api_key(self, key):
             self.keys.remove(key)
 
-    runtime.cpa = FakeCPA()
+    runtime.nodes[0].cpa = FakeCPA()
     runtime.worker.reconcile_keys()
-    assert runtime.cpa.keys == [keys["bob"]["key"], "external-key"]
+    assert runtime.nodes[0].cpa.keys == [keys["bob"]["key"], "external-key"]
     login(client, "alice")
     assert client.get("/api/keys").json() == {"items": [], "max_keys": 10}
     assert client.get("/api/usage/logs").json()["total"] == 1

@@ -125,3 +125,37 @@ def test_type_conversions(config_path):
     assert cfg["payment"]["presets"] == [5, 15, 50]
     assert cfg["payment"]["epay"]["channels"] == ["alipay"]
     assert cfg["trust_proxy"] is True
+
+
+NODE2 = """
+NODE2_CPA_BASE_URL=http://10.0.0.2:8317
+NODE2_CPA_MANAGEMENT_KEY=node2-key
+NODE2_CPAMP_USAGE_DB=./node2/usage.sqlite
+"""
+
+
+def test_extra_nodes_are_numbered_from_two_in_order(config_path):
+    config_path.write_text(SAMPLE_ENV)
+    assert config.load_config(config_path)["extra_nodes"] == []
+
+    node3 = (
+        NODE2.replace("NODE2", "NODE3").replace("10.0.0.2", "10.0.0.3").replace("node2", "node3")
+    )
+    config_path.write_text(SAMPLE_ENV + node3 + NODE2)
+    nodes = config.load_config(config_path)["extra_nodes"]
+    assert [node["id"] for node in nodes] == ["node2", "node3"]
+    assert nodes[0]["cpa_base_url"] == "http://10.0.0.2:8317"
+    assert nodes[0]["management_key"] == "node2-key"
+    assert Path(nodes[0]["usage_db"]) == config_path.parent / "node2" / "usage.sqlite"
+
+
+def test_incomplete_misnumbered_or_shared_node_config_is_refused(config_path):
+    shared_db = "/opt/services/cpa-manager-plus/data/usage.sqlite"
+    for text in (
+        SAMPLE_ENV + NODE2.replace("=node2-key", "="),
+        SAMPLE_ENV + NODE2.replace("NODE2", "NODE1"),
+        SAMPLE_ENV + NODE2.replace("./node2/usage.sqlite", shared_db),
+    ):
+        config_path.write_text(text)
+        with pytest.raises(ValueError):
+            config.load_config(config_path)

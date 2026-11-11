@@ -88,6 +88,16 @@ nano .env
 | `CPAMP_USAGE_DB` | `/opt/services/cpa-manager-plus/data/usage.sqlite` | CPAMP 用量数据库路径 |
 | `CPAMP_PRICE_DISCOUNT` | `1.0` | 官方价折扣初始值（8 折填 `0.8`，`1` 为不打折），之后可在后台「系统设置」修改 |
 
+**多 CPA 节点（可选）**：上面的 `CPA_BASE_URL` / `CPA_MANAGEMENT_KEY` / `CPAMP_USAGE_DB` 是 1 号节点，其余节点从 2 开始编号追加：
+
+```bash
+NODE2_CPA_BASE_URL=http://10.0.0.2:8317
+NODE2_CPA_MANAGEMENT_KEY=节点 2 的管理密钥明文
+NODE2_CPAMP_USAGE_DB=/opt/services/cpamp-node2/data/usage.sqlite
+```
+
+Portal 会把有效密钥同步到每个节点，逐个读取各节点的用量库并统一扣费，后台「运营概况」按节点显示同步状态。每个节点都要有一个专属的 CPAMP 实例（`--cpa-endpoint` 指向该节点），节点上不要再运行其他 CPAMP，否则用量会被分走而漏扣费。
+
 ### 3. 创建管理员与系统服务
 
 ```bash

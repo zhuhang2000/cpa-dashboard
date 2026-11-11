@@ -244,11 +244,8 @@ def admin_overview(conn=Depends(get_connection), runtime=Depends(get_runtime)):
             for row in report["top_users"]
         ],
         "unpriced_models": report["unpriced_models"],
-        "sync": runtime.worker.state,
+        "nodes": runtime.worker.status(),
         "config": {
-            "cpa_base_url": runtime.cpa.base,
-            "cpa_configured": runtime.cpa.configured,
-            "cpamp_usage_db": runtime.cfg["cpamp"]["usage_db"],
             "online_payment": epay_conf(runtime.cfg) is not None,
         },
     }

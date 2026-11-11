@@ -56,4 +56,4 @@ def admin_run_sync(runtime=Depends(get_runtime)):
     runtime.worker.reset_backoff()
     runtime.worker.invalidate_prices()
     runtime.worker.run_once()
-    return {"sync": runtime.worker.state}
+    return {"nodes": runtime.worker.status()}

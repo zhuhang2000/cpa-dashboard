@@ -1,8 +1,9 @@
 """Usage ingestion, history queries and reporting.
 
-This service owns usage_logs and the CPAMP ingestion cursor. A usage batch is
-one transaction, including balance debits, key counters and discovered models.
-Reporting reads can aggregate data belonging to other business modules.
+This service owns usage_logs and the CPAMP ingestion cursors, one per CPA node.
+A usage batch is one transaction, including balance debits, key counters and
+discovered models. Reporting reads can aggregate data belonging to other
+business modules.
 """
 
 import datetime
@@ -188,16 +189,21 @@ def overview(conn, tz_offset_minutes, now=None):
 # ---- Sync worker and CLI ----
 
 
-def get_cursor(conn):
-    return get_setting(conn, "cpamp_cursor")
+def cursor_key(node_id):
+    # Every node's CPAMP database numbers its events from 1, so each needs its own cursor.
+    return "cpamp_cursor:" + node_id
 
 
-def initialize_cursor(conn, cursor, models):
+def get_cursor(conn, node_id):
+    return get_setting(conn, cursor_key(node_id))
+
+
+def initialize_cursor(conn, node_id, cursor, models):
     """Persist the first cursor and initial model catalogue atomically."""
     with transaction(conn):
         for row in models:
             pricing.touch_model(conn, row["model"], row["last_ms"], row["calls"])
-        set_setting(conn, "cpamp_cursor", cursor)
+        set_setting(conn, cursor_key(node_id), cursor)
 
 
 def normalize_tokens(row):
@@ -216,7 +222,7 @@ def normalize_tokens(row):
     return uncached, cache_read, cache_write, output, reasoning, total
 
 
-def apply_batch(conn, rows, keys, book, bill_failed, last_event_at=None):
+def apply_batch(conn, node_id, rows, keys, book, bill_failed, last_event_at=None):
     """Commit one ingestion batch; return (inserted_count, last_event_at).
 
     Call without an active transaction. Deduplication, balance/key updates, model
@@ -279,7 +285,7 @@ def apply_batch(conn, rows, keys, book, bill_failed, last_event_at=None):
             api_keys.record_usage(conn, key_id, cost, ts)
         for model, (last_ms, calls) in models.items():
             pricing.touch_model(conn, model, last_ms, calls)
-        set_setting(conn, "cpamp_cursor", rows[-1]["id"])
+        set_setting(conn, cursor_key(node_id), rows[-1]["id"])
     return billed, last_event_at or None
 
 

@@ -17,12 +17,12 @@ from api.middleware import HTTPPolicyMiddleware
 from api.router import router
 from api.static import FrontendFiles
 from core.config import load_config
-from core.constants import VERSION
+from core.constants import PRIMARY_NODE, VERSION
 from core.db import connect, init_db
 from core.errors import ApiError
 from core.security import RateLimiter
 from integrations.cpa import CPAClient
-from runtime.sync import SyncWorker
+from runtime.sync import Node, SyncWorker
 from services.settings import RuntimeSettings
 
 
@@ -36,11 +36,20 @@ class Runtime:
         init_db(self.db_path)
         self.limiter = RateLimiter()
         self.settings = RuntimeSettings(cfg, self.db)
-        self.cpa = CPAClient(
-            cfg["cpa"]["base_url"],
-            cfg["cpa"]["management_key"],
-            timeout=cfg["cpa"]["timeout_seconds"],
+        timeout = cfg["cpa"]["timeout_seconds"]
+        primary = Node(
+            PRIMARY_NODE,
+            CPAClient(cfg["cpa"]["base_url"], cfg["cpa"]["management_key"], timeout=timeout),
+            cfg["cpamp"]["usage_db"],
         )
+        self.nodes = [primary] + [
+            Node(
+                node["id"],
+                CPAClient(node["cpa_base_url"], node["management_key"], timeout=timeout),
+                node["usage_db"],
+            )
+            for node in cfg["extra_nodes"]
+        ]
         self.worker = SyncWorker(self)
 
     def db(self):
