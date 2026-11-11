@@ -10,6 +10,8 @@ backend/core/.env
 !.env.example
 # Real server address; copy from deploy/deploy.example.sh
 deploy/deploy.sh
+# Local ops notes about the real servers
+deploy/*.local.md
 __pycache__/
 *.pyc
 *.tar.gz
