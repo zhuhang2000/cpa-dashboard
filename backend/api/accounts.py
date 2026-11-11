@@ -33,7 +33,7 @@ def user_public(row):
         "total_recharge": money(row["total_recharge_micro"]),
         "total_spent": money(row["total_spent_micro"]),
         "created_at": row["created_at"],
-        "last_login_at": row["last_login_at"],
+        "last_active_at": row["last_active_at"],
     }
 
 
@@ -131,7 +131,6 @@ def admin_list_users(request: Request, staff=Depends(require_staff), conn=Depend
         item.update(
             alias=row["alias"] or "",
             key_count=key_counts.get(row["id"], 0),
-            last_login_ip=row["last_login_ip"] or "",
             last_used_at=row["last_used_at"],
         )
         # Tags are the system administrator's bookkeeping; a manager only sees its users.

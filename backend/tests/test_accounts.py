@@ -68,6 +68,28 @@ def test_session_expiration_and_sliding_renewal(account_db):
     assert accounts.authenticate_session(conn, "unknown-token", 7) == (None, None)
 
 
+def test_authenticated_visits_record_activity_at_most_every_ten_minutes(account_db, monkeypatch):
+    conn = account_db
+    user = add_user(conn, "alice")
+    token, _ = accounts.start_session(conn, user["id"], "127.0.0.1", 7)
+
+    def active_at():
+        return conn.execute(
+            "SELECT last_active_at FROM users WHERE id = ?", (user["id"],)
+        ).fetchone()[0]
+
+    accounts.authenticate_session(conn, token, 7)
+    assert active_at() == NOW
+
+    monkeypatch.setattr(accounts, "now_ms", lambda: NOW + accounts.ACTIVE_TOUCH_MS - 1)
+    accounts.authenticate_session(conn, token, 7)
+    assert active_at() == NOW
+
+    monkeypatch.setattr(accounts, "now_ms", lambda: NOW + accounts.ACTIVE_TOUCH_MS)
+    accounts.authenticate_session(conn, token, 7)
+    assert active_at() == NOW + accounts.ACTIVE_TOUCH_MS
+
+
 def test_banning_user_revokes_sessions_and_blocks_authentication(account_db):
     conn = account_db
     user = add_user(conn, "alice", role=Role.MANAGER, tag="VIP")

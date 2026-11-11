@@ -72,7 +72,7 @@
               <th><SortButton field="last_used" :sort="sort" @sort="setSort">最近调用</SortButton></th>
               <th>
                 <SortButton field="created" :sort="sort" @sort="setSort">注册</SortButton> /
-                <SortButton field="last_login" :sort="sort" @sort="setSort">最近登录</SortButton>
+                <SortButton field="last_active" :sort="sort" @sort="setSort">最近活跃</SortButton>
               </th>
               <th class="actions">操作</th>
             </tr>
@@ -129,8 +129,8 @@
               </td>
               <td class="nowrap">
                 <div>{{ date(u.created_at) }}</div>
-                <div class="cell-sub" :title="u.last_login_ip">
-                  {{ u.last_login_at ? `${relative(u.last_login_at)}登录` : '从未登录' }}
+                <div class="cell-sub" :title="u.last_active_at ? dateTime(u.last_active_at) : ''">
+                  {{ u.last_active_at ? `${relative(u.last_active_at)}活跃` : '从未活跃' }}
                 </div>
               </td>
               <td class="actions">

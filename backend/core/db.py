@@ -173,6 +173,13 @@ SCHEMA_V7 = """
 UPDATE settings SET key = 'cpamp_cursor:node1' WHERE key = 'cpamp_cursor';
 """
 
+# Last authenticated visit (sliding sessions keep users signed in, so the login time goes
+# stale); seeded from the old login time. last_login_at/last_login_ip are no longer used.
+SCHEMA_V8 = """
+ALTER TABLE users ADD COLUMN last_active_at INTEGER;
+UPDATE users SET last_active_at = last_login_at;
+"""
+
 MIGRATIONS = [
     SCHEMA_V1,
     SCHEMA_V2,
@@ -181,6 +188,7 @@ MIGRATIONS = [
     SCHEMA_V5,
     SCHEMA_V6,
     SCHEMA_V7,
+    SCHEMA_V8,
 ]
 
 

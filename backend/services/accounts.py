@@ -9,10 +9,12 @@ from core.errors import ApiError
 from core.security import hash_password, new_session_token, sha256_hex, verify_password
 
 DAY_MS = 86400000
+# last_active_at is written at most this often per user, keeping page loads read-only.
+ACTIVE_TOUCH_MS = 10 * 60 * 1000
 USER_SORTS = {
     "created": "u.id",
     "last_used": "last_used_at",
-    "last_login": "u.last_login_at",
+    "last_active": "u.last_active_at",
     "balance": "u.balance_micro",
     "recharge": "u.total_recharge_micro",
     "spent": "u.total_spent_micro",
@@ -61,6 +63,8 @@ def authenticate_session(conn, token, session_days):
     now = now_ms()
     if row is None or row["session_expires_at"] <= now or row["status"] != UserStatus.ACTIVE:
         return None, None
+    if now - (row["last_active_at"] or 0) >= ACTIVE_TOUCH_MS:
+        conn.execute("UPDATE users SET last_active_at = ? WHERE id = ?", (now, row["id"]))
     lifetime = session_days * DAY_MS
     if row["session_expires_at"] - now < lifetime // 2:
         conn.execute(
@@ -127,9 +131,9 @@ def register(conn, data, ip, limiter, allow_register, session_days, user_agent="
         if email and conn.execute("SELECT 1 FROM users WHERE email = ?", (email,)).fetchone():
             raise ApiError(409, "该邮箱已注册")
         user_id = conn.execute(
-            "INSERT INTO users (username, email, password_hash, created_at, last_login_at, "
-            "last_login_ip) VALUES (?, ?, ?, ?, ?, ?)",
-            (username, email, password_hash, now_ms(), now_ms(), ip),
+            "INSERT INTO users (username, email, password_hash, created_at, last_active_at) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (username, email, password_hash, now_ms(), now_ms()),
         ).lastrowid
         token, max_age = start_session(conn, user_id, ip, session_days, user_agent)
     return get(conn, user_id), token, max_age
@@ -156,10 +160,7 @@ def login(conn, data, ip, limiter, session_days, user_agent=""):
         raise ApiError(403, "账号已被禁用，请联系管理员")
     limiter.reset(account_key)
     with transaction(conn):
-        conn.execute(
-            "UPDATE users SET last_login_at = ?, last_login_ip = ? WHERE id = ?",
-            (now_ms(), ip, row["id"]),
-        )
+        conn.execute("UPDATE users SET last_active_at = ? WHERE id = ?", (now_ms(), row["id"]))
         token, max_age = start_session(conn, row["id"], ip, session_days, user_agent)
     return get(conn, row["id"]), token, max_age
 
