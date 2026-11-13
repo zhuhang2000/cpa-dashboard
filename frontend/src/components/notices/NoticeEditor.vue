@@ -27,13 +27,14 @@
 import { onMounted, ref, useId } from 'vue'
 
 const props = defineProps({
+  value: { type: String, default: '' },
   label: { type: String, default: '' },
   hint: { type: String, default: '' },
   submitLabel: { type: String, default: '保存' },
   saving: Boolean,
 })
-const draft = defineModel({ type: String, required: true })
 const emit = defineEmits(['submit', 'cancel'])
+const draft = ref(props.value)
 const inputId = useId()
 const input = ref(null)
 

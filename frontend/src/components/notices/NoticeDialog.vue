@@ -1,14 +1,7 @@
 <template>
-  <Modal :open="open" wide :title="selected ? detail.title || '公告详情' : '公告'" @close="emit('close')">
+  <Modal :open="open && !selected" wide title="公告" @close="emit('close')">
     <template #header>
-      <div v-if="selected" class="notice-header">
-        <button class="btn btn-ghost btn-icon btn-sm" type="button" aria-label="返回列表" @click="selectedId = null">
-          <Icon name="chevron-left" :size="18" />
-        </button>
-        <span class="notice-header-icon"><Icon name="info" :size="19" /></span>
-        <span class="badge badge-accent plain">公告</span>
-      </div>
-      <div v-else class="notice-header">
+      <div class="notice-header">
         <span class="notice-header-icon"><Icon name="bell" :size="19" /></span>
         <div>
           <div class="modal-title">公告</div>
@@ -30,8 +23,62 @@
       </div>
     </template>
 
+    <NoticeEditor
+      v-if="composing"
+      class="notice-compose"
+      submit-label="发布"
+      hint="发布后，所有用户右上角的通知图标会出现红点"
+      :saving="notices.saving"
+      @submit="publish"
+      @cancel="composing = false"
+    />
+
+    <div v-if="notices.loading" class="stack" style="gap: 10px">
+      <div v-for="i in 3" :key="i" class="skeleton" style="height: 64px" />
+    </div>
+    <EmptyState v-else-if="!notices.items.length" icon="bell" title="暂无公告" />
+    <div v-else ref="scroller" class="notice-scroll">
+      <ol class="notice-list">
+        <NoticeItem
+          v-for="notice in notices.items"
+          :key="notice.id"
+          :notice="notice"
+          :title="noticeTitle(notice)"
+          :unread="!notices.isRead(notice)"
+          :is-admin="sessionStore.isAdmin"
+          :saving="notices.saving"
+          :editing="editingId === notice.id"
+          :active="activeItemId === notice.id"
+          @select="openDetail(notice)"
+          @activate="activeItemId = notice.id"
+          @edit="startEdit(notice.id)"
+          @save="saveEdit(notice.id, $event)"
+          @cancel-edit="editingId = null"
+          @remove="notices.remove(notice.id)"
+        />
+      </ol>
+    </div>
+
+    <template #footer>
+      <div class="notice-footer">
+        <span class="notice-footer-hint">
+          {{ notices.loading ? '正在加载公告…' : `共 ${notices.items.length} 条公告` }}
+        </span>
+        <button class="btn btn-primary" @click="emit('close')">关闭</button>
+      </div>
+    </template>
+  </Modal>
+
+  <Modal :open="open && !!selected" wide :title="detail.title" @close="selectedId = null">
+    <template #header>
+      <div class="notice-header">
+        <span class="notice-header-icon"><Icon name="info" :size="19" /></span>
+        <span class="badge badge-accent plain">公告</span>
+      </div>
+    </template>
+
     <template v-if="selected">
-      <h2 class="notice-detail-title">{{ detail.title || '图片公告' }}</h2>
+      <h2 class="notice-detail-title">{{ detail.title }}</h2>
       <div class="notice-detail-meta">
         <span class="num">
           <Icon name="clock" :size="14" />
@@ -41,79 +88,32 @@
         <span v-if="selected.updated_at > selected.created_at">· 已编辑</span>
       </div>
       <div class="notice-detail-body">
-        <template v-if="detail.blocks.length">
-          <template v-for="(block, i) in detail.blocks" :key="i">
-            <template v-if="block.src">
-              <a
-                v-if="!broken.has(block.src)"
-                class="notice-image"
-                :href="block.src"
-                target="_blank"
-                rel="noopener noreferrer"
-                title="查看原图"
-              >
-                <img :src="block.src" alt="公告图片" loading="lazy" @error="broken.add(block.src)" />
-              </a>
-              <a v-else :href="block.src" target="_blank" rel="noopener noreferrer">{{ block.src }}</a>
-            </template>
-            <p v-else>{{ block.text }}</p>
+        <template v-for="(block, i) in detail.blocks" :key="i">
+          <template v-if="block.src">
+            <a
+              v-if="!broken.has(block.src)"
+              class="notice-image"
+              :href="block.src"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="查看原图"
+            >
+              <img :src="block.src" alt="公告图片" loading="lazy" @error="broken.add(block.src)" />
+            </a>
+            <a v-else :href="block.src" target="_blank" rel="noopener noreferrer">{{ block.src }}</a>
           </template>
+          <p v-else>{{ block.text }}</p>
         </template>
-        <p v-else>{{ detail.title }}</p>
-      </div>
-    </template>
-
-    <template v-else>
-      <NoticeEditor
-        v-if="composing"
-        v-model="composeDraft"
-        class="notice-compose"
-        submit-label="发布"
-        hint="发布后，所有用户右上角的通知图标会出现红点"
-        :saving="notices.saving"
-        @submit="publish"
-        @cancel="composing = false"
-      />
-
-      <div v-if="notices.loading" class="stack" style="gap: 10px">
-        <div v-for="i in 3" :key="i" class="skeleton" style="height: 64px" />
-      </div>
-      <EmptyState v-else-if="!notices.items.length" icon="bell" title="暂无公告" />
-      <div v-else ref="scroller" class="notice-scroll">
-        <ol class="notice-list">
-          <NoticeItem
-            v-for="notice in notices.items"
-            :key="notice.id"
-            :notice="notice"
-            :unread="!notices.isRead(notice)"
-            :is-admin="sessionStore.isAdmin"
-            :saving="notices.saving"
-            :editing="editingId === notice.id"
-            :active="activeItemId === notice.id"
-            @select="openDetail(notice)"
-            @activate="activeItemId = notice.id"
-            @edit="startEdit(notice.id)"
-            @save="saveEdit(notice.id, $event)"
-            @cancel-edit="editingId = null"
-            @remove="remove(notice.id)"
-          />
-        </ol>
       </div>
     </template>
 
     <template #footer>
       <div class="notice-footer">
         <span class="notice-footer-hint">
-          <template v-if="selected">
-            <Icon name="info" :size="14" />
-            您已阅读此公告
-          </template>
-          <template v-else>
-            {{ notices.loading ? '正在加载公告…' : `共 ${notices.items.length} 条公告` }}
-          </template>
+          <Icon name="info" :size="14" />
+          您已阅读此公告
         </span>
-        <button v-if="selected" class="btn" @click="selectedId = null">返回</button>
-        <button v-else class="btn btn-primary" @click="emit('close')">关闭</button>
+        <button class="btn" @click="selectedId = null">返回</button>
       </div>
     </template>
   </Modal>
@@ -138,7 +138,6 @@ const emit = defineEmits(['close'])
 
 const IMAGE_LINE = /^https:\/\/\S+\.(?:png|jpe?g|gif|webp)(?:[?#]\S*)?$/i
 const composing = ref(false)
-const composeDraft = ref('')
 const editingId = ref(null)
 const activeItemId = ref(null)
 const selectedId = ref(null)
@@ -151,39 +150,41 @@ watch(
     if (!open) return
     composing.value = false
     editingId.value = null
-    activeItemId.value = null
     selectedId.value = null
   },
 )
 
 const selected = computed(() => props.notices.items.find((item) => item.id === selectedId.value) || null)
 
-// A line holding only an https image link shows as that image; other lines stay text. The first
-// line is the title unless it is an image, so an image-only notice needs no title.
+function noticeTitle(notice) {
+  const first = notice.content.trim().split(/\r?\n/, 1)[0].trim()
+  return IMAGE_LINE.test(first) ? '图片公告' : first
+}
+
+// A line holding only an https image link shows as that image; other lines stay text.
 const detail = computed(() => {
   if (!selected.value) return { title: '', blocks: [] }
   const lines = selected.value.content.trim().split(/\r?\n/)
-  const title = IMAGE_LINE.test(lines[0].trim()) ? '' : lines.shift()
+  const title = IMAGE_LINE.test(lines[0].trim()) ? '图片公告' : lines.shift()
   const blocks = []
   for (const line of lines) {
+    const trimmed = line.trim()
     const last = blocks.at(-1)
-    if (IMAGE_LINE.test(line.trim())) blocks.push({ src: line.trim() })
+    if (IMAGE_LINE.test(trimmed)) blocks.push({ src: trimmed })
     else if (last && !last.src) last.text += `\n${line}`
     else blocks.push({ text: line })
   }
-  for (const block of blocks) if (!block.src) block.text = block.text.trim()
-  return { title, blocks: blocks.filter((block) => block.src || block.text) }
+  const filtered = blocks.filter((b) => b.src || (b.text = b.text.trim()))
+  return { title, blocks: filtered.length ? filtered : [{ text: title }] }
 })
 
 function openDetail(notice) {
-  activeItemId.value = null
   props.notices.markRead(notice)
   selectedId.value = notice.id
 }
 function startCompose() {
   activeItemId.value = null
   editingId.value = null
-  composeDraft.value = ''
   composing.value = true
 }
 async function publish(content) {
@@ -199,12 +200,6 @@ function startEdit(id) {
 }
 async function saveEdit(id, content) {
   if (await props.notices.update(id, content)) editingId.value = null
-}
-async function remove(id) {
-  if (await props.notices.remove(id)) {
-    activeItemId.value = null
-    if (selectedId.value === id) selectedId.value = null
-  }
 }
 </script>
 

@@ -2,14 +2,21 @@
   <li class="notice-item" :class="{ unread }">
     <NoticeEditor
       v-if="editing"
-      v-model="draft"
+      :value="notice.content"
       label="编辑公告"
       :saving="saving"
       @submit="emit('save', $event)"
       @cancel="emit('cancel-edit')"
     />
     <template v-else>
-      <div class="notice-item-row" @click="emit('select')">
+      <div
+        class="notice-item-row"
+        role="button"
+        tabindex="0"
+        @click="emit('select')"
+        @keydown.enter.prevent="emit('select')"
+        @keydown.space.prevent="emit('select')"
+      >
         <span class="notice-item-icon" aria-hidden="true">
           <Icon :name="unread ? 'info' : 'check-circle'" :size="19" />
         </span>
@@ -63,7 +70,7 @@
 </template>
 
 <script setup>
-import { computed, nextTick, ref, useId, watch } from 'vue'
+import { nextTick, ref, useId, watch } from 'vue'
 import Icon from '@/components/base/Icon.vue'
 import { usePopover } from '@/composables/usePopover'
 import { relative } from '@/utils/format'
@@ -71,6 +78,7 @@ import NoticeEditor from './NoticeEditor.vue'
 
 const props = defineProps({
   notice: { type: Object, required: true },
+  title: { type: String, required: true },
   unread: Boolean,
   isAdmin: Boolean,
   saving: Boolean,
@@ -78,7 +86,6 @@ const props = defineProps({
   active: Boolean,
 })
 const emit = defineEmits(['select', 'activate', 'edit', 'save', 'cancel-edit', 'remove'])
-const draft = ref('')
 const confirming = ref(false)
 const menuId = useId()
 const actionMenu = ref(null)
@@ -89,19 +96,7 @@ const actions = usePopover({
     top: `${rect.bottom + 100 > innerHeight ? rect.top - 94 : rect.bottom + 6}px`,
   }),
 })
-const IMAGE_LINE = /^https:\/\/\S+\.(?:png|jpe?g|gif|webp)(?:[?#]\S*)?$/i
-const title = computed(() => {
-  const first = props.notice.content.trim().split(/\r?\n/, 1)[0].trim()
-  return IMAGE_LINE.test(first) ? '图片公告' : first
-})
 
-watch(
-  () => props.editing,
-  (editing) => {
-    if (editing) draft.value = props.notice.content
-  },
-  { immediate: true },
-)
 watch(
   () => props.active,
   (active) => {
