@@ -17,9 +17,7 @@
         @keydown.enter.prevent="emit('select')"
         @keydown.space.prevent="emit('select')"
       >
-        <span class="notice-item-icon" aria-hidden="true">
-          <Icon :name="unread ? 'info' : 'check-circle'" :size="19" />
-        </span>
+        <span class="notice-dot" aria-hidden="true" />
         <div class="notice-item-body">
           <h3 class="notice-title">{{ title }}</h3>
           <div class="notice-meta">
@@ -136,38 +134,25 @@ function confirmRemove() {
 .notice-item:last-child {
   border-bottom-color: transparent;
 }
-.notice-item.unread::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 8px;
-  bottom: 8px;
-  width: 3px;
-  border-radius: 999px;
-  background: var(--accent);
-}
 .notice-item-row {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 12px;
   cursor: pointer;
 }
 .notice-item:hover {
   background: var(--surface-2);
 }
-.notice-item-icon {
+.notice-dot {
   flex: none;
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  background: var(--surface-3);
-  color: var(--faint);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--border);
 }
-.notice-item.unread .notice-item-icon {
+.notice-item.unread .notice-dot {
   background: var(--accent);
-  color: var(--on-accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 .notice-item-body {
   flex: 1;
@@ -213,7 +198,7 @@ function confirmRemove() {
   align-items: center;
   gap: 8px;
   margin-top: 12px;
-  padding-left: 52px;
+  padding-left: 19px;
   font-size: 13px;
 }
 .notice-confirm > span {
