@@ -22,6 +22,7 @@ from core.db import connect, init_db
 from core.errors import ApiError
 from core.security import RateLimiter
 from integrations.cpa import CPAClient
+from integrations.router import RouterClient
 from runtime.sync import Node, SyncWorker
 from services.settings import RuntimeSettings
 
@@ -50,6 +51,7 @@ class Runtime:
             )
             for node in cfg["extra_nodes"]
         ]
+        self.router = RouterClient(cfg["router"]["control_url"], cfg["router"]["control_token"])
         self.worker = SyncWorker(self)
 
     def db(self):

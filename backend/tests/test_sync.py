@@ -13,6 +13,7 @@ from core.config import load_config
 from core.db import MIGRATIONS, connect, get_setting, init_db, now_ms, set_setting
 from integrations import cpamp
 from integrations.cpa import CPAError
+from integrations.router import RouterClient
 from runtime.sync import Node, SyncWorker
 from services import api_keys
 from services.settings import RuntimeSettings
@@ -60,7 +61,10 @@ class SyncTests(unittest.TestCase):
         self.cfg["cpa"]["sync_keys"] = True
         self.node = Node("node1", FakeCPA(), self.source_path)
         self.runtime = SimpleNamespace(
-            cfg=self.cfg, db=lambda: connect(self.path), nodes=[self.node]
+            cfg=self.cfg,
+            db=lambda: connect(self.path),
+            nodes=[self.node],
+            router=RouterClient("", ""),
         )
         self.runtime.settings = RuntimeSettings(self.cfg, self.runtime.db)
         self.worker = SyncWorker(self.runtime)

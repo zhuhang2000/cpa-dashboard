@@ -63,6 +63,8 @@ EXPECTED_ROUTES = {
     ("PUT", "/api/admin/notices/{notice_id}"),
     ("DELETE", "/api/admin/notices/{notice_id}"),
     ("POST", "/api/admin/sync"),
+    ("GET", "/api/admin/routing"),
+    ("PUT", "/api/admin/routing"),
 }
 
 
@@ -324,6 +326,21 @@ def run_portal_scenario(admin, user, bootstrap_admin, append_usage, payment_key=
     assert synced["nodes"][0]["cpamp"]["ok"] is True
     assert synced["nodes"][0]["cpamp"]["billed_events"] == 2
     call(admin, "POST", "/api/admin/sync", json={})
+    routed, _ = call(admin, "GET", "/api/admin/routing")
+    assert routed["routing"] == {
+        "enabled": False,
+        "nodes": [{"id": "node1", "enabled": True, "capacity": 1}],
+    }
+    assert routed["nodes"][0]["cpamp"]["ok"] is True
+    routed, _ = call(
+        admin,
+        "PUT",
+        "/api/admin/routing",
+        json={"enabled": True, "nodes": [{"id": "node1", "enabled": True, "capacity": 2}]},
+    )
+    assert routed["routing"]["enabled"] is True
+    assert routed["routing"]["nodes"][0]["capacity"] == 2
+    call(user, "GET", "/api/admin/routing", expected=403)
     summary, _ = call(user, "GET", "/api/usage/summary", params={"days": 7})
     assert summary["total"] == {"requests": 2, "cost": 3}
     assert summary["balance"] == 12 and len(summary["daily"]) == 7
@@ -465,6 +482,8 @@ def test_all_business_endpoints_through_fastapi(tmp_path):
     cfg["data_dir"] = str(tmp_path / "portal")
     cfg["frontend_dir"] = str(tmp_path)
     cfg["cpamp"]["usage_db"] = str(tmp_path / "cpamp.sqlite")
+    cfg["extra_nodes"] = []
+    cfg["router"] = {"control_url": "", "control_token": ""}
     cfg["payment"]["epay"].update(
         enabled=True,
         gateway="https://pay.example.test",
@@ -534,7 +553,7 @@ def test_all_business_endpoints_through_fastapi(tmp_path):
             for method in operations
             if method in {"get", "post", "put", "patch", "delete"}
         }
-    assert len(EXPECTED_ROUTES) == 51
+    assert len(EXPECTED_ROUTES) == 53
     assert covered == EXPECTED_ROUTES
     assert actual_routes == EXPECTED_ROUTES
     assert len(records) > 39

@@ -82,6 +82,8 @@ def test_manager_is_refused_every_other_administrator_action(client, team):
         ("GET", f"/api/admin/users/{alice}/usage/logs", None),
         ("GET", "/api/admin/codes", None),
         ("GET", "/api/admin/settings", None),
+        ("GET", "/api/admin/routing", None),
+        ("PUT", "/api/admin/routing", {"enabled": False, "nodes": []}),
     ):
         response = client.request(method, path, json=body)
         assert response.status_code == 403, (method, path)

@@ -244,7 +244,14 @@ def admin_overview(conn=Depends(get_connection), runtime=Depends(get_runtime)):
             for row in report["top_users"]
         ],
         "unpriced_models": report["unpriced_models"],
-        "nodes": runtime.worker.status(),
+        # Details live on the node routing page; the overview only points there.
+        "sync_issues": [
+            node["id"]
+            for node in runtime.worker.status()
+            if node["cpamp"]["ok"] is False
+            or not node["cpa_configured"]
+            or node["cpa"]["ok"] is False
+        ],
         "config": {
             "online_payment": epay_conf(runtime.cfg) is not None,
         },

@@ -1,4 +1,5 @@
-"""Schedule usage ingestion and reconcile portal keys with every CLIProxyAPI node.
+"""Schedule usage ingestion, reconcile portal keys with every CLIProxyAPI node and
+keep nginx's node routing in line with the saved settings.
 
 The worker owns runtime state, retries and external-call orchestration. Portal
 database operations belong to services; CPAMP reads belong to its adapter.
@@ -13,7 +14,8 @@ from dataclasses import dataclass
 from core.db import now_ms
 from integrations import cpamp
 from integrations.cpa import CPAClient, CPAError
-from services import api_keys, pricing, usage
+from integrations.router import RouterError
+from services import api_keys, pricing, routing, usage
 
 log = logging.getLogger("portal.sync")
 PRICE_REFRESH_SECONDS = 300
@@ -62,6 +64,7 @@ class SyncWorker:
         self._cpamp_prices = {}
         self._cpamp_prices_at = 0.0
         self.state = {node.id: _initial_state() for node in runtime.nodes}
+        self.router_state = {"ok": None, "error": None, "last_sync_at": None}
 
     def start(self):
         if self._thread is not None and self._thread.is_alive():
@@ -89,6 +92,37 @@ class SyncWorker:
                 log.exception("key sync failed")
                 for node_state in self.state.values():
                     node_state["cpa"].update(ok=False, error=str(exc))
+            try:
+                self.sync_routing()
+            except Exception as exc:
+                log.exception("routing sync failed")
+                self.router_state.update(ok=False, error=str(exc))
+
+    def sync_routing(self):
+        """Push the saved routing settings to nginx when its copy differs.
+
+        nginx keeps them in shared memory, so a restart loses them and routing falls
+        back to "off" until this runs again. Returns nginx's live state, or None.
+        """
+        router = self.runtime.router
+        if not router.configured:
+            return None
+        conn = self.runtime.db()
+        try:
+            wanted = routing.serialize(routing.load(conn, [node.id for node in self.runtime.nodes]))
+        finally:
+            conn.close()
+        try:
+            live = router.status()
+            if live.get("config") != wanted:
+                live = router.push(wanted)
+                log.info("routing pushed to nginx: %s", wanted)
+        except RouterError as exc:
+            self.router_state.update(ok=False, error=str(exc))
+            log.warning("routing sync failed: %s", exc)
+            return None
+        self.router_state.update(ok=True, error=None, last_sync_at=now_ms())
+        return live
 
     def status(self):
         """Every node's configuration and sync state, in configuration order."""
@@ -227,7 +261,7 @@ class SyncWorker:
                 self._cpa_backoff_until[node.id] = time.time() + 86400
                 message = (
                     "%s（已暂停自动重试，避免触发 CPA 封禁本机 IP；修正 .env 中该节点的管理地址或密钥后"
-                    "重启服务，或在运营概况点击“立即同步”重试）" % exc
+                    "重启服务，或在节点分流页面点击“立即同步”重试）" % exc
                 )
             else:
                 self._cpa_backoff_until[node.id] = time.time() + 30
