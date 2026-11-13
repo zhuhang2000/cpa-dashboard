@@ -24,6 +24,11 @@ const consolePages = [
 const adminPages = [
   { path: '', component: () => import('@/views/admin/Overview.vue'), meta: { title: '运营概况', icon: 'trend' } },
   {
+    path: 'routing',
+    component: () => import('@/views/admin/Routing.vue'),
+    meta: { title: '节点分流', icon: 'split' },
+  },
+  {
     path: 'users',
     component: () => import('@/views/admin/Users.vue'),
     meta: { title: '用户管理', icon: 'users', staff: true },
