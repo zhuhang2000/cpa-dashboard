@@ -111,6 +111,11 @@ def load_config(config_path: Path | None = None) -> dict:
             "batch_size": batch_size,
         },
         "extra_nodes": extra_nodes,
+        # Optional, so an .env written before node routing existed still loads.
+        "router": {
+            "control_url": env.get("ROUTER_CONTROL_URL", ""),
+            "control_token": env.get("ROUTER_CONTROL_TOKEN", ""),
+        },
         "pricing": {
             "use_cpamp_prices": env["USE_CPAMP_PRICES"].lower() == "true",
             "cpamp_price_discount": float(env["CPAMP_PRICE_DISCOUNT"]),

@@ -134,6 +134,18 @@ NODE2_CPAMP_USAGE_DB=./node2/usage.sqlite
 """
 
 
+def test_router_control_settings_are_optional(config_path):
+    config_path.write_text(SAMPLE_ENV)
+    assert config.load_config(config_path)["router"] == {"control_url": "", "control_token": ""}
+    config_path.write_text(
+        SAMPLE_ENV + "ROUTER_CONTROL_URL=http://127.0.0.1:18490\nROUTER_CONTROL_TOKEN=abc123\n"
+    )
+    assert config.load_config(config_path)["router"] == {
+        "control_url": "http://127.0.0.1:18490",
+        "control_token": "abc123",
+    }
+
+
 def test_extra_nodes_are_numbered_from_two_in_order(config_path):
     config_path.write_text(SAMPLE_ENV)
     assert config.load_config(config_path)["extra_nodes"] == []

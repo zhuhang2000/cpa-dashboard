@@ -17,6 +17,8 @@ def runtime(tmp_path):
     cfg["frontend_dir"] = str(tmp_path / "frontend")
     cfg["cpamp"]["usage_db"] = str(tmp_path / "missing-cpamp.sqlite")
     cfg["cpa"]["management_key"] = ""
+    cfg["extra_nodes"] = []
+    cfg["router"] = {"control_url": "", "control_token": ""}
     return Runtime(cfg)
 
 
