@@ -85,7 +85,6 @@
           {{ relative(selected.created_at) }} · {{ dateTime(selected.created_at, { seconds: true }) }}
         </span>
         <span><Icon name="eye" :size="14" />已读</span>
-        <span v-if="selected.updated_at > selected.created_at">· 已编辑</span>
       </div>
       <div class="notice-detail-body">
         <template v-for="(block, i) in detail.blocks" :key="i">

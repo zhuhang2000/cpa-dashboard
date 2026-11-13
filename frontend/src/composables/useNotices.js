@@ -13,8 +13,13 @@ export function useNotices() {
   const latestAt = ref(siteStore.status?.notice_latest_at || 0)
   let timer
 
+  function noticeAt(notice) {
+    return Math.max(notice.created_at || 0, notice.updated_at || 0)
+  }
+
   function isRead(notice) {
-    return notice.created_at <= readAt.value || readIds.value.has(notice.id)
+    const at = noticeAt(notice)
+    return at <= readAt.value || (readIds.value.get(notice.id) || 0) >= at
   }
 
   const unreadCount = computed(() => notices.items.filter((n) => !isRead(n)).length)
@@ -67,7 +72,7 @@ export function useNotices() {
 
   function markRead(notice) {
     if (!notice || isRead(notice)) return
-    readIds.value = new Set(readIds.value).add(notice.id)
+    readIds.value = new Map(readIds.value).set(notice.id, noticeAt(notice))
     if (notices.items.length && !unreadCount.value) {
       markAllRead()
       return
@@ -80,7 +85,8 @@ export function useNotices() {
   }
 
   function markAllRead() {
-    const at = Math.max(latestAt.value, notices.items[0]?.created_at || 0)
+    const maxItemAt = notices.items.reduce((max, n) => Math.max(max, noticeAt(n)), 0)
+    const at = Math.max(latestAt.value, maxItemAt)
     if (at > readAt.value) {
       readAt.value = at
       try {
@@ -90,7 +96,7 @@ export function useNotices() {
       }
     }
     if (readIds.value.size) {
-      readIds.value = new Set()
+      readIds.value = new Map()
       try {
         localStorage.removeItem(readIdsKey)
       } catch {
@@ -158,9 +164,10 @@ export function useNotices() {
 
   function readStoredIds() {
     try {
-      return new Set(JSON.parse(localStorage.getItem(readIdsKey) || '[]'))
+      const parsed = JSON.parse(localStorage.getItem(readIdsKey) || '[]')
+      return new Map(Array.isArray(parsed) ? parsed.filter(Array.isArray) : [])
     } catch {
-      return new Set()
+      return new Map()
     }
   }
 

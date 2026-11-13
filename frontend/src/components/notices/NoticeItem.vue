@@ -25,7 +25,6 @@
           <div class="notice-meta">
             <span class="num">{{ relative(notice.created_at) }}</span>
             <span v-if="unread" class="badge badge-accent">未读</span>
-            <span v-if="notice.updated_at > notice.created_at">· 已编辑</span>
           </div>
         </div>
         <button
