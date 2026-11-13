@@ -80,13 +80,13 @@ nano .env
 
 **关键必填项**：
 
-| 配置项 | 默认值 / 示例 | 说明 |
-| :--- | :--- | :--- |
-| `PUBLIC_API_BASE` | `https://api.example.com` | 用户调用的 CPA 接口公网地址（控制台接入示例中展示） |
-| `CPA_BASE_URL` | `http://127.0.0.1:8317` | 本机 CPA 服务地址 |
-| `CPA_MANAGEMENT_KEY`| *(空)* | CPA 管理密钥**明文**（初始化 CPAMP 时的 Management Key） |
-| `CPAMP_USAGE_DB` | `/opt/services/cpa-manager-plus/data/usage.sqlite` | CPAMP 用量数据库路径 |
-| `CPAMP_PRICE_DISCOUNT` | `1.0` | 官方价折扣初始值（8 折填 `0.8`，`1` 为不打折），之后可在后台「系统设置」修改 |
+| 配置项                   | 默认值 / 示例                                        | 说明                                                                             |
+| :----------------------- | :--------------------------------------------------- | :------------------------------------------------------------------------------- |
+| `PUBLIC_API_BASE`      | `https://api.example.com`                          | 用户调用的 CPA 接口公网地址（控制台接入示例中展示）                              |
+| `CPA_BASE_URL`         | `http://127.0.0.1:8317`                            | 本机 CPA 服务地址                                                                |
+| `CPA_MANAGEMENT_KEY`   | *(空)*                                             | CPA 管理密钥**明文**（初始化 CPAMP 时的 Management Key）                   |
+| `CPAMP_USAGE_DB`       | `/opt/services/cpa-manager-plus/data/usage.sqlite` | CPAMP 用量数据库路径                                                             |
+| `CPAMP_PRICE_DISCOUNT` | `1.0`                                              | 官方价折扣初始值（8 折填 `0.8`，`1` 为不打折），之后可在后台「系统设置」修改 |
 
 **多 CPA 节点（可选）**：上面的 `CPA_BASE_URL` / `CPA_MANAGEMENT_KEY` / `CPAMP_USAGE_DB` 是 1 号节点，其余节点从 2 开始编号追加：
 
@@ -96,7 +96,9 @@ NODE2_CPA_MANAGEMENT_KEY=节点 2 的管理密钥明文
 NODE2_CPAMP_USAGE_DB=/opt/services/cpamp-node2/data/usage.sqlite
 ```
 
-Portal 会把有效密钥同步到每个节点，逐个读取各节点的用量库并统一扣费，后台「运营概况」按节点显示同步状态。每个节点都要有一个专属的 CPAMP 实例（`--cpa-endpoint` 指向该节点），节点上不要再运行其他 CPAMP，否则用量会被分走而漏扣费。
+Portal 会把有效密钥同步到每个节点，逐个读取各节点的用量库并统一扣费，后台「节点分流」页面按节点显示同步状态。每个节点都要有一个专属的 CPAMP 实例（`--cpa-endpoint` 指向该节点），节点上不要再运行其他 CPAMP，否则用量会被分走而漏扣费。
+
+**节点分流（可选）**：用户请求由 nginx + Lua（`deploy/cpa-router/`）按 API Key 粘性分配到各节点。在 `.env` 填写 `ROUTER_CONTROL_URL`（nginx 只监听本机的控制接口）和 `ROUTER_CONTROL_TOKEN` 后，就可以在后台「节点分流」页面开关分流、选择参与分流的节点并调整容量比例，保存后几秒内生效，不需要 reload nginx。
 
 ### 3. 创建管理员与系统服务
 
