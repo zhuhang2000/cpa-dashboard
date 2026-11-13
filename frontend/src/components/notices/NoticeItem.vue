@@ -9,17 +9,27 @@
       @cancel="emit('cancel-edit')"
     />
     <template v-else>
-      <div class="notice-item-head">
-        <h3 v-if="content.title" class="notice-title">{{ content.title }}</h3>
-        <span v-if="unread" class="notice-new-tag">未读</span>
+      <div class="notice-item-row" @click="emit('select')">
+        <span class="notice-item-icon" aria-hidden="true">
+          <Icon :name="unread ? 'info' : 'check-circle'" :size="19" />
+        </span>
+        <div class="notice-item-body">
+          <h3 class="notice-title">{{ title }}</h3>
+          <div class="notice-meta">
+            <span class="num">{{ relative(notice.created_at) }}</span>
+            <span v-if="unread" class="badge badge-accent">未读</span>
+            <span v-if="notice.updated_at > notice.created_at">· 已编辑</span>
+          </div>
+        </div>
         <button
           v-if="isAdmin"
+          type="button"
           class="btn btn-ghost btn-icon btn-sm notice-more"
-          :aria-label="`更多操作：${content.title || '图片公告'}`"
+          :aria-label="`更多操作：${title}`"
           :aria-expanded="actions.open"
           :aria-controls="actions.open ? menuId : undefined"
           title="更多操作"
-          @click="toggleActions"
+          @click.stop="toggleActions"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <circle cx="5" cy="12" r="1.7" />
@@ -27,29 +37,7 @@
             <circle cx="19" cy="12" r="1.7" />
           </svg>
         </button>
-      </div>
-      <div v-if="content.blocks.length" class="notice-body">
-        <template v-for="(block, i) in content.blocks" :key="i">
-          <template v-if="block.src">
-            <a
-              v-if="!broken.has(block.src)"
-              class="notice-image"
-              :href="block.src"
-              target="_blank"
-              rel="noopener noreferrer"
-              title="查看原图"
-            >
-              <img :src="block.src" alt="公告图片" loading="lazy" @error="broken.add(block.src)" />
-            </a>
-          </template>
-          <p v-else>{{ block.text }}</p>
-        </template>
-      </div>
-      <div class="notice-meta">
-        <span class="num">{{ dateTime(notice.created_at).slice(11) }}</span>
-        <span aria-hidden="true">·</span>
-        <span>平台公告</span>
-        <span v-if="notice.updated_at > notice.created_at">· 已编辑</span>
+        <Icon name="chevron-right" :size="17" class="notice-arrow" />
       </div>
       <div v-if="confirming" class="notice-confirm" role="group" aria-label="确认删除公告">
         <span>确定删除这条公告？</span>
@@ -75,10 +63,10 @@
 </template>
 
 <script setup>
-import { computed, nextTick, reactive, ref, useId, watch } from 'vue'
+import { computed, nextTick, ref, useId, watch } from 'vue'
 import Icon from '@/components/base/Icon.vue'
 import { usePopover } from '@/composables/usePopover'
-import { dateTime } from '@/utils/format'
+import { relative } from '@/utils/format'
 import NoticeEditor from './NoticeEditor.vue'
 
 const props = defineProps({
@@ -89,7 +77,7 @@ const props = defineProps({
   editing: Boolean,
   active: Boolean,
 })
-const emit = defineEmits(['activate', 'edit', 'save', 'cancel-edit', 'remove'])
+const emit = defineEmits(['select', 'activate', 'edit', 'save', 'cancel-edit', 'remove'])
 const draft = ref('')
 const confirming = ref(false)
 const menuId = useId()
@@ -101,22 +89,10 @@ const actions = usePopover({
     top: `${rect.bottom + 100 > innerHeight ? rect.top - 94 : rect.bottom + 6}px`,
   }),
 })
-// A line holding only an https image link shows as that image; other lines stay text. The first
-// line is the title unless it is an image, so an image-only notice needs no title.
 const IMAGE_LINE = /^https:\/\/\S+\.(?:png|jpe?g|gif|webp)(?:[?#]\S*)?$/i
-const broken = reactive(new Set())
-const content = computed(() => {
-  const lines = props.notice.content.trim().split(/\r?\n/)
-  const title = IMAGE_LINE.test(lines[0].trim()) ? '' : lines.shift()
-  const blocks = []
-  for (const line of lines) {
-    const last = blocks.at(-1)
-    if (IMAGE_LINE.test(line.trim())) blocks.push({ src: line.trim() })
-    else if (last && !last.src) last.text += `\n${line}`
-    else blocks.push({ text: line })
-  }
-  for (const block of blocks) if (!block.src) block.text = block.text.trim()
-  return { title, blocks: blocks.filter((block) => block.src || block.text) }
+const title = computed(() => {
+  const first = props.notice.content.trim().split(/\r?\n/, 1)[0].trim()
+  return IMAGE_LINE.test(first) ? '图片公告' : first
 })
 
 watch(
@@ -158,85 +134,92 @@ function confirmRemove() {
 
 <style scoped>
 .notice-item {
-  padding: 18px 14px;
+  position: relative;
+  padding: 14px 12px;
   border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
 }
 .notice-item:last-child {
   border-bottom-color: transparent;
 }
-.notice-item.unread {
-  border-radius: 10px;
-  border-bottom-color: transparent;
-  background: color-mix(in srgb, var(--accent-soft) 55%, var(--surface));
+.notice-item.unread::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 999px;
+  background: var(--accent);
 }
-.notice-item-head {
+.notice-item-row {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+}
+.notice-item:hover {
+  background: var(--surface-2);
+}
+.notice-item-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: var(--surface-3);
+  color: var(--faint);
+}
+.notice-item.unread .notice-item-icon {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.notice-item-body {
+  flex: 1;
+  min-width: 0;
 }
 .notice-title {
-  min-width: 0;
-  font-size: 15px;
-  line-height: 1.6;
-  overflow-wrap: anywhere;
-}
-.notice-new-tag {
-  flex: none;
-  margin-top: 3px;
-  color: var(--accent-text);
-  font-size: 11px;
+  font-size: 14.5px;
   font-weight: 500;
+  line-height: 1.45;
+  color: var(--text-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.notice-item.unread .notice-title {
+  font-weight: 600;
+  color: var(--text);
+}
+.notice-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
 }
 .notice-more {
   flex: none;
-  margin: -2px -4px -2px auto;
   color: var(--muted);
 }
 .notice-more[aria-expanded='true'] {
   background: var(--accent-soft);
   color: var(--accent-text);
 }
-.notice-body {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px;
-  margin-top: 6px;
-  color: var(--text-2);
-  font-size: 14px;
-  line-height: 1.8;
-}
-.notice-body p {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-.notice-image {
-  display: block;
-  max-width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-}
-.notice-image img {
-  display: block;
-  max-width: 100%;
-  height: auto;
-}
-.notice-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 7px;
-  margin-top: 10px;
-  color: var(--muted);
-  font-size: 12px;
+.notice-arrow {
+  flex: none;
+  color: var(--faint);
 }
 .notice-confirm {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  margin-top: 14px;
+  margin-top: 12px;
+  padding-left: 52px;
   font-size: 13px;
 }
 .notice-confirm > span {
@@ -278,7 +261,10 @@ function confirmRemove() {
 
 @media (max-width: 480px) {
   .notice-item {
-    padding: 16px 10px;
+    padding: 12px 8px;
+  }
+  .notice-confirm {
+    padding-left: 0;
   }
 }
 </style>

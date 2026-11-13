@@ -10,7 +10,7 @@
     <span v-if="notices.unread" class="notice-dot" />
   </button>
 
-  <NoticeDialog v-if="open" :notices="notices" @close="open = false" />
+  <NoticeDialog :open="open" :notices="notices" @close="open = false" />
 </template>
 
 <script setup>

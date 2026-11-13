@@ -7,17 +7,28 @@ import { toast } from '@/toast'
 // One controller per bell. Dialogs can unmount without losing this user's read state.
 export function useNotices() {
   const readKey = `portal-notice-read-${sessionStore.user?.id}`
-  const readAt = ref(readStored())
+  const readIdsKey = `portal-notice-read-ids-${sessionStore.user?.id}`
+  const readAt = ref(readStoredAt())
+  const readIds = ref(readStoredIds())
   const latestAt = ref(siteStore.status?.notice_latest_at || 0)
   let timer
+
+  function isRead(notice) {
+    return notice.created_at <= readAt.value || readIds.value.has(notice.id)
+  }
+
+  const unreadCount = computed(() => notices.items.filter((n) => !isRead(n)).length)
+
   const notices = reactive({
     items: [],
     loading: false,
     saving: false,
-    // Snapshot from before opening, used to highlight newly received notices.
-    seenBefore: 0,
-    unread: computed(() => latestAt.value > readAt.value),
+    unreadCount,
+    unread: computed(() => (notices.items.length ? unreadCount.value > 0 : latestAt.value > readAt.value)),
+    isRead,
     load,
+    markRead,
+    markAllRead,
     create,
     update,
     remove,
@@ -44,16 +55,47 @@ export function useNotices() {
   })
 
   async function load() {
-    notices.seenBefore = readAt.value
     notices.loading = true
     try {
       notices.items = (await noticesApi.listNotices()).items
-      // Only mark notices actually returned by a successful request as read.
-      markRead(notices.items[0]?.created_at)
     } catch (e) {
       toast.error(e.message)
     } finally {
       notices.loading = false
+    }
+  }
+
+  function markRead(notice) {
+    if (!notice || isRead(notice)) return
+    readIds.value = new Set(readIds.value).add(notice.id)
+    if (notices.items.length && !unreadCount.value) {
+      markAllRead()
+      return
+    }
+    try {
+      localStorage.setItem(readIdsKey, JSON.stringify([...readIds.value]))
+    } catch {
+      /* Storage may be unavailable; keep the in-memory read state. */
+    }
+  }
+
+  function markAllRead() {
+    const at = Math.max(latestAt.value, notices.items[0]?.created_at || 0)
+    if (at > readAt.value) {
+      readAt.value = at
+      try {
+        localStorage.setItem(readKey, String(at))
+      } catch {
+        /* Storage may be unavailable; keep the in-memory read state. */
+      }
+    }
+    if (readIds.value.size) {
+      readIds.value = new Set()
+      try {
+        localStorage.removeItem(readIdsKey)
+      } catch {
+        /* Storage may be unavailable; keep the in-memory read state. */
+      }
     }
   }
 
@@ -63,9 +105,7 @@ export function useNotices() {
     try {
       const { notice } = await noticesApi.adminCreateNotice({ content })
       notices.items = [notice, ...notices.items]
-      markRead(notice.created_at)
-      // The publisher has seen it, so it is not tagged 未读 in the open dialog either.
-      notices.seenBefore = notice.created_at
+      markRead(notice)
       toast.success('通知已发布')
       return notice
     } catch (e) {
@@ -108,20 +148,19 @@ export function useNotices() {
     }
   }
 
-  function markRead(at) {
-    if (!at || at <= readAt.value) return
-    readAt.value = at
-    try {
-      localStorage.setItem(readKey, String(at))
-    } catch {
-      /* Storage may be unavailable; keep the in-memory read state. */
-    }
-  }
-  function readStored() {
+  function readStoredAt() {
     try {
       return Number(localStorage.getItem(readKey)) || 0
     } catch {
       return 0
+    }
+  }
+
+  function readStoredIds() {
+    try {
+      return new Set(JSON.parse(localStorage.getItem(readIdsKey) || '[]'))
+    } catch {
+      return new Set()
     }
   }
 
